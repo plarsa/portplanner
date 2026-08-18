@@ -1,0 +1,104 @@
+package se.portplaner.service;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import se.portplaner.dto.AssignmentRequest;
+import se.portplaner.dto.AssignmentResponse;
+import se.portplaner.exception.ResourceNotFoundException;
+import se.portplaner.model.*;
+import se.portplaner.repository.AssignmentRepository;
+import se.portplaner.repository.BoatRepository;
+import se.portplaner.repository.SlipRepository;
+
+import java.time.LocalDate;
+import java.util.List;
+
+@Service
+@Transactional
+public class AssignmentService {
+
+    private final AssignmentRepository assignmentRepository;
+    private final BoatRepository boatRepository;
+    private final SlipRepository slipRepository;
+
+    public AssignmentService(AssignmentRepository assignmentRepository,
+                             BoatRepository boatRepository,
+                             SlipRepository slipRepository) {
+        this.assignmentRepository = assignmentRepository;
+        this.boatRepository = boatRepository;
+        this.slipRepository = slipRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssignmentResponse> findActive() {
+        return assignmentRepository.findByStatus(AssignmentStatus.ACTIVE)
+                .stream().map(AssignmentResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AssignmentResponse> findByBoat(Long boatId) {
+        return assignmentRepository.findByBoatId(boatId)
+                .stream().map(AssignmentResponse::from).toList();
+    }
+
+    public AssignmentResponse create(AssignmentRequest req) {
+        var boat = boatRepository.findById(req.boatId())
+                .orElseThrow(() -> new ResourceNotFoundException("Båt " + req.boatId() + " hittades inte"));
+        var slip = slipRepository.findById(req.slipId())
+                .orElseThrow(() -> new ResourceNotFoundException("Båtplats " + req.slipId() + " hittades inte"));
+
+        validateBoatFitsSlip(boat, slip);
+
+        if (slip.getStatus() != SlipStatus.AVAILABLE) {
+            throw new IllegalArgumentException("Platsen är inte ledig (status: " + slip.getStatus() + ")");
+        }
+        if (assignmentRepository.findByBoatIdAndStatus(req.boatId(), AssignmentStatus.ACTIVE).isPresent()) {
+            throw new IllegalArgumentException("Båten har redan en aktiv tilldelning");
+        }
+
+        slip.setStatus(SlipStatus.OCCUPIED);
+        slipRepository.save(slip);
+
+        var assignment = new Assignment();
+        assignment.setBoat(boat);
+        assignment.setSlip(slip);
+        assignment.setAssignedDate(LocalDate.now());
+        assignment.setStatus(AssignmentStatus.ACTIVE);
+
+        return AssignmentResponse.from(assignmentRepository.save(assignment));
+    }
+
+    public AssignmentResponse end(Long id) {
+        var assignment = assignmentRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Tilldelning " + id + " hittades inte"));
+        if (assignment.getStatus() != AssignmentStatus.ACTIVE) {
+            throw new IllegalArgumentException("Tilldelningen är redan avslutad");
+        }
+
+        assignment.setStatus(AssignmentStatus.ENDED);
+        assignment.setEndDate(LocalDate.now());
+
+        var slip = assignment.getSlip();
+        slip.setStatus(SlipStatus.AVAILABLE);
+        slipRepository.save(slip);
+
+        return AssignmentResponse.from(assignmentRepository.save(assignment));
+    }
+
+    // Reused by QueueService
+    public void validateBoatFitsSlip(Boat boat, Slip slip) {
+        if (boat.getLengthM().compareTo(slip.getMaxLengthM()) > 0) {
+            throw new IllegalArgumentException(
+                    "Båten är för lång (%.1fm) för platsen (max %.1fm)".formatted(boat.getLengthM(), slip.getMaxLengthM()));
+        }
+        if (boat.getWidthM().compareTo(slip.getMaxWidthM()) > 0) {
+            throw new IllegalArgumentException(
+                    "Båten är för bred (%.1fm) för platsen (max %.1fm)".formatted(boat.getWidthM(), slip.getMaxWidthM()));
+        }
+        if (boat.getDraftM() != null && slip.getMaxDraftM() != null
+                && boat.getDraftM().compareTo(slip.getMaxDraftM()) > 0) {
+            throw new IllegalArgumentException(
+                    "Båtens djupgång (%.1fm) överstiger platsens max (%.1fm)".formatted(boat.getDraftM(), slip.getMaxDraftM()));
+        }
+    }
+}
