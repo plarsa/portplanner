@@ -32,7 +32,7 @@
       <span class="leg-item"><span class="leg-swatch land"></span> Land</span>
       <span class="leg-item"><span class="leg-swatch dock"></span> Brygga</span>
       <span class="leg-item"><span class="leg-swatch available"></span> Ledig plats</span>
-      <span class="leg-item"><span class="leg-swatch occupied"></span> Ockuperad plats</span>
+      <span class="leg-item"><span class="leg-swatch occupied"></span> Tilldelad plats</span>
       <span class="leg-item"><span class="leg-swatch maintenance"></span> Underhåll</span>
     </div>
 
@@ -88,11 +88,10 @@
           <dd><span :class="['status-badge', popup.slip.status.toLowerCase()]">{{ statusLabel(popup.slip.status) }}</span></dd>
         </dl>
         <div class="popup-assignment">
-          <div v-if="popupLoading" class="loading">Laddar tilldelning…</div>
-          <template v-else-if="popup.assignment">
-            <div class="assign-header">Tilldelad:</div>
-            <div class="assign-row"><strong>{{ popup.assignment.boatName }}</strong></div>
-            <div class="assign-row">{{ popup.assignment.ownerName }}</div>
+          <template v-if="popup.assignment">
+            <div class="assign-header">Tilldelad</div>
+            <div class="assign-boat">{{ popup.assignment.boatName }}</div>
+            <div class="assign-owner">{{ popup.assignment.ownerName }}</div>
             <div class="assign-row date">Från: {{ formatDate(popup.assignment.assignedDate) }}</div>
           </template>
           <div v-else class="free-tag">Platsen är ledig</div>
@@ -107,7 +106,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import { getDock, getDockSlips, updateDock } from '../api/docks'
-import { getSlipActiveAssignment } from '../api/layout'
+import { getAssignments } from '../api/assignments'
 
 const route = useRoute()
 const dockId = Number(route.params.id)
@@ -132,7 +131,7 @@ const gridWidth = ref(30)
 const gridHeight = ref(20)
 
 const popup = ref(null)
-const popupLoading = ref(false)
+const assignmentsBySlipId = ref({})
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -167,7 +166,7 @@ function cellTitle(r, c) {
 }
 
 function statusLabel(s) {
-  return { AVAILABLE: 'Ledig', OCCUPIED: 'Ockuperad', MAINTENANCE: 'Underhåll' }[s] ?? s
+  return { AVAILABLE: 'Ledig', OCCUPIED: 'Tilldelad', MAINTENANCE: 'Underhåll' }[s] ?? s
 }
 
 function formatDate(d) {
@@ -224,12 +223,7 @@ function onCellClick(r, c) {
   if (isEditing.value) return
   const slip = slipForCell(r, c)
   if (!slip) return
-  popup.value = { slip, assignment: null }
-  popupLoading.value = true
-  getSlipActiveAssignment(slip.id)
-    .then(res => { popup.value.assignment = res.data })
-    .catch(() => { popup.value.assignment = null })
-    .finally(() => { popupLoading.value = false })
+  popup.value = { slip, assignment: assignmentsBySlipId.value[slip.id] ?? null }
 }
 
 // ── Mode toggle ───────────────────────────────────────────
@@ -279,9 +273,16 @@ async function save() {
 }
 
 onMounted(async () => {
-  const [{ data: d }, { data: s }] = await Promise.all([getDock(dockId), getDockSlips(dockId)])
+  const [{ data: d }, { data: s }, { data: allAssignments }] = await Promise.all([
+    getDock(dockId), getDockSlips(dockId), getAssignments()
+  ])
   dock.value = d
   slips.value = s
+  const bySlip = {}
+  for (const a of allAssignments) {
+    if (a.status === 'ACTIVE') bySlip[a.slipId] = a
+  }
+  assignmentsBySlipId.value = bySlip
   parseLayout(d.layoutJson)
 })
 </script>
@@ -373,8 +374,9 @@ dd { font-size: 0.88rem; margin: 0; }
 .status-badge.occupied { background: #ffcdd2; color: #b71c1c; }
 .status-badge.maintenance { background: #ffe0b2; color: #e65100; }
 .popup-assignment { padding: 0.75rem 1.25rem 1.1rem; border-top: 1px solid #eee; }
-.loading { color: #aaa; font-size: 0.85rem; }
-.assign-header { font-size: 0.78rem; font-weight: 600; color: #888; margin-bottom: 0.3rem; }
+.assign-header { font-size: 0.78rem; font-weight: 600; color: #888; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.assign-boat { font-size: 1rem; font-weight: 700; color: #1a3a5c; margin-bottom: 0.2rem; }
+.assign-owner { font-size: 0.88rem; color: #444; margin-bottom: 0.25rem; }
 .assign-row { font-size: 0.9rem; margin-bottom: 0.15rem; }
 .assign-row.date { font-size: 0.8rem; color: #888; }
 .free-tag { background: #e8f5e9; color: #2e7d32; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.85rem; font-weight: 600; }

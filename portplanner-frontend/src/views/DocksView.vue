@@ -70,7 +70,7 @@
         <label class="full">Status
           <select v-model="slipForm.status">
             <option value="AVAILABLE">Ledig</option>
-            <option value="OCCUPIED">Ockuperad</option>
+            <option value="OCCUPIED">Tilldelad</option>
             <option value="MAINTENANCE">Underhåll</option>
           </select>
         </label>
@@ -110,7 +110,7 @@ const emptySlip = () => ({ slipNumber: '', maxLengthM: '', maxWidthM: '', maxDra
 const slipForm = ref(emptySlip())
 
 function statusLabel(s) {
-  return { AVAILABLE: 'Ledig', OCCUPIED: 'Ockuperad', MAINTENANCE: 'Underhåll' }[s] ?? s
+  return { AVAILABLE: 'Ledig', OCCUPIED: 'Tilldelad', MAINTENANCE: 'Underhåll' }[s] ?? s
 }
 
 async function load() {
