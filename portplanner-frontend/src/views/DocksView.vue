@@ -27,14 +27,14 @@
           <tr><th>Plats</th><th>Kategori</th><th>Max L</th><th>Max B</th><th>Max Djup</th><th>Status</th><th></th></tr>
         </thead>
         <tbody>
-          <tr v-for="s in slipsByDock[dock.id]" :key="s.id">
+          <tr v-for="s in slipsByDock[dock.id]" :key="s.id" class="clickable-row" @click="openDetail(s, dock.name)">
             <td>{{ s.slipNumber }}</td>
             <td><span v-if="s.category" class="cat-badge">{{ s.category }}</span><span v-else class="muted">–</span></td>
             <td>{{ s.maxLengthM }} m</td>
             <td>{{ s.maxWidthM }} m</td>
             <td>{{ s.maxDraftM ? s.maxDraftM + ' m' : '–' }}</td>
             <td><span :class="['status', s.status.toLowerCase()]">{{ statusLabel(s.status) }}</span></td>
-            <td class="actions">
+            <td class="actions" @click.stop>
               <button v-if="s.status === 'AVAILABLE'" class="assign-btn" @click="openAssign(s)">+ Tilldela</button>
               <button @click="openSlipEdit(s)">Redigera</button>
               <button class="danger" @click="removeSlip(s)">Ta bort</button>
@@ -43,6 +43,47 @@
         </tbody>
       </table>
       <p v-else class="no-slips">Inga platser registrerade</p>
+    </div>
+
+    <!-- Slip detail overlay -->
+    <div v-if="detail" class="detail-overlay" @click.self="detail = null">
+      <div class="detail-card">
+        <div class="detail-header">
+          <div>
+            <h3>Plats {{ detail.slip.slipNumber }}</h3>
+            <div class="detail-sub">{{ detail.dockName }}</div>
+          </div>
+          <button class="close-btn" @click="detail = null">✕</button>
+        </div>
+        <dl class="detail-grid">
+          <dt>Kategori</dt>
+          <dd>{{ detail.slip.category || '–' }}</dd>
+          <dt>Max längd</dt>
+          <dd>{{ detail.slip.maxLengthM }} m</dd>
+          <dt>Max bredd</dt>
+          <dd>{{ detail.slip.maxWidthM }} m</dd>
+          <dt>Max djupgång</dt>
+          <dd>{{ detail.slip.maxDraftM ? detail.slip.maxDraftM + ' m' : '–' }}</dd>
+          <dt>Status</dt>
+          <dd><span :class="['status', detail.slip.status.toLowerCase()]">{{ statusLabel(detail.slip.status) }}</span></dd>
+        </dl>
+        <div class="boat-section">
+          <div class="section-title">Tilldelad båt</div>
+          <div v-if="detail.boat" class="boat-block assigned">
+            <div class="boat-block-header">
+              <span class="boat-name">{{ detail.boat.name }}</span>
+              <span class="boat-dims">{{ detail.boat.widthM }} m × {{ detail.boat.lengthM }} m</span>
+              <span v-if="detail.boat.registrationNumber" class="boat-reg">{{ detail.boat.registrationNumber }}</span>
+            </div>
+            <div class="boat-owner">{{ detail.boat.ownerName }}</div>
+            <div v-if="detail.assignment" class="boat-since">Fr.o.m. {{ formatDate(detail.assignment.assignedDate) }}</div>
+          </div>
+          <div v-else class="boat-block free">Ingen båt tilldelad</div>
+        </div>
+        <div class="detail-footer">
+          <button class="btn-primary" @click="openSlipEdit(detail.slip); detail = null">Redigera plats</button>
+        </div>
+      </div>
     </div>
 
     <!-- Dock modal -->
@@ -161,6 +202,10 @@ const assignModal = ref(false)
 const assignSlip = ref(null)
 const assignErr = ref('')
 
+const detail = ref(null)
+const assignmentBySlipId = ref({})
+const boatById = ref({})
+
 const unassignedBoats = computed(() =>
   allBoats.value.filter(b => !assignedBoatIds.value.has(b.id))
 )
@@ -194,9 +239,10 @@ async function load() {
   docks.value = docksData
   tariffCategories.value = [...new Set(tariffs.map(t => t.category))].sort()
   allBoats.value = boatsData
-  assignedBoatIds.value = new Set(
-    assignments.filter(a => a.status === 'ACTIVE').map(a => a.boatId)
-  )
+  const activeAssignments = assignments.filter(a => a.status === 'ACTIVE')
+  assignedBoatIds.value = new Set(activeAssignments.map(a => a.boatId))
+  assignmentBySlipId.value = Object.fromEntries(activeAssignments.map(a => [a.slipId, a]))
+  boatById.value = Object.fromEntries(boatsData.map(b => [b.id, b]))
 
   for (const dock of docksData) {
     const { data: slips } = await getDockSlips(dock.id)
@@ -208,6 +254,16 @@ function openDockCreate() { editingDock.value = null; dockForm.value = { name: '
 function openDockEdit(d) { editingDock.value = d; dockForm.value = { name: d.name, description: d.description }; dockErr.value = ''; dockModal.value = true }
 function openSlipCreate() { editingSlip.value = null; slipForm.value = emptySlip(); slipErr.value = ''; slipModal.value = true }
 function openSlipEdit(s) { editingSlip.value = s; slipForm.value = { slipNumber: s.slipNumber, maxLengthM: s.maxLengthM, maxWidthM: s.maxWidthM, maxDraftM: s.maxDraftM, dockId: s.dockId, status: s.status, category: s.category || '' }; slipErr.value = ''; slipModal.value = true }
+
+function openDetail(slip, dockName) {
+  const assignment = assignmentBySlipId.value[slip.id] ?? null
+  const boat = assignment ? (boatById.value[assignment.boatId] ?? null) : null
+  detail.value = { slip, dockName, assignment, boat }
+}
+
+function formatDate(d) {
+  return d ? new Date(d + 'T00:00:00').toLocaleDateString('sv-SE') : '–'
+}
 
 function openAssign(slip) {
   assignSlip.value = slip
@@ -326,4 +382,28 @@ label input, label select, label textarea { padding: 0.5rem; border: 1px solid #
 .warn-tag { font-size: 0.72rem; font-weight: 700; color: #9a5000; background: #ffe082; border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
 .assign-scroll { flex: 1; overflow-y: auto; min-height: 0; }
 .assign-err { padding: 0 1.25rem 1rem; margin: 0; }
+.clickable-row { cursor: pointer; transition: background 0.1s; }
+.clickable-row:hover { background: #f5f8ff; }
+
+/* Slip detail overlay */
+.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.detail-card { background: white; border-radius: 12px; width: 420px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
+.detail-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1rem 1.4rem; border-bottom: 1px solid #eee; }
+.detail-header h3 { font-size: 1.15rem; margin: 0 0 0.15rem; }
+.detail-sub { font-size: 0.85rem; color: #666; }
+.detail-grid { display: grid; grid-template-columns: 120px 1fr; gap: 0.5rem 1rem; padding: 1.1rem 1.4rem; margin: 0; }
+dt { font-size: 0.82rem; font-weight: 600; color: #888; align-self: center; }
+dd { font-size: 0.9rem; color: #222; margin: 0; }
+.boat-section { border-top: 1px solid #eee; padding: 1rem 1.4rem; }
+.section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 0.6rem; }
+.boat-block { border-radius: 8px; padding: 0.75rem 1rem; }
+.boat-block.assigned { background: #f8d7da; }
+.boat-block-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
+.boat-block .boat-name { font-weight: 700; font-size: 0.95rem; color: #721c24; }
+.boat-block .boat-dims { font-size: 0.78rem; color: #9a3a3a; }
+.boat-block .boat-reg { font-size: 0.78rem; color: #b05050; margin-left: auto; }
+.boat-owner { font-size: 0.85rem; color: #721c24; }
+.boat-since { font-size: 0.78rem; color: #9a3a3a; margin-top: 0.2rem; opacity: 0.85; }
+.boat-block.free { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.88rem; }
+.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
 </style>
