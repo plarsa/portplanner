@@ -4,9 +4,12 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import se.portplanner.dto.AssignmentResponse;
 import se.portplanner.dto.SlipRequest;
 import se.portplanner.dto.SlipResponse;
+import se.portplanner.service.AssignmentService;
 import se.portplanner.service.SlipService;
 
 import java.util.List;
@@ -17,9 +20,11 @@ import java.util.List;
 public class SlipController {
 
     private final SlipService slipService;
+    private final AssignmentService assignmentService;
 
-    public SlipController(SlipService slipService) {
+    public SlipController(SlipService slipService, AssignmentService assignmentService) {
         this.slipService = slipService;
+        this.assignmentService = assignmentService;
     }
 
     @GetMapping
@@ -45,6 +50,14 @@ public class SlipController {
     @Operation(summary = "Uppdatera båtplats")
     public SlipResponse update(@PathVariable Long id, @Valid @RequestBody SlipRequest req) {
         return slipService.update(id, req);
+    }
+
+    @GetMapping("/{id}/active-assignment")
+    @Operation(summary = "Hämta aktiv tilldelning för en plats")
+    public ResponseEntity<AssignmentResponse> activeAssignment(@PathVariable Long id) {
+        return assignmentService.findActiveBySlip(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @DeleteMapping("/{id}")

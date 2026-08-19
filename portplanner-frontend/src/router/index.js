@@ -10,6 +10,7 @@ const routes = [
   { path: '/persons', component: () => import('../views/PersonsView.vue') },
   { path: '/boats', component: () => import('../views/BoatsView.vue') },
   { path: '/docks', component: () => import('../views/DocksView.vue') },
+  { path: '/docks/:id/layout', component: () => import('../views/DockLayoutView.vue') },
   { path: '/assignments', component: () => import('../views/AssignmentsView.vue') },
   { path: '/queue', component: () => import('../views/QueueView.vue') },
   { path: '/mail', component: () => import('../views/MailView.vue') },

@@ -51,6 +51,7 @@ public class DockService {
         var dock = new Dock();
         dock.setName(req.name());
         dock.setDescription(req.description());
+        dock.setLayoutJson(req.layoutJson());
         var saved = dockRepository.save(dock);
         auditService.log("CREATED", "DOCK", saved.getId(), "Brygga skapad: " + saved.getName());
         return DockResponse.from(saved);
@@ -60,6 +61,7 @@ public class DockService {
         var dock = getOrThrow(id);
         dock.setName(req.name());
         dock.setDescription(req.description());
+        if (req.layoutJson() != null) dock.setLayoutJson(req.layoutJson());
         var saved = dockRepository.save(dock);
         auditService.log("UPDATED", "DOCK", saved.getId(), "Brygga uppdaterad: " + saved.getName());
         return DockResponse.from(saved);

@@ -12,6 +12,7 @@ import se.portplanner.repository.SlipRepository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @Transactional
@@ -36,6 +37,12 @@ public class AssignmentService {
     public List<AssignmentResponse> findActive() {
         return assignmentRepository.findByStatus(AssignmentStatus.ACTIVE)
                 .stream().map(AssignmentResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<AssignmentResponse> findActiveBySlip(Long slipId) {
+        return assignmentRepository.findBySlipIdAndStatus(slipId, AssignmentStatus.ACTIVE)
+                .map(AssignmentResponse::from);
     }
 
     @Transactional(readOnly = true)

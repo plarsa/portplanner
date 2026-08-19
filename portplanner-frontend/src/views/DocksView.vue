@@ -16,6 +16,7 @@
         </div>
         <div class="dock-actions">
           <span class="badge">{{ dock.slipCount }} platser</span>
+          <button @click="router.push('/docks/' + dock.id + '/layout')">Visa layout</button>
           <button @click="openDockEdit(dock)">Redigera</button>
           <button class="danger" @click="removeDock(dock)">Ta bort</button>
         </div>
@@ -87,12 +88,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { getDocks, createDock, updateDock, deleteDock, getDockSlips } from '../api/docks'
 import { createSlip, updateSlip, deleteSlip } from '../api/slips'
 import { getTariffs } from '../api/tariffs'
 
+const router = useRouter()
 const docks = ref([])
 const slipsByDock = ref({})
 const tariffCategories = ref([])

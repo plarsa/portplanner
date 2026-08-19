@@ -22,6 +22,9 @@ public class Dock {
 
     private String description;
 
+    @Column(name = "layout_json", columnDefinition = "CLOB")
+    private String layoutJson;
+
     @OneToMany(mappedBy = "dock", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Slip> slips = new ArrayList<>();
 }
