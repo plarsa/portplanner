@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface BoatRepository extends JpaRepository<Boat, Long> {
     List<Boat> findByOwnerId(Long ownerId);
+    boolean existsByNameIgnoreCaseAndOwnerId(String name, Long ownerId);
 }

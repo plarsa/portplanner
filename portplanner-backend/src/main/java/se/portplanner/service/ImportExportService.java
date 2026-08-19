@@ -3,10 +3,12 @@ package se.portplanner.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.portplanner.dto.*;
+import se.portplanner.model.Boat;
 import se.portplanner.model.Dock;
 import se.portplanner.model.Person;
 import se.portplanner.model.Slip;
 import se.portplanner.model.SlipStatus;
+import se.portplanner.repository.BoatRepository;
 import se.portplanner.repository.DockRepository;
 import se.portplanner.repository.PersonRepository;
 import se.portplanner.repository.SlipRepository;
@@ -25,13 +27,16 @@ public class ImportExportService {
     private final DockRepository dockRepository;
     private final SlipRepository slipRepository;
     private final PersonRepository personRepository;
+    private final BoatRepository boatRepository;
     private final AuditService auditService;
 
     public ImportExportService(DockRepository dockRepository, SlipRepository slipRepository,
-                               PersonRepository personRepository, AuditService auditService) {
+                               PersonRepository personRepository, BoatRepository boatRepository,
+                               AuditService auditService) {
         this.dockRepository = dockRepository;
         this.slipRepository = slipRepository;
         this.personRepository = personRepository;
+        this.boatRepository = boatRepository;
         this.auditService = auditService;
     }
 
@@ -232,6 +237,100 @@ public class ImportExportService {
                 "Import: " + personsCreated + " personer importerade" +
                 (personsSkipped > 0 ? ", " + personsSkipped + " hoppade över" : ""));
         return new PersonImportResult(personsCreated, personsSkipped, warnings);
+    }
+
+    // ── Boat export ────────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<BoatImportDto> exportBoats() {
+        return boatRepository.findAll().stream()
+                .map(b -> new BoatImportDto(
+                        b.getName(),
+                        b.getRegistrationNumber(),
+                        b.getLengthM(),
+                        b.getWidthM(),
+                        b.getDraftM(),
+                        b.getOwner().getEmail()))
+                .toList();
+    }
+
+    // ── Boat preview ───────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public BoatImportPreview previewBoats(List<BoatImportDto> boats) {
+        Map<String, Person> personsByEmail = existingPersonsByEmail();
+        int boatsNew = 0, boatsExisting = 0, ownersNotFound = 0;
+        List<String> details = new ArrayList<>();
+
+        for (BoatImportDto dto : boats) {
+            if (dto.name() == null || dto.name().isBlank()) continue;
+            Person owner = dto.ownerEmail() != null
+                    ? personsByEmail.get(dto.ownerEmail().toLowerCase()) : null;
+            if (owner == null) {
+                ownersNotFound++;
+                details.add("Ägare ej hittad: " + dto.ownerEmail() + " (båt: " + dto.name() + ")");
+                continue;
+            }
+            if (boatRepository.existsByNameIgnoreCaseAndOwnerId(dto.name(), owner.getId())) {
+                boatsExisting++;
+                details.add("Befintlig båt: " + dto.name() + " (" + owner.getFirstName() + " " + owner.getLastName() + ")");
+            } else {
+                boatsNew++;
+                details.add("Ny båt: " + dto.name() + " – ägare " + owner.getFirstName() + " " + owner.getLastName());
+            }
+        }
+        return new BoatImportPreview(boatsNew, boatsExisting, ownersNotFound, details);
+    }
+
+    // ── Boat import ────────────────────────────────────────────────────────
+
+    public BoatImportResult importBoats(List<BoatImportDto> boats) {
+        Map<String, Person> personsByEmail = existingPersonsByEmail();
+        int boatsCreated = 0, boatsSkipped = 0;
+        List<String> warnings = new ArrayList<>();
+
+        for (BoatImportDto dto : boats) {
+            if (dto.name() == null || dto.name().isBlank()) {
+                warnings.add("Post saknar båtnamn, hoppar över");
+                boatsSkipped++;
+                continue;
+            }
+            if (dto.ownerEmail() == null || dto.ownerEmail().isBlank()) {
+                warnings.add("Båt " + dto.name() + " saknar ägarens e-post, hoppar över");
+                boatsSkipped++;
+                continue;
+            }
+            Person owner = personsByEmail.get(dto.ownerEmail().toLowerCase());
+            if (owner == null) {
+                warnings.add("Ägare ej hittad för e-post " + dto.ownerEmail() + " (båt: " + dto.name() + "), hoppar över");
+                boatsSkipped++;
+                continue;
+            }
+            if (boatRepository.existsByNameIgnoreCaseAndOwnerId(dto.name(), owner.getId())) {
+                boatsSkipped++;
+                continue;
+            }
+            if (dto.lengthM() == null || dto.widthM() == null) {
+                warnings.add("Båt " + dto.name() + " saknar längd eller bredd, hoppar över");
+                boatsSkipped++;
+                continue;
+            }
+
+            var boat = new Boat();
+            boat.setName(dto.name());
+            boat.setRegistrationNumber(dto.registrationNumber());
+            boat.setLengthM(dto.lengthM());
+            boat.setWidthM(dto.widthM());
+            boat.setDraftM(dto.draftM());
+            boat.setOwner(owner);
+            boatRepository.save(boat);
+            boatsCreated++;
+        }
+
+        auditService.log("IMPORTED", "BOAT", null,
+                "Import: " + boatsCreated + " båtar importerade" +
+                (boatsSkipped > 0 ? ", " + boatsSkipped + " hoppade över" : ""));
+        return new BoatImportResult(boatsCreated, boatsSkipped, warnings);
     }
 
     // ── Helpers ────────────────────────────────────────────────────────────

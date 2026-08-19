@@ -70,6 +70,81 @@
       </div>
     </section>
 
+    <!-- ═══ BÅTAR – EXPORT ═══════════════════════════════════════════════ -->
+    <section class="card">
+      <h3>Exportera båtar</h3>
+      <p class="desc">Laddar ner alla båtar (namn, mått, ägare via e-post) som en JSON-fil.</p>
+      <button class="btn-primary" :disabled="boatExporting" @click="doBoatExport">
+        {{ boatExporting ? 'Exporterar…' : '⬇ Ladda ner båtar.json' }}
+      </button>
+    </section>
+
+    <!-- ═══ BÅTAR – IMPORT ════════════════════════════════════════════════ -->
+    <section class="card">
+      <h3>Importera båtar</h3>
+      <p class="desc">
+        Klistra in eller ladda upp en JSON-fil med båtar. Matchning sker på båtnamn + ägarens e-postadress –
+        befintliga kombinationer hoppas över. Ägaren måste finnas som person i systemet.
+      </p>
+
+      <div class="input-row">
+        <label class="file-btn">
+          📂 Välj fil
+          <input type="file" accept=".json,application/json" @change="onFileSelected($event, 'boats')" hidden />
+        </label>
+        <span class="or">eller klistra in JSON nedan</span>
+      </div>
+
+      <textarea
+        v-model="boatJsonText"
+        rows="10"
+        placeholder='[
+  {
+    "name": "Mästerkatten",
+    "registrationNumber": "SE-1234",
+    "lengthM": 8.5,
+    "widthM": 2.8,
+    "draftM": 1.2,
+    "ownerEmail": "anna@example.com"
+  }
+]'
+      />
+
+      <div class="btn-row">
+        <button class="btn-secondary" :disabled="!boatJsonText.trim() || boatPreviewing" @click="doBoatPreview">
+          {{ boatPreviewing ? 'Kontrollerar…' : '🔍 Förhandsgranska' }}
+        </button>
+        <button class="btn-primary" :disabled="!boatPreview || boatImporting" @click="doBoatImport">
+          {{ boatImporting ? 'Importerar…' : '⬆ Importera' }}
+        </button>
+      </div>
+
+      <p v-if="boatParseError" class="error">{{ boatParseError }}</p>
+
+      <div v-if="boatPreview" class="preview-box">
+        <h4>Förhandsgranskning</h4>
+        <div class="stats">
+          <div class="stat"><span class="stat-val green">{{ boatPreview.boatsNew }}</span><span class="stat-label">Nya båtar</span></div>
+          <div class="stat"><span class="stat-val blue">{{ boatPreview.boatsExisting }}</span><span class="stat-label">Befintliga</span></div>
+          <div class="stat"><span class="stat-val gray">{{ boatPreview.ownersNotFound }}</span><span class="stat-label">Ägare ej hittad</span></div>
+        </div>
+        <ul v-if="boatPreview.details.length" class="details">
+          <li v-for="(d, i) in boatPreview.details" :key="i">{{ d }}</li>
+        </ul>
+      </div>
+
+      <div v-if="boatResult" class="result-box" :class="boatResult.warnings.length ? 'warn' : 'ok'">
+        <h4>Import klar</h4>
+        <div class="stats">
+          <div class="stat"><span class="stat-val green">{{ boatResult.boatsCreated }}</span><span class="stat-label">Skapade</span></div>
+          <div class="stat"><span class="stat-val gray">{{ boatResult.boatsSkipped }}</span><span class="stat-label">Hoppade över</span></div>
+        </div>
+        <ul v-if="boatResult.warnings.length" class="details warn-list">
+          <li v-for="(w, i) in boatResult.warnings" :key="i">⚠ {{ w }}</li>
+        </ul>
+      </div>
+    </section>
+
     <!-- ═══ PERSONER – EXPORT ════════════════════════════════════════════ -->
     <section class="card">
       <h3>Exportera personer</h3>
@@ -150,6 +225,7 @@ import AppLayout from '../components/AppLayout.vue'
 import {
   exportDocks, previewImport, importDocks,
   exportPersons, previewPersonImport, importPersons,
+  exportBoats, previewBoatImport, importBoats,
 } from '../api/importExport'
 
 // ── Docks ────────────────────────────────────────────────────────────────
@@ -254,6 +330,57 @@ async function doPersonImport() {
   finally { personImporting.value = false }
 }
 
+// ── Boats ─────────────────────────────────────────────────────────────────
+const boatJsonText   = ref('')
+const boatParseError = ref('')
+const boatPreview    = ref(null)
+const boatResult     = ref(null)
+const boatExporting  = ref(false)
+const boatPreviewing = ref(false)
+const boatImporting  = ref(false)
+
+function parseBoatJson() {
+  boatParseError.value = ''
+  try {
+    const data = JSON.parse(boatJsonText.value)
+    if (!Array.isArray(data)) throw new Error('JSON måste vara en array')
+    return data
+  } catch (e) {
+    boatParseError.value = 'Ogiltig JSON: ' + e.message
+    return null
+  }
+}
+
+async function doBoatExport() {
+  boatExporting.value = true
+  try {
+    const { data } = await exportBoats()
+    downloadJson(data, 'båtar.json')
+  } finally { boatExporting.value = false }
+}
+
+async function doBoatPreview() {
+  const data = parseBoatJson()
+  if (!data) return
+  boatPreview.value = null; boatResult.value = null; boatPreviewing.value = true
+  try {
+    const { data: p } = await previewBoatImport(data)
+    boatPreview.value = p
+  } catch (e) { boatParseError.value = e.response?.data?.error || 'Fel vid förhandsgranskning' }
+  finally { boatPreviewing.value = false }
+}
+
+async function doBoatImport() {
+  const data = parseBoatJson()
+  if (!data) return
+  boatResult.value = null; boatImporting.value = true
+  try {
+    const { data: r } = await importBoats(data)
+    boatResult.value = r; boatPreview.value = null
+  } catch (e) { boatParseError.value = e.response?.data?.error || 'Fel vid import' }
+  finally { boatImporting.value = false }
+}
+
 // ── Shared ────────────────────────────────────────────────────────────────
 function onFileSelected(e, target) {
   const file = e.target.files[0]
@@ -263,6 +390,9 @@ function onFileSelected(e, target) {
     if (target === 'docks') {
       dockJsonText.value = ev.target.result
       dockPreview.value = null; dockResult.value = null; dockParseError.value = ''
+    } else if (target === 'boats') {
+      boatJsonText.value = ev.target.result
+      boatPreview.value = null; boatResult.value = null; boatParseError.value = ''
     } else {
       personJsonText.value = ev.target.result
       personPreview.value = null; personResult.value = null; personParseError.value = ''

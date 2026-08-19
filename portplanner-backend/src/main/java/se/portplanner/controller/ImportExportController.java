@@ -54,4 +54,22 @@ public class ImportExportController {
     public PersonImportResult importPersons(@RequestBody List<PersonImportDto> persons) {
         return importExportService.importPersons(persons);
     }
+
+    @GetMapping("/export/boats")
+    @Operation(summary = "Exportera alla båtar som JSON")
+    public List<BoatImportDto> exportBoats() {
+        return importExportService.exportBoats();
+    }
+
+    @PostMapping("/import/boats/preview")
+    @Operation(summary = "Förhandsgranska båtimport utan att spara")
+    public BoatImportPreview previewBoats(@RequestBody List<BoatImportDto> boats) {
+        return importExportService.previewBoats(boats);
+    }
+
+    @PostMapping("/import/boats")
+    @Operation(summary = "Importera båtar från JSON")
+    public BoatImportResult importBoats(@RequestBody List<BoatImportDto> boats) {
+        return importExportService.importBoats(boats);
+    }
 }
