@@ -17,10 +17,13 @@ public class BoatService {
 
     private final BoatRepository boatRepository;
     private final PersonRepository personRepository;
+    private final AuditService auditService;
 
-    public BoatService(BoatRepository boatRepository, PersonRepository personRepository) {
+    public BoatService(BoatRepository boatRepository, PersonRepository personRepository,
+                       AuditService auditService) {
         this.boatRepository = boatRepository;
         this.personRepository = personRepository;
+        this.auditService = auditService;
     }
 
     @Transactional(readOnly = true)
@@ -41,17 +44,27 @@ public class BoatService {
     public BoatResponse create(BoatRequest req) {
         var boat = new Boat();
         mapFields(boat, req);
-        return BoatResponse.from(boatRepository.save(boat));
+        var saved = boatRepository.save(boat);
+        auditService.log("CREATED", "BOAT", saved.getId(),
+                "Båt skapad: " + saved.getName() +
+                " (ägare: " + saved.getOwner().getFirstName() + " " + saved.getOwner().getLastName() + ")");
+        return BoatResponse.from(saved);
     }
 
     public BoatResponse update(Long id, BoatRequest req) {
         var boat = getOrThrow(id);
         mapFields(boat, req);
-        return BoatResponse.from(boatRepository.save(boat));
+        var saved = boatRepository.save(boat);
+        auditService.log("UPDATED", "BOAT", saved.getId(),
+                "Båt uppdaterad: " + saved.getName());
+        return BoatResponse.from(saved);
     }
 
     public void delete(Long id) {
-        boatRepository.delete(getOrThrow(id));
+        var boat = getOrThrow(id);
+        String name = boat.getName();
+        boatRepository.delete(boat);
+        auditService.log("DELETED", "BOAT", id, "Båt borttagen: " + name);
     }
 
     private Boat getOrThrow(Long id) {

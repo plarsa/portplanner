@@ -22,10 +22,13 @@ public class ImportExportService {
 
     private final DockRepository dockRepository;
     private final SlipRepository slipRepository;
+    private final AuditService auditService;
 
-    public ImportExportService(DockRepository dockRepository, SlipRepository slipRepository) {
+    public ImportExportService(DockRepository dockRepository, SlipRepository slipRepository,
+                               AuditService auditService) {
         this.dockRepository = dockRepository;
         this.slipRepository = slipRepository;
+        this.auditService = auditService;
     }
 
     // ── Export ─────────────────────────────────────────────────────────────
@@ -143,6 +146,9 @@ public class ImportExportService {
                 existingSlipNums.add(slipDto.slipNumber());
             }
         }
+        auditService.log("IMPORTED", "DOCK", null,
+                "Import: " + docksCreated + " bryggor och " + slipsCreated + " platser importerade" +
+                (slipsSkipped > 0 ? ", " + slipsSkipped + " hoppade över" : ""));
         return new ImportResult(docksCreated, slipsCreated, slipsSkipped, warnings);
     }
 

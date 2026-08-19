@@ -22,17 +22,20 @@ public class QueueService {
     private final BoatRepository boatRepository;
     private final SlipRepository slipRepository;
     private final AssignmentService assignmentService;
+    private final AuditService auditService;
 
     public QueueService(QueueEntryRepository queueRepository,
                         PersonRepository personRepository,
                         BoatRepository boatRepository,
                         SlipRepository slipRepository,
-                        AssignmentService assignmentService) {
+                        AssignmentService assignmentService,
+                        AuditService auditService) {
         this.queueRepository = queueRepository;
         this.personRepository = personRepository;
         this.boatRepository = boatRepository;
         this.slipRepository = slipRepository;
         this.assignmentService = assignmentService;
+        this.auditService = auditService;
     }
 
     @Transactional(readOnly = true)
@@ -53,7 +56,11 @@ public class QueueService {
         entry.setNotes(req.notes());
         entry.setStatus(QueueEntryStatus.WAITING);
 
-        return QueueEntryResponse.from(queueRepository.save(entry));
+        var saved = queueRepository.save(entry);
+        auditService.log("QUEUED", "QUEUE_ENTRY", saved.getId(),
+                "Köpost tillagd: " + boat.getName() +
+                " (" + person.getFirstName() + " " + person.getLastName() + ")");
+        return QueueEntryResponse.from(saved);
     }
 
     @Transactional(readOnly = true)
@@ -81,13 +88,19 @@ public class QueueService {
         entry.setStatus(QueueEntryStatus.ASSIGNED);
         queueRepository.save(entry);
 
+        auditService.log("QUEUE_ASSIGNED", "QUEUE_ENTRY", entryId,
+                "Från kö: " + entry.getBoat().getName() +
+                " (" + entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName() + ") tilldelad plats");
         return assignment;
     }
 
     public void cancel(Long id) {
         var entry = getOrThrow(id);
+        String desc = "Köpost avbruten: " + entry.getBoat().getName() +
+                " (" + entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName() + ")";
         entry.setStatus(QueueEntryStatus.CANCELLED);
         queueRepository.save(entry);
+        auditService.log("DEQUEUED", "QUEUE_ENTRY", id, desc);
     }
 
     private QueueEntry getOrThrow(Long id) {

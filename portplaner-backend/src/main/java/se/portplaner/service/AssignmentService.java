@@ -20,13 +20,16 @@ public class AssignmentService {
     private final AssignmentRepository assignmentRepository;
     private final BoatRepository boatRepository;
     private final SlipRepository slipRepository;
+    private final AuditService auditService;
 
     public AssignmentService(AssignmentRepository assignmentRepository,
                              BoatRepository boatRepository,
-                             SlipRepository slipRepository) {
+                             SlipRepository slipRepository,
+                             AuditService auditService) {
         this.assignmentRepository = assignmentRepository;
         this.boatRepository = boatRepository;
         this.slipRepository = slipRepository;
+        this.auditService = auditService;
     }
 
     @Transactional(readOnly = true)
@@ -65,7 +68,11 @@ public class AssignmentService {
         assignment.setAssignedDate(LocalDate.now());
         assignment.setStatus(AssignmentStatus.ACTIVE);
 
-        return AssignmentResponse.from(assignmentRepository.save(assignment));
+        var saved = assignmentRepository.save(assignment);
+        auditService.log("ASSIGNED", "ASSIGNMENT", saved.getId(),
+                "Tilldelning: " + boat.getName() + " → plats " + slip.getSlipNumber() +
+                " (" + slip.getDock().getName() + ")");
+        return AssignmentResponse.from(saved);
     }
 
     public AssignmentResponse end(Long id) {
@@ -82,10 +89,13 @@ public class AssignmentService {
         slip.setStatus(SlipStatus.AVAILABLE);
         slipRepository.save(slip);
 
-        return AssignmentResponse.from(assignmentRepository.save(assignment));
+        var saved = assignmentRepository.save(assignment);
+        auditService.log("UNASSIGNED", "ASSIGNMENT", id,
+                "Tilldelning avslutad: " + saved.getBoat().getName() + " lämnar plats " +
+                slip.getSlipNumber() + " (" + slip.getDock().getName() + ")");
+        return AssignmentResponse.from(saved);
     }
 
-    // Reused by QueueService
     public void validateBoatFitsSlip(Boat boat, Slip slip) {
         if (boat.getLengthM().compareTo(slip.getMaxLengthM()) > 0) {
             throw new IllegalArgumentException(

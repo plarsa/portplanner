@@ -21,12 +21,14 @@ public class DockService {
     private final DockRepository dockRepository;
     private final SlipRepository slipRepository;
     private final AssignmentRepository assignmentRepository;
+    private final AuditService auditService;
 
     public DockService(DockRepository dockRepository, SlipRepository slipRepository,
-                       AssignmentRepository assignmentRepository) {
+                       AssignmentRepository assignmentRepository, AuditService auditService) {
         this.dockRepository = dockRepository;
         this.slipRepository = slipRepository;
         this.assignmentRepository = assignmentRepository;
+        this.auditService = auditService;
     }
 
     @Transactional(readOnly = true)
@@ -49,24 +51,30 @@ public class DockService {
         var dock = new Dock();
         dock.setName(req.name());
         dock.setDescription(req.description());
-        return DockResponse.from(dockRepository.save(dock));
+        var saved = dockRepository.save(dock);
+        auditService.log("CREATED", "DOCK", saved.getId(), "Brygga skapad: " + saved.getName());
+        return DockResponse.from(saved);
     }
 
     public DockResponse update(Long id, DockRequest req) {
         var dock = getOrThrow(id);
         dock.setName(req.name());
         dock.setDescription(req.description());
-        return DockResponse.from(dockRepository.save(dock));
+        var saved = dockRepository.save(dock);
+        auditService.log("UPDATED", "DOCK", saved.getId(), "Brygga uppdaterad: " + saved.getName());
+        return DockResponse.from(saved);
     }
 
     public void delete(Long id) {
-        getOrThrow(id);
+        Dock dock = getOrThrow(id);
         List<Slip> slips = slipRepository.findByDockId(id);
         for (Slip slip : slips) {
             assignmentRepository.deleteBySlipId(slip.getId());
         }
         slipRepository.deleteAll(slips);
         dockRepository.deleteById(id);
+        auditService.log("DELETED", "DOCK", id,
+                "Brygga borttagen: " + dock.getName() + " (" + slips.size() + " platser)");
     }
 
     private Dock getOrThrow(Long id) {

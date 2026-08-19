@@ -14,6 +14,7 @@ const routes = [
   { path: '/queue', component: () => import('../views/QueueView.vue') },
   { path: '/mail', component: () => import('../views/MailView.vue') },
   { path: '/import-export', component: () => import('../views/ImportExportView.vue') },
+  { path: '/audit', component: () => import('../views/AuditView.vue') },
 ]
 
 const router = createRouter({

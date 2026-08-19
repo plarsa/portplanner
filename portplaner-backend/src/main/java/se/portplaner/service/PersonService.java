@@ -15,9 +15,11 @@ import java.util.List;
 public class PersonService {
 
     private final PersonRepository personRepository;
+    private final AuditService auditService;
 
-    public PersonService(PersonRepository personRepository) {
+    public PersonService(PersonRepository personRepository, AuditService auditService) {
         this.personRepository = personRepository;
+        this.auditService = auditService;
     }
 
     @Transactional(readOnly = true)
@@ -36,17 +38,26 @@ public class PersonService {
     public PersonResponse create(PersonRequest req) {
         var person = new Person();
         mapFields(person, req);
-        return PersonResponse.from(personRepository.save(person));
+        var saved = personRepository.save(person);
+        auditService.log("CREATED", "PERSON", saved.getId(),
+                "Person skapad: " + saved.getFirstName() + " " + saved.getLastName() + " (" + saved.getEmail() + ")");
+        return PersonResponse.from(saved);
     }
 
     public PersonResponse update(Long id, PersonRequest req) {
         var person = getOrThrow(id);
         mapFields(person, req);
-        return PersonResponse.from(personRepository.save(person));
+        var saved = personRepository.save(person);
+        auditService.log("UPDATED", "PERSON", saved.getId(),
+                "Person uppdaterad: " + saved.getFirstName() + " " + saved.getLastName());
+        return PersonResponse.from(saved);
     }
 
     public void delete(Long id) {
-        personRepository.delete(getOrThrow(id));
+        var person = getOrThrow(id);
+        String name = person.getFirstName() + " " + person.getLastName();
+        personRepository.delete(person);
+        auditService.log("DELETED", "PERSON", id, "Person borttagen: " + name);
     }
 
     private Person getOrThrow(Long id) {
