@@ -35,4 +35,9 @@ public class Slip {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SlipStatus status = SlipStatus.AVAILABLE;
+
+    @Column(name = "mooring_type")
+    private String mooringType;
+
+    private String side;
 }
