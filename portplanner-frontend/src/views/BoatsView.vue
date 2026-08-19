@@ -17,14 +17,14 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="b in filteredBoats" :key="b.id">
+          <tr v-for="b in filteredBoats" :key="b.id" class="clickable-row" @click="openDetail(b)">
             <td>{{ b.name }}</td>
             <td>{{ b.registrationNumber || '–' }}</td>
             <td>{{ b.ownerName }}</td>
             <td>{{ b.lengthM }}</td>
             <td>{{ b.widthM }}</td>
             <td>{{ b.draftM || '–' }}</td>
-            <td class="actions">
+            <td class="actions" @click.stop>
               <button @click="openEdit(b)">Redigera</button>
               <button class="danger" @click="remove(b)">Ta bort</button>
             </td>
@@ -34,6 +34,37 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Detaljvy -->
+    <div v-if="detail" class="detail-overlay" @click.self="detail = null">
+      <div class="detail-card">
+        <div class="detail-header">
+          <div>
+            <h3>{{ detail.boat.name }}</h3>
+            <div class="detail-owner">{{ detail.boat.ownerName }}</div>
+          </div>
+          <button class="close-btn" @click="detail = null">✕</button>
+        </div>
+        <dl class="detail-grid">
+          <dt>Registrering</dt><dd>{{ detail.boat.registrationNumber || '–' }}</dd>
+          <dt>Längd</dt><dd>{{ detail.boat.lengthM }} m</dd>
+          <dt>Bredd</dt><dd>{{ detail.boat.widthM }} m</dd>
+          <dt>Djupgång</dt><dd>{{ detail.boat.draftM ? detail.boat.draftM + ' m' : '–' }}</dd>
+        </dl>
+        <div class="assignment-section">
+          <div class="section-title">Tilldelning</div>
+          <div v-if="detailLoading" class="loading">Laddar…</div>
+          <div v-else-if="detail.assignment" class="assignment-block assigned">
+            <div class="assign-location">{{ detail.assignment.dockName }} · Plats {{ detail.assignment.slipNumber }}</div>
+            <div class="assign-date">Fr.o.m. {{ formatDate(detail.assignment.assignedDate) }}</div>
+          </div>
+          <div v-else class="assignment-block free">Ingen aktiv plats</div>
+        </div>
+        <div class="detail-footer">
+          <button class="btn-primary" @click="openEdit(detail.boat); detail = null">Redigera</button>
+        </div>
+      </div>
     </div>
 
     <BaseModal v-if="modal" :title="editing ? 'Redigera båt' : 'Ny båt'"
@@ -60,6 +91,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { getAssignments } from '../api/assignments'
 import AppLayout from '../components/AppLayout.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { getBoats, createBoat, updateBoat, deleteBoat } from '../api/boats'
@@ -69,6 +101,8 @@ const boats = ref([])
 const persons = ref([])
 const search = ref('')
 const modal = ref(false)
+const detail = ref(null)
+const detailLoading = ref(false)
 
 const filteredBoats = computed(() => {
   const q = search.value.trim().toLowerCase()
@@ -88,6 +122,21 @@ async function load() {
   const [b, p] = await Promise.all([getBoats(), getPersons()])
   boats.value = b.data
   persons.value = p.data
+}
+
+function formatDate(d) {
+  return d ? new Date(d + 'T00:00:00').toLocaleDateString('sv-SE') : '–'
+}
+
+async function openDetail(b) {
+  detail.value = { boat: b, assignment: null }
+  detailLoading.value = true
+  try {
+    const { data: assignments } = await getAssignments()
+    detail.value.assignment = assignments.find(a => a.status === 'ACTIVE' && a.boatId === b.id) ?? null
+  } finally {
+    detailLoading.value = false
+  }
 }
 
 function openCreate() { editing.value = null; form.value = emptyForm(); err.value = ''; modal.value = true }
@@ -142,4 +191,25 @@ button.danger { background: #fee; color: #c0392b; }
 label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
 label input, label select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
 .error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
+.clickable-row { cursor: pointer; transition: background 0.1s; }
+.clickable-row:hover { background: #f5f8ff; }
+.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.detail-card { background: white; border-radius: 12px; width: 420px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
+.detail-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1rem 1.4rem; border-bottom: 1px solid #eee; }
+.detail-header h3 { font-size: 1.15rem; margin: 0 0 0.15rem; }
+.detail-owner { font-size: 0.85rem; color: #666; }
+.close-btn { background: none; border: none; font-size: 1.1rem; color: #888; cursor: pointer; padding: 0.2rem 0.4rem; flex-shrink: 0; }
+.close-btn:hover { color: #333; background: #f0f0f0; border-radius: 4px; }
+.detail-grid { display: grid; grid-template-columns: 120px 1fr; gap: 0.5rem 1rem; padding: 1.1rem 1.4rem; margin: 0; }
+dt { font-size: 0.82rem; font-weight: 600; color: #888; }
+dd { font-size: 0.9rem; color: #222; margin: 0; }
+.assignment-section { border-top: 1px solid #eee; padding: 1rem 1.4rem; }
+.section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 0.6rem; }
+.loading { color: #aaa; font-size: 0.85rem; }
+.assignment-block { border-radius: 8px; padding: 0.7rem 1rem; }
+.assignment-block.assigned { background: #f8d7da; }
+.assign-location { font-weight: 700; font-size: 0.95rem; color: #721c24; }
+.assign-date { font-size: 0.8rem; color: #721c24; margin-top: 0.2rem; opacity: 0.8; }
+.assignment-block.free { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.88rem; }
+.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
 </style>
