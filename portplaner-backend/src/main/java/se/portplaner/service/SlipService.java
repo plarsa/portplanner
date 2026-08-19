@@ -80,5 +80,6 @@ public class SlipService {
         slip.setMaxDraftM(req.maxDraftM());
         slip.setDock(dock);
         slip.setStatus(req.status() != null ? req.status() : SlipStatus.AVAILABLE);
+        slip.setCategory(req.category());
     }
 }

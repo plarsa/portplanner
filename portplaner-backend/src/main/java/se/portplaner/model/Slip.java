@@ -40,4 +40,6 @@ public class Slip {
     private String mooringType;
 
     private String side;
+
+    private String category;
 }

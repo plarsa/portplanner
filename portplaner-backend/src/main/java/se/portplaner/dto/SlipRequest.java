@@ -13,5 +13,6 @@ public record SlipRequest(
         @NotNull @Positive BigDecimal maxWidthM,
         @Positive BigDecimal maxDraftM,
         @NotNull Long dockId,
-        SlipStatus status
+        SlipStatus status,
+        String category
 ) {}
