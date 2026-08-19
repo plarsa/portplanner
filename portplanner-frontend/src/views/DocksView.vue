@@ -96,32 +96,34 @@
           <button class="close-btn" @click="assignModal = false">✕</button>
         </div>
 
-        <div v-if="!unassignedBoats.length" class="no-boats">
-          Inga lediga båtar att tilldela.
-        </div>
-        <template v-else>
-          <div class="section-label">Passar platsen</div>
-          <div v-if="!fittingBoats.length" class="no-boats-section">Inga båtar passar måtten</div>
-          <div v-for="b in fittingBoats" :key="b.id" class="boat-row fits" @click="doAssign(b)">
-            <div class="boat-name">{{ b.name }}</div>
-            <div class="boat-meta">{{ b.ownerName }} · {{ b.widthM }} m × {{ b.lengthM }} m</div>
+        <div class="assign-scroll">
+          <div v-if="!unassignedBoats.length" class="no-boats">
+            Inga lediga båtar att tilldela.
           </div>
-
-          <div class="section-label warn-label">Passar ej (för stor)</div>
-          <div v-if="!nonFittingBoats.length" class="no-boats-section muted">Inga överstora båtar</div>
-          <div v-for="b in nonFittingBoats" :key="b.id" class="boat-row no-fit" @click="doAssign(b)">
-            <div class="boat-name">{{ b.name }}</div>
-            <div class="boat-meta">
-              {{ b.ownerName }} ·
-              <span :class="b.widthM > assignSlip.maxWidthM ? 'over' : ''">{{ b.widthM }} m bredd</span>
-              ·
-              <span :class="assignSlip.maxLengthM && b.lengthM > assignSlip.maxLengthM ? 'over' : ''">{{ b.lengthM }} m längd</span>
+          <template v-else>
+            <div class="section-label">Passar platsen</div>
+            <div v-if="!fittingBoats.length" class="no-boats-section">Inga båtar passar måtten</div>
+            <div v-for="b in fittingBoats" :key="b.id" class="boat-row fits" @click="doAssign(b)">
+              <div class="boat-name">{{ b.name }}</div>
+              <div class="boat-meta">{{ b.ownerName }} · {{ b.widthM }} m × {{ b.lengthM }} m</div>
             </div>
-            <span class="warn-tag">⚠ Passar ej</span>
-          </div>
-        </template>
 
-        <p v-if="assignErr" class="error">{{ assignErr }}</p>
+            <div class="section-label warn-label">Passar ej (för stor)</div>
+            <div v-if="!nonFittingBoats.length" class="no-boats-section muted">Inga överstora båtar</div>
+            <div v-for="b in nonFittingBoats" :key="b.id" class="boat-row no-fit" @click="doAssign(b)">
+              <div class="boat-name">{{ b.name }}</div>
+              <div class="boat-meta">
+                {{ b.ownerName }} ·
+                <span :class="b.widthM > assignSlip.maxWidthM ? 'over' : ''">{{ b.widthM }} m bredd</span>
+                ·
+                <span :class="assignSlip.maxLengthM && b.lengthM > assignSlip.maxLengthM ? 'over' : ''">{{ b.lengthM }} m längd</span>
+              </div>
+              <span class="warn-tag">⚠ Passar ej</span>
+            </div>
+          </template>
+        </div>
+
+        <p v-if="assignErr" class="error assign-err">{{ assignErr }}</p>
       </div>
     </div>
   </AppLayout>
@@ -322,4 +324,6 @@ label input, label select, label textarea { padding: 0.5rem; border: 1px solid #
 .boat-meta { font-size: 0.8rem; color: #666; flex: 1; }
 .over { color: #c0392b; font-weight: 700; }
 .warn-tag { font-size: 0.72rem; font-weight: 700; color: #9a5000; background: #ffe082; border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
+.assign-scroll { flex: 1; overflow-y: auto; min-height: 0; }
+.assign-err { padding: 0 1.25rem 1rem; margin: 0; }
 </style>
