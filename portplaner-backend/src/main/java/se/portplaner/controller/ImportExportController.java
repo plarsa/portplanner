@@ -36,4 +36,22 @@ public class ImportExportController {
     public ImportResult importDocks(@RequestBody List<DockImportDto> docks) {
         return importExportService.importDocks(docks);
     }
+
+    @GetMapping("/export/persons")
+    @Operation(summary = "Exportera alla personer som JSON")
+    public List<PersonImportDto> exportPersons() {
+        return importExportService.exportPersons();
+    }
+
+    @PostMapping("/import/persons/preview")
+    @Operation(summary = "Förhandsgranska personimport utan att spara")
+    public PersonImportPreview previewPersons(@RequestBody List<PersonImportDto> persons) {
+        return importExportService.previewPersons(persons);
+    }
+
+    @PostMapping("/import/persons")
+    @Operation(summary = "Importera personer från JSON")
+    public PersonImportResult importPersons(@RequestBody List<PersonImportDto> persons) {
+        return importExportService.importPersons(persons);
+    }
 }

@@ -4,9 +4,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import se.portplaner.dto.*;
 import se.portplaner.model.Dock;
+import se.portplaner.model.Person;
 import se.portplaner.model.Slip;
 import se.portplaner.model.SlipStatus;
 import se.portplaner.repository.DockRepository;
+import se.portplaner.repository.PersonRepository;
 import se.portplaner.repository.SlipRepository;
 
 import java.util.ArrayList;
@@ -22,12 +24,14 @@ public class ImportExportService {
 
     private final DockRepository dockRepository;
     private final SlipRepository slipRepository;
+    private final PersonRepository personRepository;
     private final AuditService auditService;
 
     public ImportExportService(DockRepository dockRepository, SlipRepository slipRepository,
-                               AuditService auditService) {
+                               PersonRepository personRepository, AuditService auditService) {
         this.dockRepository = dockRepository;
         this.slipRepository = slipRepository;
+        this.personRepository = personRepository;
         this.auditService = auditService;
     }
 
@@ -152,8 +156,87 @@ public class ImportExportService {
         return new ImportResult(docksCreated, slipsCreated, slipsSkipped, warnings);
     }
 
+    // ── Person export ──────────────────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public List<PersonImportDto> exportPersons() {
+        return personRepository.findAll().stream()
+                .map(p -> new PersonImportDto(p.getFirstName(), p.getLastName(), p.getEmail(), p.getPhone()))
+                .toList();
+    }
+
+    // ── Person preview (dry-run) ───────────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public PersonImportPreview previewPersons(List<PersonImportDto> persons) {
+        Map<String, Person> existing = existingPersonsByEmail();
+        int personsNew = 0, personsExisting = 0;
+        List<String> details = new ArrayList<>();
+
+        for (PersonImportDto dto : persons) {
+            if (dto.email() == null || dto.email().isBlank()) continue;
+            if (existing.containsKey(dto.email().toLowerCase())) {
+                personsExisting++;
+                details.add("Befintlig person: " + dto.firstName() + " " + dto.lastName() +
+                        " (" + dto.email() + ")");
+            } else {
+                personsNew++;
+                details.add("Ny person: " + dto.firstName() + " " + dto.lastName() +
+                        " (" + dto.email() + ")");
+            }
+        }
+        return new PersonImportPreview(personsNew, personsExisting, details);
+    }
+
+    // ── Person import ──────────────────────────────────────────────────────
+
+    public PersonImportResult importPersons(List<PersonImportDto> persons) {
+        Map<String, Person> existing = existingPersonsByEmail();
+        int personsCreated = 0, personsSkipped = 0;
+        List<String> warnings = new ArrayList<>();
+
+        for (PersonImportDto dto : persons) {
+            if (dto.firstName() == null || dto.firstName().isBlank() ||
+                    dto.lastName() == null || dto.lastName().isBlank()) {
+                warnings.add("Post saknar för- eller efternamn, hoppar över");
+                personsSkipped++;
+                continue;
+            }
+            if (dto.email() == null || dto.email().isBlank()) {
+                warnings.add("Person " + dto.firstName() + " " + dto.lastName() + " saknar e-post, hoppar över");
+                personsSkipped++;
+                continue;
+            }
+            if (existing.containsKey(dto.email().toLowerCase())) {
+                personsSkipped++;
+                continue;
+            }
+
+            var person = new Person();
+            person.setFirstName(dto.firstName());
+            person.setLastName(dto.lastName());
+            person.setEmail(dto.email());
+            person.setPhone(dto.phone());
+            personRepository.save(person);
+            existing.put(dto.email().toLowerCase(), person);
+            personsCreated++;
+        }
+
+        auditService.log("IMPORTED", "PERSON", null,
+                "Import: " + personsCreated + " personer importerade" +
+                (personsSkipped > 0 ? ", " + personsSkipped + " hoppade över" : ""));
+        return new PersonImportResult(personsCreated, personsSkipped, warnings);
+    }
+
+    // ── Helpers ────────────────────────────────────────────────────────────
+
     private Map<String, Dock> existingDocksByName() {
         return dockRepository.findAll().stream()
                 .collect(Collectors.toMap(d -> d.getName().toLowerCase(), Function.identity()));
+    }
+
+    private Map<String, Person> existingPersonsByEmail() {
+        return personRepository.findAll().stream()
+                .collect(Collectors.toMap(p -> p.getEmail().toLowerCase(), Function.identity()));
     }
 }
