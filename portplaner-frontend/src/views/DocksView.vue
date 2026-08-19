@@ -23,11 +23,12 @@
 
       <table v-if="slipsByDock[dock.id]?.length">
         <thead>
-          <tr><th>Plats</th><th>Max L</th><th>Max B</th><th>Max Djup</th><th>Status</th><th></th></tr>
+          <tr><th>Plats</th><th>Kategori</th><th>Max L</th><th>Max B</th><th>Max Djup</th><th>Status</th><th></th></tr>
         </thead>
         <tbody>
           <tr v-for="s in slipsByDock[dock.id]" :key="s.id">
             <td>{{ s.slipNumber }}</td>
+            <td><span v-if="s.category" class="cat-badge">{{ s.category }}</span><span v-else class="muted">–</span></td>
             <td>{{ s.maxLengthM }} m</td>
             <td>{{ s.maxWidthM }} m</td>
             <td>{{ s.maxDraftM ? s.maxDraftM + ' m' : '–' }}</td>
@@ -72,6 +73,12 @@
             <option value="MAINTENANCE">Underhåll</option>
           </select>
         </label>
+        <label class="full">Taxekategori
+          <select v-model="slipForm.category">
+            <option value="">Ingen kategori</option>
+            <option v-for="cat in tariffCategories" :key="cat" :value="cat">{{ cat }}</option>
+          </select>
+        </label>
       </div>
       <p v-if="slipErr" class="error">{{ slipErr }}</p>
     </BaseModal>
@@ -84,9 +91,11 @@ import AppLayout from '../components/AppLayout.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { getDocks, createDock, updateDock, deleteDock, getDockSlips } from '../api/docks'
 import { createSlip, updateSlip, deleteSlip } from '../api/slips'
+import { getTariffs } from '../api/tariffs'
 
 const docks = ref([])
 const slipsByDock = ref({})
+const tariffCategories = ref([])
 const dockModal = ref(false)
 const slipModal = ref(false)
 const editingDock = ref(null)
@@ -94,7 +103,7 @@ const editingSlip = ref(null)
 const dockErr = ref('')
 const slipErr = ref('')
 const dockForm = ref({ name: '', description: '' })
-const emptySlip = () => ({ slipNumber: '', maxLengthM: '', maxWidthM: '', maxDraftM: '', dockId: '', status: 'AVAILABLE' })
+const emptySlip = () => ({ slipNumber: '', maxLengthM: '', maxWidthM: '', maxDraftM: '', dockId: '', status: 'AVAILABLE', category: '' })
 const slipForm = ref(emptySlip())
 
 function statusLabel(s) {
@@ -102,9 +111,10 @@ function statusLabel(s) {
 }
 
 async function load() {
-  const { data } = await getDocks()
-  docks.value = data
-  for (const dock of data) {
+  const [{ data: docksData }, { data: tariffs }] = await Promise.all([getDocks(), getTariffs()])
+  docks.value = docksData
+  tariffCategories.value = [...new Set(tariffs.map(t => t.category))].sort()
+  for (const dock of docksData) {
     const { data: slips } = await getDockSlips(dock.id)
     slipsByDock.value[dock.id] = slips
   }
@@ -113,7 +123,7 @@ async function load() {
 function openDockCreate() { editingDock.value = null; dockForm.value = { name: '', description: '' }; dockErr.value = ''; dockModal.value = true }
 function openDockEdit(d) { editingDock.value = d; dockForm.value = { name: d.name, description: d.description }; dockErr.value = ''; dockModal.value = true }
 function openSlipCreate() { editingSlip.value = null; slipForm.value = emptySlip(); slipErr.value = ''; slipModal.value = true }
-function openSlipEdit(s) { editingSlip.value = s; slipForm.value = { slipNumber: s.slipNumber, maxLengthM: s.maxLengthM, maxWidthM: s.maxWidthM, maxDraftM: s.maxDraftM, dockId: s.dockId, status: s.status }; slipErr.value = ''; slipModal.value = true }
+function openSlipEdit(s) { editingSlip.value = s; slipForm.value = { slipNumber: s.slipNumber, maxLengthM: s.maxLengthM, maxWidthM: s.maxWidthM, maxDraftM: s.maxDraftM, dockId: s.dockId, status: s.status, category: s.category || '' }; slipErr.value = ''; slipModal.value = true }
 
 async function saveDock() {
   dockErr.value = ''
@@ -127,7 +137,7 @@ async function saveDock() {
 async function saveSlip() {
   slipErr.value = ''
   try {
-    const payload = { ...slipForm.value, maxDraftM: slipForm.value.maxDraftM || null }
+    const payload = { ...slipForm.value, maxDraftM: slipForm.value.maxDraftM || null, category: slipForm.value.category || null }
     if (editingSlip.value) await updateSlip(editingSlip.value.id, payload)
     else await createSlip(payload)
     slipModal.value = false; await load()
@@ -172,6 +182,8 @@ table { width: 100%; border-collapse: collapse; }
 th { background: #f8f8f8; padding: 0.6rem 1rem; text-align: left; font-size: 0.82rem; color: #555; }
 td { padding: 0.6rem 1rem; border-top: 1px solid #f0f0f0; font-size: 0.9rem; }
 .actions { display: flex; gap: 0.5rem; }
+.cat-badge { background: #1a3a5c; color: white; border-radius: 4px; padding: 0.1rem 0.45rem; font-size: 0.78rem; font-weight: 700; }
+.muted { color: #bbb; }
 .status { padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
 .status.available { background: #d4edda; color: #155724; }
 .status.occupied { background: #f8d7da; color: #721c24; }
