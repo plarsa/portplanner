@@ -7,6 +7,8 @@ import se.portplaner.dto.DockResponse;
 import se.portplaner.dto.SlipResponse;
 import se.portplaner.exception.ResourceNotFoundException;
 import se.portplaner.model.Dock;
+import se.portplaner.model.Slip;
+import se.portplaner.repository.AssignmentRepository;
 import se.portplaner.repository.DockRepository;
 import se.portplaner.repository.SlipRepository;
 
@@ -18,10 +20,13 @@ public class DockService {
 
     private final DockRepository dockRepository;
     private final SlipRepository slipRepository;
+    private final AssignmentRepository assignmentRepository;
 
-    public DockService(DockRepository dockRepository, SlipRepository slipRepository) {
+    public DockService(DockRepository dockRepository, SlipRepository slipRepository,
+                       AssignmentRepository assignmentRepository) {
         this.dockRepository = dockRepository;
         this.slipRepository = slipRepository;
+        this.assignmentRepository = assignmentRepository;
     }
 
     @Transactional(readOnly = true)
@@ -55,7 +60,13 @@ public class DockService {
     }
 
     public void delete(Long id) {
-        dockRepository.delete(getOrThrow(id));
+        getOrThrow(id);
+        List<Slip> slips = slipRepository.findByDockId(id);
+        for (Slip slip : slips) {
+            assignmentRepository.deleteBySlipId(slip.getId());
+        }
+        slipRepository.deleteAll(slips);
+        dockRepository.deleteById(id);
     }
 
     private Dock getOrThrow(Long id) {

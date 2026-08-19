@@ -135,13 +135,23 @@ async function saveSlip() {
 }
 
 async function removeDock(d) {
-  if (!confirm(`Ta bort brygga ${d.name}?`)) return
-  await deleteDock(d.id); await load()
+  if (!confirm(`Ta bort brygga ${d.name} och alla dess platser?`)) return
+  try {
+    await deleteDock(d.id)
+    await load()
+  } catch (e) {
+    alert(e.response?.data?.error || 'Kunde inte ta bort bryggan')
+  }
 }
 
 async function removeSlip(s) {
   if (!confirm(`Ta bort plats ${s.slipNumber}?`)) return
-  await deleteSlip(s.id); await load()
+  try {
+    await deleteSlip(s.id)
+    await load()
+  } catch (e) {
+    alert(e.response?.data?.error || 'Kunde inte ta bort platsen')
+  }
 }
 
 onMounted(load)
