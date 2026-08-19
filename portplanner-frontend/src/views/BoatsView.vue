@@ -2,7 +2,10 @@
   <AppLayout>
     <div class="page-header">
       <h2>Båtar</h2>
-      <button class="btn-primary" @click="openCreate">+ Ny båt</button>
+      <div class="header-right">
+        <input v-model="search" class="search-input" placeholder="Sök båt eller ägare…" />
+        <button class="btn-primary" @click="openCreate">+ Ny båt</button>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -14,7 +17,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="b in boats" :key="b.id">
+          <tr v-for="b in filteredBoats" :key="b.id">
             <td>{{ b.name }}</td>
             <td>{{ b.registrationNumber || '–' }}</td>
             <td>{{ b.ownerName }}</td>
@@ -26,8 +29,8 @@
               <button class="danger" @click="remove(b)">Ta bort</button>
             </td>
           </tr>
-          <tr v-if="!boats.length">
-            <td colspan="7" class="empty">Inga båtar registrerade</td>
+          <tr v-if="!filteredBoats.length">
+            <td colspan="7" class="empty">{{ search ? 'Inga träffar' : 'Inga båtar registrerade' }}</td>
           </tr>
         </tbody>
       </table>
@@ -56,7 +59,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import BaseModal from '../components/BaseModal.vue'
 import { getBoats, createBoat, updateBoat, deleteBoat } from '../api/boats'
@@ -64,7 +67,18 @@ import { getPersons } from '../api/persons'
 
 const boats = ref([])
 const persons = ref([])
+const search = ref('')
 const modal = ref(false)
+
+const filteredBoats = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) return boats.value
+  return boats.value.filter(b =>
+    b.name.toLowerCase().includes(q) ||
+    (b.ownerName ?? '').toLowerCase().includes(q) ||
+    (b.registrationNumber ?? '').toLowerCase().includes(q)
+  )
+})
 const editing = ref(null)
 const err = ref('')
 const emptyForm = () => ({ name: '', registrationNumber: '', lengthM: '', widthM: '', draftM: '', ownerId: '' })
@@ -109,6 +123,9 @@ onMounted(load)
 <style scoped>
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
 h2 { font-size: 1.5rem; }
+.header-right { display: flex; gap: 0.75rem; align-items: center; }
+.search-input { padding: 0.45rem 0.85rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: 220px; }
+.search-input:focus { outline: none; border-color: #1a3a5c; }
 .table-wrap { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
 table { width: 100%; border-collapse: collapse; }
 th { background: #f8f8f8; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: #555; border-bottom: 1px solid #eee; }
