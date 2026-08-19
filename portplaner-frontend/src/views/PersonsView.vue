@@ -17,7 +17,7 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="p in persons" :key="p.id">
+          <tr v-for="p in persons" :key="p.id" class="clickable-row" @click="openDetail(p)">
             <td>{{ p.firstName }} {{ p.lastName }}</td>
             <td>{{ p.email }}</td>
             <td>{{ p.phone || '–' }}</td>
@@ -26,7 +26,7 @@
               <span v-else class="muted">–</span>
             </td>
             <td>{{ p.boatCount }}</td>
-            <td class="actions">
+            <td class="actions" @click.stop>
               <button @click="openEdit(p)">Redigera</button>
               <button class="danger" @click="remove(p)">Ta bort</button>
             </td>
@@ -36,6 +36,33 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Detaljvy -->
+    <div v-if="detail" class="detail-overlay" @click.self="detail = null">
+      <div class="detail-card">
+        <div class="detail-header">
+          <h3>{{ detail.firstName }} {{ detail.lastName }}</h3>
+          <button class="close-btn" @click="detail = null">✕</button>
+        </div>
+        <dl class="detail-grid">
+          <dt>E-post</dt>
+          <dd>{{ detail.email || '–' }}</dd>
+          <dt>Telefon</dt>
+          <dd>{{ detail.phone || '–' }}</dd>
+          <dt>Adress</dt>
+          <dd>{{ detail.address ? detail.address + (detail.postalCode ? ', ' + detail.postalCode : '') : '–' }}</dd>
+          <dt>Fastighetsbeteckning</dt>
+          <dd>{{ detail.propertyDesignation || '–' }}</dd>
+          <dt>Antal båtar</dt>
+          <dd>{{ detail.boatCount }}</dd>
+          <dt v-if="detail.notes">Noteringar</dt>
+          <dd v-if="detail.notes" class="notes-text">{{ detail.notes }}</dd>
+        </dl>
+        <div class="detail-footer">
+          <button class="btn-primary" @click="openEdit(detail); detail = null">Redigera</button>
+        </div>
+      </div>
     </div>
 
     <BaseModal v-if="modal" :title="editing ? 'Redigera person' : 'Ny person'"
@@ -65,6 +92,7 @@ const persons = ref([])
 const search = ref('')
 const modal = ref(false)
 const editing = ref(null)
+const detail = ref(null)
 const err = ref('')
 
 const emptyForm = () => ({
@@ -78,6 +106,7 @@ async function load() {
   persons.value = data
 }
 
+function openDetail(p) { detail.value = p }
 function openCreate() { editing.value = null; form.value = emptyForm(); err.value = ''; modal.value = true }
 function openEdit(p) {
   editing.value = p
@@ -139,4 +168,17 @@ label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 
 label input, label textarea { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
 label textarea { resize: vertical; font-family: inherit; }
 .error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
+.clickable-row { cursor: pointer; transition: background 0.1s; }
+.clickable-row:hover { background: #f5f8ff; }
+.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.detail-card { background: white; border-radius: 12px; width: 440px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
+.detail-header { display: flex; justify-content: space-between; align-items: center; padding: 1.1rem 1.4rem; border-bottom: 1px solid #eee; }
+.detail-header h3 { font-size: 1.15rem; margin: 0; }
+.close-btn { background: none; border: none; font-size: 1.1rem; color: #888; cursor: pointer; padding: 0.2rem 0.4rem; }
+.close-btn:hover { color: #333; background: #f0f0f0; border-radius: 4px; }
+.detail-grid { display: grid; grid-template-columns: 140px 1fr; gap: 0.5rem 1rem; padding: 1.2rem 1.4rem; margin: 0; }
+dt { font-size: 0.82rem; font-weight: 600; color: #888; align-self: start; padding-top: 0.1rem; }
+dd { font-size: 0.9rem; color: #222; margin: 0; }
+.notes-text { white-space: pre-wrap; color: #555; font-style: italic; }
+.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
 </style>
