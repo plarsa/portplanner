@@ -12,14 +12,15 @@
         <div class="queue-pos">{{ idx + 1 }}</div>
         <div class="queue-info">
           <strong>{{ entry.personName }}</strong>
-          <span class="sub">{{ entry.boatName }} – {{ entry.boatLengthM }}×{{ entry.boatWidthM }}m
+          <span v-if="entry.boatName" class="sub">{{ entry.boatName }} – {{ entry.boatLengthM }}×{{ entry.boatWidthM }}m
             <span v-if="entry.boatDraftM"> / {{ entry.boatDraftM }}m djup</span>
           </span>
+          <span v-else class="sub muted">Ingen båt angiven</span>
           <span class="date">Anmäld: {{ formatDate(entry.requestedDate) }}</span>
           <span v-if="entry.notes" class="notes">{{ entry.notes }}</span>
         </div>
         <div class="queue-actions">
-          <button @click="loadSuggestions(entry)">
+          <button v-if="entry.boatId" @click="loadSuggestions(entry)">
             {{ activeSuggestionId === entry.id ? 'Dölj förslag' : 'Visa lediga platser' }}
           </button>
           <button class="danger" @click="cancel(entry)">Avboka</button>
@@ -62,9 +63,9 @@
             </option>
           </select>
         </label>
-        <label>Båt *
-          <select v-model.number="form.boatId" required>
-            <option value="">Välj båt…</option>
+        <label>Båt
+          <select v-model.number="form.boatId">
+            <option value="">Ingen båt (valfritt)…</option>
             <option v-for="b in boatsForPerson" :key="b.id" :value="b.id">
               {{ b.name }} – {{ b.lengthM }}×{{ b.widthM }}m
             </option>
@@ -163,6 +164,7 @@ h2 { font-size: 1.5rem; }
 .queue-info { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; }
 .queue-info strong { font-size: 1rem; }
 .sub { color: #444; font-size: 0.875rem; }
+.muted { color: #bbb; }
 .date { color: #999; font-size: 0.8rem; }
 .notes { color: #555; font-size: 0.85rem; font-style: italic; }
 .queue-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }

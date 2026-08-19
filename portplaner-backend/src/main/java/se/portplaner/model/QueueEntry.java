@@ -21,7 +21,7 @@ public class QueueEntry {
     private Person person;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "boat_id", nullable = false)
+    @JoinColumn(name = "boat_id")
     private Boat boat;
 
     @Column(name = "requested_date", nullable = false)

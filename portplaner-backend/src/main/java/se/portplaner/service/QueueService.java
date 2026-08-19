@@ -47,8 +47,12 @@ public class QueueService {
     public QueueEntryResponse add(QueueEntryRequest req) {
         var person = personRepository.findById(req.personId())
                 .orElseThrow(() -> new ResourceNotFoundException("Person " + req.personId() + " hittades inte"));
-        var boat = boatRepository.findById(req.boatId())
-                .orElseThrow(() -> new ResourceNotFoundException("Båt " + req.boatId() + " hittades inte"));
+
+        Boat boat = null;
+        if (req.boatId() != null) {
+            boat = boatRepository.findById(req.boatId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Båt " + req.boatId() + " hittades inte"));
+        }
 
         var entry = new QueueEntry();
         entry.setPerson(person);
@@ -57,9 +61,10 @@ public class QueueService {
         entry.setStatus(QueueEntryStatus.WAITING);
 
         var saved = queueRepository.save(entry);
+        String boatPart = boat != null ? boat.getName() + " – " : "";
         auditService.log("QUEUED", "QUEUE_ENTRY", saved.getId(),
-                "Köpost tillagd: " + boat.getName() +
-                " (" + person.getFirstName() + " " + person.getLastName() + ")");
+                "Köpost tillagd: " + boatPart +
+                person.getFirstName() + " " + person.getLastName());
         return QueueEntryResponse.from(saved);
     }
 
@@ -67,9 +72,11 @@ public class QueueService {
     public List<SlipResponse> suggestions(Long entryId) {
         var entry = getOrThrow(entryId);
         var boat = entry.getBoat();
+        if (boat == null) return List.of();
 
         return slipRepository.findByStatus(SlipStatus.AVAILABLE).stream()
-                .filter(slip -> boat.getLengthM().compareTo(slip.getMaxLengthM()) <= 0)
+                .filter(slip -> boat.getLengthM() == null || slip.getMaxLengthM() == null
+                        || boat.getLengthM().compareTo(slip.getMaxLengthM()) <= 0)
                 .filter(slip -> boat.getWidthM().compareTo(slip.getMaxWidthM()) <= 0)
                 .filter(slip -> boat.getDraftM() == null || slip.getMaxDraftM() == null
                         || boat.getDraftM().compareTo(slip.getMaxDraftM()) <= 0)
@@ -88,16 +95,18 @@ public class QueueService {
         entry.setStatus(QueueEntryStatus.ASSIGNED);
         queueRepository.save(entry);
 
+        String boatPart = entry.getBoat() != null ? entry.getBoat().getName() + " – " : "";
         auditService.log("QUEUE_ASSIGNED", "QUEUE_ENTRY", entryId,
-                "Från kö: " + entry.getBoat().getName() +
-                " (" + entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName() + ") tilldelad plats");
+                "Från kö: " + boatPart +
+                entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName() + " tilldelad plats");
         return assignment;
     }
 
     public void cancel(Long id) {
         var entry = getOrThrow(id);
-        String desc = "Köpost avbruten: " + entry.getBoat().getName() +
-                " (" + entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName() + ")";
+        String boatPart = entry.getBoat() != null ? entry.getBoat().getName() + " – " : "";
+        String desc = "Köpost avbruten: " + boatPart +
+                entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName();
         entry.setStatus(QueueEntryStatus.CANCELLED);
         queueRepository.save(entry);
         auditService.log("DEQUEUED", "QUEUE_ENTRY", id, desc);

@@ -15,12 +15,16 @@ public record QueueEntryResponse(
         QueueEntryStatus status) {
 
     public static QueueEntryResponse from(QueueEntry e) {
+        var boat = e.getBoat();
         return new QueueEntryResponse(
                 e.getId(),
                 e.getPerson().getId(),
                 e.getPerson().getFirstName() + " " + e.getPerson().getLastName(),
-                e.getBoat().getId(), e.getBoat().getName(),
-                e.getBoat().getLengthM(), e.getBoat().getWidthM(), e.getBoat().getDraftM(),
+                boat != null ? boat.getId() : null,
+                boat != null ? boat.getName() : null,
+                boat != null ? boat.getLengthM() : null,
+                boat != null ? boat.getWidthM() : null,
+                boat != null ? boat.getDraftM() : null,
                 e.getRequestedDate(), e.getNotes(), e.getStatus());
     }
 }
