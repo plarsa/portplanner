@@ -161,7 +161,9 @@ public class ImportExportService {
     @Transactional(readOnly = true)
     public List<PersonImportDto> exportPersons() {
         return personRepository.findAll().stream()
-                .map(p -> new PersonImportDto(p.getFirstName(), p.getLastName(), p.getEmail(), p.getPhone()))
+                .map(p -> new PersonImportDto(
+                        p.getFirstName(), p.getLastName(), p.getEmail(), p.getPhone(),
+                        p.getAddress(), p.getPostalCode(), p.getPropertyDesignation(), p.getNotes()))
                 .toList();
     }
 
@@ -217,6 +219,10 @@ public class ImportExportService {
             person.setLastName(dto.lastName());
             person.setEmail(dto.email());
             person.setPhone(dto.phone());
+            person.setAddress(dto.address());
+            person.setPostalCode(dto.postalCode());
+            person.setPropertyDesignation(dto.propertyDesignation());
+            person.setNotes(dto.notes());
             personRepository.save(person);
             existing.put(dto.email().toLowerCase(), person);
             personsCreated++;

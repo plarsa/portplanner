@@ -27,6 +27,12 @@ public class Person {
     private String email;
 
     private String phone;
+    private String address;
+    private String postalCode;
+    private String propertyDesignation;
+
+    @Column(columnDefinition = "CLOB")
+    private String notes;
 
     @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Boat> boats = new ArrayList<>();

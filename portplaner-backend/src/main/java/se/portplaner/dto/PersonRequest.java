@@ -7,5 +7,9 @@ public record PersonRequest(
         @NotBlank String firstName,
         @NotBlank String lastName,
         @NotBlank @Email String email,
-        String phone
+        String phone,
+        String address,
+        String postalCode,
+        String propertyDesignation,
+        String notes
 ) {}

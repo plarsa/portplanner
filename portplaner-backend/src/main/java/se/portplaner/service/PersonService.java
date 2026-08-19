@@ -70,5 +70,9 @@ public class PersonService {
         p.setLastName(req.lastName());
         p.setEmail(req.email());
         p.setPhone(req.phone());
+        p.setAddress(req.address());
+        p.setPostalCode(req.postalCode());
+        p.setPropertyDesignation(req.propertyDesignation());
+        p.setNotes(req.notes());
     }
 }

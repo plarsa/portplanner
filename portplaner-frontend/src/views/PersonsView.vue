@@ -13,7 +13,7 @@
       <table>
         <thead>
           <tr>
-            <th>Namn</th><th>E-post</th><th>Telefon</th><th>Båtar</th><th></th>
+            <th>Namn</th><th>E-post</th><th>Telefon</th><th>Adress</th><th>Båtar</th><th></th>
           </tr>
         </thead>
         <tbody>
@@ -21,6 +21,10 @@
             <td>{{ p.firstName }} {{ p.lastName }}</td>
             <td>{{ p.email }}</td>
             <td>{{ p.phone || '–' }}</td>
+            <td class="address-cell">
+              <span v-if="p.address">{{ p.address }}<span v-if="p.postalCode">, {{ p.postalCode }}</span></span>
+              <span v-else class="muted">–</span>
+            </td>
             <td>{{ p.boatCount }}</td>
             <td class="actions">
               <button @click="openEdit(p)">Redigera</button>
@@ -28,7 +32,7 @@
             </td>
           </tr>
           <tr v-if="!persons.length">
-            <td colspan="5" class="empty">Inga personer hittades</td>
+            <td colspan="6" class="empty">Inga personer hittades</td>
           </tr>
         </tbody>
       </table>
@@ -40,7 +44,11 @@
         <label>Förnamn *<input v-model="form.firstName" required /></label>
         <label>Efternamn *<input v-model="form.lastName" required /></label>
         <label class="full">E-post *<input v-model="form.email" type="email" required /></label>
-        <label class="full">Telefon<input v-model="form.phone" /></label>
+        <label>Telefon<input v-model="form.phone" /></label>
+        <label>Postnummer<input v-model="form.postalCode" /></label>
+        <label class="full">Adress<input v-model="form.address" placeholder="Gatuadress" /></label>
+        <label class="full">Fastighetsbeteckning<input v-model="form.propertyDesignation" placeholder="t.ex. Örby 1:23" /></label>
+        <label class="full">Noteringar<textarea v-model="form.notes" rows="4" placeholder="Fri text…" /></label>
       </div>
       <p v-if="err" class="error">{{ err }}</p>
     </BaseModal>
@@ -58,7 +66,11 @@ const search = ref('')
 const modal = ref(false)
 const editing = ref(null)
 const err = ref('')
-const emptyForm = () => ({ firstName: '', lastName: '', email: '', phone: '' })
+
+const emptyForm = () => ({
+  firstName: '', lastName: '', email: '', phone: '',
+  address: '', postalCode: '', propertyDesignation: '', notes: '',
+})
 const form = ref(emptyForm())
 
 async function load() {
@@ -67,7 +79,15 @@ async function load() {
 }
 
 function openCreate() { editing.value = null; form.value = emptyForm(); err.value = ''; modal.value = true }
-function openEdit(p) { editing.value = p; form.value = { ...p }; err.value = ''; modal.value = true }
+function openEdit(p) {
+  editing.value = p
+  form.value = {
+    firstName: p.firstName, lastName: p.lastName, email: p.email, phone: p.phone || '',
+    address: p.address || '', postalCode: p.postalCode || '',
+    propertyDesignation: p.propertyDesignation || '', notes: p.notes || '',
+  }
+  err.value = ''; modal.value = true
+}
 
 async function save() {
   err.value = ''
@@ -83,8 +103,12 @@ async function save() {
 
 async function remove(p) {
   if (!confirm(`Ta bort ${p.firstName} ${p.lastName}?`)) return
-  await deletePerson(p.id)
-  await load()
+  try {
+    await deletePerson(p.id)
+    await load()
+  } catch (e) {
+    alert(e.response?.data?.error || 'Kunde inte ta bort personen')
+  }
 }
 
 onMounted(load)
@@ -99,6 +123,8 @@ h2 { font-size: 1.5rem; }
 table { width: 100%; border-collapse: collapse; }
 th { background: #f8f8f8; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: #555; border-bottom: 1px solid #eee; }
 td { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+td.address-cell { font-size: 0.85rem; color: #444; max-width: 200px; }
+.muted { color: #bbb; }
 .actions { display: flex; gap: 0.5rem; }
 .empty { color: #999; text-align: center; padding: 2rem; }
 button { padding: 0.35rem 0.8rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.85rem; background: #e8f0fe; color: #1a3a5c; }
@@ -110,6 +136,7 @@ button.danger:hover { background: #fcc; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .form-grid .full { grid-column: 1 / -1; }
 label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
-label input { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
+label input, label textarea { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
+label textarea { resize: vertical; font-family: inherit; }
 .error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
 </style>
