@@ -9,6 +9,7 @@
       <router-link to="/assignments">Tilldelningar</router-link>
       <router-link to="/queue">Kö</router-link>
       <router-link to="/mail">E-post (AI)</router-link>
+      <router-link to="/import-export">Import / Export</router-link>
       <div class="spacer" />
       <div class="user-info">
         <span>{{ auth.username }}</span>

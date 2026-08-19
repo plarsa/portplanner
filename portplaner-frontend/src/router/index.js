@@ -13,6 +13,7 @@ const routes = [
   { path: '/assignments', component: () => import('../views/AssignmentsView.vue') },
   { path: '/queue', component: () => import('../views/QueueView.vue') },
   { path: '/mail', component: () => import('../views/MailView.vue') },
+  { path: '/import-export', component: () => import('../views/ImportExportView.vue') },
 ]
 
 const router = createRouter({
