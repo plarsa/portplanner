@@ -119,7 +119,7 @@ const saving = ref(false)
 
 const paintModes = [
   { value: 'LAND',   label: 'Land' },
-  { value: 'BRYGGA', label: 'Brygga' },
+  { value: 'DOCK',   label: 'Brygga' },
   { value: 'PLATS',  label: 'Plats' },
   { value: 'RADERA', label: 'Radera' },
 ]
@@ -306,8 +306,8 @@ button:hover { background: #d0e2ff; }
 .mode-btn { font-weight: 600; }
 .mode-btn.land { background: #c8e6c9; color: #1b5e20; }
 .mode-btn.land:hover, .mode-btn.land.active { background: #4caf50; color: white; }
-.mode-btn.brygga { background: #e0e0e0; color: #333; }
-.mode-btn.brygga:hover, .mode-btn.brygga.active { background: #9e9e9e; color: white; }
+.mode-btn.dock { background: #e0e0e0; color: #333; }
+.mode-btn.dock:hover, .mode-btn.dock.active { background: #757575; color: white; }
 .mode-btn.plats { background: #bbdefb; color: #0d47a1; }
 .mode-btn.plats:hover, .mode-btn.plats.active { background: #1565c0; color: white; }
 .mode-btn.radera { background: #ffcdd2; color: #b71c1c; }
@@ -320,7 +320,7 @@ label input { width: 52px; padding: 0.25rem 0.4rem; border: 1px solid #ddd; bord
 .leg-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #555; }
 .leg-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.12); }
 .leg-swatch.land { background: #66bb6a; }
-.leg-swatch.dock { background: #bdbdbd; }
+.leg-swatch.dock { background: #757575; }
 .leg-swatch.available { background: #66bb6a; }
 .leg-swatch.occupied { background: #ef5350; }
 .leg-swatch.maintenance { background: #ffa726; }
@@ -336,7 +336,7 @@ label input { width: 52px; padding: 0.25rem 0.4rem; border: 1px solid #ddd; bord
 .cell:hover { filter: brightness(0.9); }
 .cell.water { background: #e3f2fd; }
 .cell.land { background: #66bb6a; }
-.cell.dock-cell { background: #bdbdbd; }
+.cell.dock-cell { background: #757575; }
 .cell.slip { background: #66bb6a; cursor: default; }
 .cell.slip.occupied { background: #ef5350; }
 .cell.slip.maintenance { background: #ffa726; }
