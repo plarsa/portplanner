@@ -25,6 +25,14 @@
       <span class="tl">Storlek:</span>
       <label>Bredd <input type="number" v-model.number="gridWidth" min="5" max="60" /></label>
       <label>Höjd <input type="number" v-model.number="gridHeight" min="5" max="40" /></label>
+      <span class="tl-sep"></span>
+      <div class="zoom-controls">
+        <span class="tl">Zoom:</span>
+        <button @click="zoomOut" :disabled="zoomLevel <= 0.25">−</button>
+        <span class="zoom-label">{{ Math.round(zoomLevel * 100) }}%</span>
+        <button @click="zoomIn" :disabled="zoomLevel >= 2.0">+</button>
+        <button @click="zoomLevel = 1.0" title="Återställ zoom">↺</button>
+      </div>
     </div>
 
     <!-- Legend (view mode) -->
@@ -34,15 +42,24 @@
       <span class="leg-item"><span class="leg-swatch available"></span> Ledig plats</span>
       <span class="leg-item"><span class="leg-swatch occupied"></span> Tilldelad plats</span>
       <span class="leg-item"><span class="leg-swatch maintenance"></span> Underhåll</span>
+      <div class="zoom-controls">
+        <button @click="zoomOut" :disabled="zoomLevel <= 0.25">−</button>
+        <span class="zoom-label">{{ Math.round(zoomLevel * 100) }}%</span>
+        <button @click="zoomIn" :disabled="zoomLevel >= 2.0">+</button>
+        <button @click="zoomLevel = 1.0" title="Återställ zoom">↺</button>
+      </div>
     </div>
 
     <div class="workspace">
       <!-- Grid -->
       <div class="grid-scroll"
+           @wheel="onWheel"
            @mouseup="stopPainting"
            @mouseleave="stopPainting">
+        <div class="grid-wrapper"
+             :style="{ width: gridWidth * 32 * zoomLevel + 'px', height: gridHeight * 32 * zoomLevel + 'px' }">
         <div class="grid"
-             :style="{ gridTemplateColumns: `repeat(${gridWidth}, 32px)` }">
+             :style="{ transform: `scale(${zoomLevel})`, transformOrigin: '0 0', gridTemplateColumns: `repeat(${gridWidth}, 32px)` }">
           <template v-for="r in gridHeight" :key="r">
             <div v-for="c in gridWidth" :key="`${r-1},${c-1}`"
                  :class="cellClass(r-1, c-1)"
@@ -55,6 +72,7 @@
               </span>
             </div>
           </template>
+        </div>
         </div>
       </div>
 
@@ -132,6 +150,8 @@ const gridHeight = ref(20)
 
 const popup = ref(null)
 const assignmentsBySlipId = ref({})
+
+const zoomLevel = ref(1.0)
 
 // ── Helpers ──────────────────────────────────────────────
 
@@ -216,6 +236,17 @@ function onMouseEnter(r, c) {
 }
 
 function stopPainting() { isPainting.value = false }
+
+// ── Zoom ──────────────────────────────────────────────────
+
+function zoomIn()  { zoomLevel.value = Math.min(2.0,  Math.round((zoomLevel.value + 0.25) * 4) / 4) }
+function zoomOut() { zoomLevel.value = Math.max(0.25, Math.round((zoomLevel.value - 0.25) * 4) / 4) }
+
+function onWheel(e) {
+  if (!e.ctrlKey && !e.metaKey) return
+  e.preventDefault()
+  e.deltaY > 0 ? zoomOut() : zoomIn()
+}
 
 // ── Viewer click ──────────────────────────────────────────
 
@@ -331,7 +362,12 @@ label input { width: 52px; padding: 0.25rem 0.4rem; border: 1px solid #ddd; bord
 
 /* Grid */
 .grid-scroll { overflow: auto; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1rem; flex: 1; min-width: 0; }
+.grid-wrapper { position: relative; overflow: visible; }
 .grid { display: grid; gap: 1px; background: rgba(0,0,0,0.06); width: fit-content; user-select: none; }
+
+/* Zoom controls */
+.zoom-controls { display: flex; align-items: center; gap: 0.3rem; margin-left: auto; }
+.zoom-label { font-size: 0.82rem; font-weight: 600; color: #555; min-width: 3rem; text-align: center; }
 
 .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: default; transition: filter 0.05s; }
 .cell:hover { filter: brightness(0.9); }
