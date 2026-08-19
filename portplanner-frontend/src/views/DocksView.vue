@@ -36,6 +36,7 @@
             <td><span :class="['status', s.status.toLowerCase()]">{{ statusLabel(s.status) }}</span></td>
             <td class="actions" @click.stop>
               <button v-if="s.status === 'AVAILABLE'" class="assign-btn" @click="openAssign(s)">+ Tilldela</button>
+              <button v-if="s.status === 'OCCUPIED'" class="unassign-btn" @click="doUnassign(s)">Avsluta tilldelning</button>
               <button @click="openSlipEdit(s)">Redigera</button>
               <button class="danger" @click="removeSlip(s)">Ta bort</button>
             </td>
@@ -81,6 +82,7 @@
           <div v-else class="boat-block free">Ingen båt tilldelad</div>
         </div>
         <div class="detail-footer">
+          <button v-if="detail.assignment" class="btn-unassign" @click="doUnassign(detail.slip); detail = null">Avsluta tilldelning</button>
           <button class="btn-primary" @click="openSlipEdit(detail.slip); detail = null">Redigera plats</button>
         </div>
       </div>
@@ -178,7 +180,7 @@ import BaseModal from '../components/BaseModal.vue'
 import { getDocks, createDock, updateDock, deleteDock, getDockSlips } from '../api/docks'
 import { createSlip, updateSlip, deleteSlip } from '../api/slips'
 import { getBoats } from '../api/boats'
-import { getAssignments, createAssignment } from '../api/assignments'
+import { getAssignments, createAssignment, endAssignment } from '../api/assignments'
 import { getTariffs } from '../api/tariffs'
 
 const router = useRouter()
@@ -263,6 +265,18 @@ function openDetail(slip, dockName) {
 
 function formatDate(d) {
   return d ? new Date(d + 'T00:00:00').toLocaleDateString('sv-SE') : '–'
+}
+
+async function doUnassign(slip) {
+  const assignment = assignmentBySlipId.value[slip.id]
+  if (!assignment) return
+  if (!confirm(`Avsluta tilldelningen för plats ${slip.slipNumber}?`)) return
+  try {
+    await endAssignment(assignment.id)
+    await load()
+  } catch (e) {
+    alert(e.response?.data?.error || 'Kunde inte avsluta tilldelningen')
+  }
 }
 
 function openAssign(slip) {
@@ -350,6 +364,8 @@ button:hover { background: #d0e2ff; }
 button.danger { background: #fee; color: #c0392b; }
 button.assign-btn { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
 button.assign-btn:hover { background: #c8e6c9; }
+button.unassign-btn { background: #fff3e0; color: #e65100; font-weight: 600; }
+button.unassign-btn:hover { background: #ffe0b2; }
 .btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; }
 .btn-primary:hover { background: #234e7a; }
 .btn-secondary { background: #eee; color: #333; padding: 0.5rem 1.1rem; border-radius: 6px; }
@@ -405,5 +421,7 @@ dd { font-size: 0.9rem; color: #222; margin: 0; }
 .boat-owner { font-size: 0.85rem; color: #721c24; }
 .boat-since { font-size: 0.78rem; color: #9a3a3a; margin-top: 0.2rem; opacity: 0.85; }
 .boat-block.free { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.88rem; }
-.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
+.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 0.75rem; }
+.btn-unassign { background: #fff3e0; color: #e65100; font-weight: 600; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
+.btn-unassign:hover { background: #ffe0b2; }
 </style>
