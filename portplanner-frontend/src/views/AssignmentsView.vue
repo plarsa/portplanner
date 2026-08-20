@@ -22,7 +22,7 @@
         <span v-if="dock.description" class="dock-desc">{{ dock.description }}</span>
       </div>
 
-      <div v-if="dockLayouts[dock.id]" class="grid-scroll" @wheel.prevent="onWheel">
+      <div v-if="dockLayouts[dock.id]" class="grid-scroll">
         <div class="grid-wrapper"
              :style="{ width: dockLayouts[dock.id].gridWidth * 32 * zoomLevel + 'px',
                        height: dockLayouts[dock.id].gridHeight * 32 * zoomLevel + 'px' }">
@@ -213,7 +213,6 @@ function onCellClick(dockId, r, c) {
 
 function zoomIn()  { zoomLevel.value = Math.min(2.0,  Math.round((zoomLevel.value + 0.25) * 4) / 4) }
 function zoomOut() { zoomLevel.value = Math.max(0.25, Math.round((zoomLevel.value - 0.25) * 4) / 4) }
-function onWheel(e) { e.deltaY > 0 ? zoomOut() : zoomIn() }
 
 async function doAssign(boat) {
   assignErr.value = ''
