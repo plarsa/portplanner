@@ -2,7 +2,7 @@
   <AppLayout>
     <div class="page-header">
       <h2>Tilldelningar</h2>
-      <div class="zoom-controls">
+      <div v-if="isDockTab" class="zoom-controls">
         <button @click="zoomOut" :disabled="zoomLevel <= 0.25">−</button>
         <span class="zoom-label">{{ Math.round(zoomLevel * 100) }}%</span>
         <button @click="zoomIn" :disabled="zoomLevel >= 2.0">+</button>
@@ -10,47 +10,56 @@
       </div>
     </div>
 
-    <div class="legend">
-      <span class="leg-item"><span class="leg-swatch available"></span> Ledig (klicka för att tilldela)</span>
-      <span class="leg-item"><span class="leg-swatch occupied"></span> Tilldelad (klicka för info)</span>
-      <span class="leg-item"><span class="leg-swatch maintenance"></span> Underhåll</span>
-    </div>
+    <!-- Sub-navigation -->
+    <nav class="sub-nav">
+      <button v-for="dock in docks" :key="dock.id"
+              :class="['nav-btn', activeTab === 'dock-' + dock.id ? 'active' : '']"
+              @click="activeTab = 'dock-' + dock.id">{{ dock.name }}</button>
+      <div class="nav-sep"></div>
+      <button :class="['nav-btn', activeTab === 'boats' ? 'active' : '']" @click="activeTab = 'boats'">
+        Båtar
+        <span v-if="unassignedBoats.length" class="nav-badge">{{ unassignedBoats.length }}</span>
+      </button>
+      <button :class="['nav-btn', activeTab === 'list' ? 'active' : '']" @click="activeTab = 'list'">Tilldelning</button>
+    </nav>
 
-    <div v-for="dock in docks" :key="dock.id" class="dock-section">
-      <div class="dock-heading">
-        {{ dock.name }}
-        <span v-if="dock.description" class="dock-desc">{{ dock.description }}</span>
-      </div>
-
-      <div v-if="dockLayouts[dock.id]" class="grid-scroll">
-        <div class="grid-wrapper"
-             :style="{ width: dockLayouts[dock.id].gridWidth * 32 * zoomLevel + 'px',
-                       height: dockLayouts[dock.id].gridHeight * 32 * zoomLevel + 'px' }">
-          <div class="grid"
-               :style="{ transform: `scale(${zoomLevel})`, transformOrigin: '0 0',
-                         gridTemplateColumns: `repeat(${dockLayouts[dock.id].gridWidth}, 32px)` }">
-            <template v-for="r in dockLayouts[dock.id].gridHeight" :key="r">
-              <div v-for="c in dockLayouts[dock.id].gridWidth" :key="`${r-1},${c-1}`"
-                   :class="cellClass(dock.id, r-1, c-1)"
-                   :title="cellTitle(dock.id, r-1, c-1)"
-                   @click="onCellClick(dock.id, r-1, c-1)">
-                <span v-if="slipForCell(dock.id, r-1, c-1)" class="slip-label">
-                  {{ slipForCell(dock.id, r-1, c-1).slipNumber }}
-                </span>
-              </div>
-            </template>
+    <!-- Dock layout tabs -->
+    <template v-for="dock in docks" :key="dock.id">
+      <div v-if="activeTab === 'dock-' + dock.id">
+        <div class="legend">
+          <span class="leg-item"><span class="leg-swatch available"></span> Ledig (klicka för att tilldela)</span>
+          <span class="leg-item"><span class="leg-swatch occupied"></span> Tilldelad (klicka för info)</span>
+          <span class="leg-item"><span class="leg-swatch maintenance"></span> Underhåll</span>
+        </div>
+        <div v-if="dockLayouts[dock.id]" class="grid-scroll">
+          <div class="grid-wrapper"
+               :style="{ width: dockLayouts[dock.id].gridWidth * 32 * zoomLevel + 'px',
+                         height: dockLayouts[dock.id].gridHeight * 32 * zoomLevel + 'px' }">
+            <div class="grid"
+                 :style="{ transform: `scale(${zoomLevel})`, transformOrigin: '0 0',
+                           gridTemplateColumns: `repeat(${dockLayouts[dock.id].gridWidth}, 32px)` }">
+              <template v-for="r in dockLayouts[dock.id].gridHeight" :key="r">
+                <div v-for="c in dockLayouts[dock.id].gridWidth" :key="`${r-1},${c-1}`"
+                     :class="cellClass(dock.id, r-1, c-1)"
+                     :title="cellTitle(dock.id, r-1, c-1)"
+                     @click="onCellClick(dock.id, r-1, c-1)">
+                  <span v-if="slipForCell(dock.id, r-1, c-1)" class="slip-label">
+                    {{ slipForCell(dock.id, r-1, c-1).slipNumber }}
+                  </span>
+                </div>
+              </template>
+            </div>
           </div>
         </div>
+        <p v-else class="no-layout">Ingen layout sparad – gå till Bryggor & Båtplatser för att rita en.</p>
       </div>
-      <p v-else class="no-layout">Ingen layout sparad – gå till Bryggor & Båtplatser för att rita en.</p>
-    </div>
+    </template>
 
-    <!-- Oplacerade båtar -->
-    <div class="unassigned-section">
-      <div class="section-heading">Oplacerade båtar <span class="count-badge">{{ unassignedBoats.length }}</span></div>
-      <div v-if="!unassignedBoats.length" class="no-unassigned">Alla registrerade båtar har en plats.</div>
-      <div v-else class="unassigned-table-wrap">
-        <table class="unassigned-table">
+    <!-- Båtar tab: oplacerade båtar -->
+    <div v-if="activeTab === 'boats'">
+      <div v-if="!unassignedBoats.length" class="empty-state">Alla registrerade båtar har en plats.</div>
+      <div v-else class="tab-table-wrap">
+        <table class="tab-table">
           <thead>
             <tr><th>Båt</th><th>Ägare</th><th>L (m)</th><th>B (m)</th></tr>
           </thead>
@@ -63,6 +72,32 @@
             </tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- Tilldelning tab: lista per brygga -->
+    <div v-if="activeTab === 'list'">
+      <div v-if="!assignedSlipsByDock.length" class="empty-state">Inga aktiva tilldelningar.</div>
+      <div v-for="group in assignedSlipsByDock" :key="group.dock.id" class="list-dock-section">
+        <div class="list-dock-heading">{{ group.dock.name }}</div>
+        <div class="tab-table-wrap">
+          <table class="tab-table">
+            <thead>
+              <tr><th>Plats</th><th>Ägare</th><th>Båt</th><th>Fr.o.m.</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="e in group.entries" :key="e.slip.id">
+                <td class="slip-num">{{ e.slip.slipNumber }}</td>
+                <td>{{ e.assignment?.ownerName ?? '–' }}</td>
+                <td>{{ e.assignment?.boatName ?? '–' }}</td>
+                <td class="date-col">{{ formatDate(e.assignment?.assignedDate) }}</td>
+                <td class="actions">
+                  <button class="btn-unassign-sm" @click="doUnassign(e.assignment)" v-if="e.assignment">Avsluta</button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -97,7 +132,7 @@
       </div>
     </div>
 
-    <!-- Tilldela-modal för lediga platser -->
+    <!-- Tilldela-modal (plats → båt) -->
     <div v-if="assignModal" class="overlay" @click.self="assignModal = false">
       <div class="assign-card">
         <div class="assign-header">
@@ -134,7 +169,7 @@
       </div>
     </div>
 
-    <!-- Båt → plats-modal (från oplacerade listan) -->
+    <!-- Tilldela-modal (båt → plats) -->
     <div v-if="boatModal" class="overlay" @click.self="boatModal = false">
       <div class="assign-card">
         <div class="assign-header">
@@ -186,17 +221,18 @@ const allSlips = ref([])
 const assignmentsBySlipId = ref({})
 const assignedBoatIds = ref(new Set())
 
+const activeTab = ref('boats')
 const popup = ref(null)
 const assignModal = ref(false)
 const assignSlip = ref(null)
 const assignDockName = ref('')
 const assignErr = ref('')
-
 const boatModal = ref(false)
 const selectedBoat = ref(null)
 const boatAssignErr = ref('')
-
 const zoomLevel = ref(1.0)
+
+const isDockTab = computed(() => activeTab.value.startsWith('dock-'))
 
 const unassignedBoats = computed(() =>
   allBoats.value.filter(b => !assignedBoatIds.value.has(b.id)).sort((a, b) => a.name.localeCompare(b.name))
@@ -211,7 +247,7 @@ const nonFittingBoats = computed(() => {
 })
 const availableSlips = computed(() =>
   allSlips.value.filter(s => s.status === 'AVAILABLE').sort((a, b) =>
-    a.dockName.localeCompare(b.dockName) || String(a.slipNumber).localeCompare(String(b.slipNumber))
+    a.dockName.localeCompare(b.dockName) || String(a.slipNumber).localeCompare(String(b.slipNumber), undefined, { numeric: true })
   )
 )
 const fittingSlips = computed(() => {
@@ -222,13 +258,21 @@ const nonFittingSlips = computed(() => {
   if (!selectedBoat.value) return []
   return availableSlips.value.filter(s => !boatFits(selectedBoat.value, s))
 })
+const assignedSlipsByDock = computed(() =>
+  docks.value.map(dock => ({
+    dock,
+    entries: (slipsByDock.value[dock.id] ?? [])
+      .filter(s => s.status === 'OCCUPIED')
+      .map(s => ({ slip: s, assignment: assignmentsBySlipId.value[s.id] ?? null }))
+      .sort((a, b) => String(a.slip.slipNumber).localeCompare(String(b.slip.slipNumber), undefined, { numeric: true }))
+  })).filter(g => g.entries.length > 0)
+)
 
 function boatFits(boat, slip) {
   if (boat.widthM > slip.maxWidthM) return false
   if (slip.maxLengthM && boat.lengthM > slip.maxLengthM) return false
   return true
 }
-
 function key(r, c) { return `${r},${c}` }
 
 function slipForCell(dockId, r, c) {
@@ -277,54 +321,37 @@ function onCellClick(dockId, r, c) {
     assignErr.value = ''
     assignModal.value = true
   } else {
-    popup.value = {
-      slip,
-      dockName: dock?.name ?? '',
-      assignment: assignmentsBySlipId.value[slip.id] ?? null,
-    }
+    popup.value = { slip, dockName: dock?.name ?? '', assignment: assignmentsBySlipId.value[slip.id] ?? null }
   }
 }
 
 function zoomIn()  { zoomLevel.value = Math.min(2.0,  Math.round((zoomLevel.value + 0.25) * 4) / 4) }
 function zoomOut() { zoomLevel.value = Math.max(0.25, Math.round((zoomLevel.value - 0.25) * 4) / 4) }
 
-function openBoatModal(boat) {
-  selectedBoat.value = boat
-  boatAssignErr.value = ''
-  boatModal.value = true
-}
+function openBoatModal(boat) { selectedBoat.value = boat; boatAssignErr.value = ''; boatModal.value = true }
 
 async function doAssignBoatToSlip(slip) {
   boatAssignErr.value = ''
   try {
     await createAssignment({ boatId: selectedBoat.value.id, slipId: slip.id })
-    boatModal.value = false
-    await load()
-  } catch (e) {
-    boatAssignErr.value = e.response?.data?.error || 'Kunde inte tilldela platsen'
-  }
+    boatModal.value = false; await load()
+  } catch (e) { boatAssignErr.value = e.response?.data?.error || 'Kunde inte tilldela platsen' }
 }
 
 async function doAssign(boat) {
   assignErr.value = ''
   try {
     await createAssignment({ boatId: boat.id, slipId: assignSlip.value.id })
-    assignModal.value = false
-    await load()
-  } catch (e) {
-    assignErr.value = e.response?.data?.error || 'Kunde inte tilldela platsen'
-  }
+    assignModal.value = false; await load()
+  } catch (e) { assignErr.value = e.response?.data?.error || 'Kunde inte tilldela platsen' }
 }
 
 async function doUnassign(assignment) {
   if (!confirm(`Avsluta tilldelningen för ${assignment.boatName} på plats ${assignment.slipNumber}?`)) return
   popup.value = null
   try {
-    await endAssignment(assignment.id)
-    await load()
-  } catch (e) {
-    alert(e.response?.data?.error || 'Något gick fel')
-  }
+    await endAssignment(assignment.id); await load()
+  } catch (e) { alert(e.response?.data?.error || 'Något gick fel') }
 }
 
 function parseLayout(json) {
@@ -365,6 +392,10 @@ async function load() {
   slipsByDock.value = slipMap
   allSlips.value = flatSlips
   dockLayouts.value = layouts
+
+  if (docksData.length && activeTab.value === 'boats') {
+    activeTab.value = 'dock-' + docksData[0].id
+  }
 }
 
 onMounted(load)
@@ -377,7 +408,17 @@ h2 { font-size: 1.5rem; }
 .zoom-controls { display: flex; align-items: center; gap: 0.3rem; }
 .zoom-label { font-size: 0.82rem; font-weight: 600; color: #555; min-width: 3rem; text-align: center; }
 
-.legend { display: flex; gap: 1.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+/* Sub-navigation */
+.sub-nav { display: flex; align-items: center; gap: 0.25rem; margin-bottom: 1.25rem; background: white; border-radius: 10px; padding: 0.35rem 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); flex-wrap: wrap; }
+.nav-btn { background: none; border: none; padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.88rem; font-weight: 600; color: #555; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; transition: background 0.1s, color 0.1s; }
+.nav-btn:hover { background: #f0f4ff; color: #1a3a5c; }
+.nav-btn.active { background: #1a3a5c; color: white; }
+.nav-badge { background: #ef5350; color: white; font-size: 0.7rem; font-weight: 700; padding: 0.05rem 0.45rem; border-radius: 20px; }
+.nav-btn.active .nav-badge { background: rgba(255,255,255,0.3); }
+.nav-sep { flex: 1; }
+
+/* Legend */
+.legend { display: flex; gap: 1.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .leg-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #555; }
 .leg-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.12); }
 .leg-swatch.land { background: #c8a97c; }
@@ -385,15 +426,10 @@ h2 { font-size: 1.5rem; }
 .leg-swatch.occupied { background: #ef5350; }
 .leg-swatch.maintenance { background: #ffa726; }
 
-.dock-section { margin-bottom: 2rem; }
-.dock-heading { font-size: 1.05rem; font-weight: 700; color: #1a3a5c; margin-bottom: 0.6rem; }
-.dock-desc { font-size: 0.85rem; font-weight: 400; color: #888; margin-left: 0.6rem; }
-.no-layout { color: #bbb; font-size: 0.88rem; padding: 0.5rem 0; }
-
+/* Grid */
 .grid-scroll { overflow: auto; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1rem; }
 .grid-wrapper { position: relative; overflow: visible; }
 .grid { display: grid; gap: 1px; background: rgba(0,0,0,0.06); width: fit-content; user-select: none; }
-
 .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: default; transition: filter 0.05s; }
 .cell:hover { filter: brightness(0.9); }
 .cell.water { background: #e3f2fd; }
@@ -404,7 +440,27 @@ h2 { font-size: 1.5rem; }
 .cell.slip.maintenance { background: #ffa726; }
 .cell.slip.clickable { cursor: pointer; }
 .slip-label { font-size: 0.6rem; font-weight: 700; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.4); line-height: 1; text-align: center; }
+.no-layout { color: #bbb; font-size: 0.88rem; padding: 0.5rem 0; }
 
+/* Shared table */
+.tab-table-wrap { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+.tab-table { width: 100%; border-collapse: collapse; }
+.tab-table th { background: #f8f8f8; padding: 0.6rem 1rem; text-align: left; font-size: 0.82rem; color: #555; border-bottom: 1px solid #eee; }
+.tab-table td { padding: 0.65rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+.tab-table td.slip-num { font-weight: 700; color: #1a3a5c; }
+.tab-table td.date-col { color: #888; font-size: 0.82rem; }
+.tab-table td.actions { width: 1%; white-space: nowrap; }
+.empty-state { color: #bbb; font-size: 0.88rem; padding: 1rem 0; }
+.clickable-row { cursor: pointer; transition: background 0.1s; }
+.clickable-row:hover { background: #f5f8ff; }
+
+/* Tilldelning list */
+.list-dock-section { margin-bottom: 1.75rem; }
+.list-dock-heading { font-size: 1rem; font-weight: 700; color: #1a3a5c; margin-bottom: 0.5rem; }
+.btn-unassign-sm { background: #fff3e0; color: #e65100; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.8rem; }
+.btn-unassign-sm:hover { background: #ffe0b2; }
+
+/* Buttons */
 button { padding: 0.4rem 0.85rem; border: none; border-radius: 6px; cursor: pointer; background: #e8f0fe; color: #1a3a5c; font-size: 0.85rem; }
 button:hover:not(:disabled) { background: #d0e2ff; }
 button:disabled { opacity: 0.45; cursor: default; }
@@ -455,16 +511,4 @@ dd { font-size: 0.88rem; margin: 0; }
 .error { color: #c0392b; font-size: 0.85rem; }
 .assign-err { padding: 0 1.25rem 1rem; margin: 0; }
 .muted { color: #bbb; }
-
-/* Unassigned boats */
-.unassigned-section { margin-top: 2rem; }
-.section-heading { font-size: 1.05rem; font-weight: 700; color: #1a3a5c; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5rem; }
-.count-badge { background: #e8f0fe; color: #1a3a5c; font-size: 0.78rem; font-weight: 700; padding: 0.1rem 0.55rem; border-radius: 20px; }
-.no-unassigned { color: #bbb; font-size: 0.88rem; padding: 0.5rem 0; }
-.unassigned-table-wrap { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-.unassigned-table { width: 100%; border-collapse: collapse; }
-.unassigned-table th { background: #f8f8f8; padding: 0.6rem 1rem; text-align: left; font-size: 0.82rem; color: #555; border-bottom: 1px solid #eee; }
-.unassigned-table td { padding: 0.65rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-.clickable-row { cursor: pointer; transition: background 0.1s; }
-.clickable-row:hover { background: #f5f8ff; }
 </style>
