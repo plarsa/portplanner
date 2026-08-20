@@ -25,7 +25,7 @@ public class PersonService {
 
     @Transactional(readOnly = true)
     public List<PersonResponse> findAll(String search) {
-        Sort sort = Sort.by("lastName").ascending().and(Sort.by("firstName").ascending());
+        Sort sort = Sort.by("firstName").ascending().and(Sort.by("lastName").ascending());
         List<Person> persons = (search != null && !search.isBlank())
                 ? personRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search, search, sort)
                 : personRepository.findAll(sort);
