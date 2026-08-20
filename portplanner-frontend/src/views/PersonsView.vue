@@ -129,7 +129,8 @@ const form = ref(emptyForm())
 
 async function load() {
   const { data } = await getPersons(search.value)
-  persons.value = data
+  persons.value = data.slice().sort((a, b) =>
+    (a.lastName + ' ' + a.firstName).localeCompare(b.lastName + ' ' + b.firstName, 'sv'))
 }
 
 function formatDate(d) {

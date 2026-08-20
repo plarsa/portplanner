@@ -108,9 +108,11 @@ function todayStr() { return new Date().toISOString().slice(0, 10) }
 
 const filteredPersons = computed(() => {
   const q = personSearch.value.toLowerCase()
-  if (!q) return persons.value
-  return persons.value.filter(p =>
-    (p.firstName + ' ' + p.lastName).toLowerCase().includes(q))
+  const list = q
+    ? persons.value.filter(p => (p.firstName + ' ' + p.lastName).toLowerCase().includes(q))
+    : persons.value
+  return list.slice().sort((a, b) =>
+    (a.lastName + ' ' + a.firstName).localeCompare(b.lastName + ' ' + b.firstName, 'sv'))
 })
 
 const boatsForPerson = computed(() =>
@@ -118,8 +120,10 @@ const boatsForPerson = computed(() =>
 
 const filteredBoatsForPerson = computed(() => {
   const q = boatSearch.value.toLowerCase()
-  if (!q) return boatsForPerson.value
-  return boatsForPerson.value.filter(b => b.name.toLowerCase().includes(q))
+  const list = q
+    ? boatsForPerson.value.filter(b => b.name.toLowerCase().includes(q))
+    : boatsForPerson.value
+  return list.slice().sort((a, b) => a.name.localeCompare(b.name, 'sv'))
 })
 
 function formatDate(dt) {
