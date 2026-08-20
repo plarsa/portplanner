@@ -81,5 +81,6 @@ public class SlipService {
         slip.setDock(dock);
         slip.setStatus(req.status() != null ? req.status() : SlipStatus.AVAILABLE);
         slip.setCategory(req.category());
+        slip.setNotes(req.notes());
     }
 }

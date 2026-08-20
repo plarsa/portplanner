@@ -42,4 +42,7 @@ public class Slip {
     private String side;
 
     private String category;
+
+    @Column(length = 2000)
+    private String notes;
 }

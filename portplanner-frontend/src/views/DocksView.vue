@@ -35,8 +35,6 @@
             <td>{{ s.maxDraftM ? s.maxDraftM + ' m' : '–' }}</td>
             <td><span :class="['status', s.status.toLowerCase()]">{{ statusLabel(s.status) }}</span></td>
             <td class="actions" @click.stop>
-              <button v-if="s.status === 'AVAILABLE'" class="assign-btn" @click="openAssign(s)">+ Tilldela</button>
-              <button v-if="s.status === 'OCCUPIED'" class="unassign-btn" @click="doUnassign(s)">Avsluta tilldelning</button>
               <button @click="openSlipEdit(s)">Redigera</button>
               <button class="danger" @click="removeSlip(s)">Ta bort</button>
             </td>
@@ -63,10 +61,13 @@
           <dd>{{ detail.slip.maxLengthM }} m</dd>
           <dt>Max bredd</dt>
           <dd>{{ detail.slip.maxWidthM }} m</dd>
-          <dt>Max djupgång</dt>
+          <dt>Djup</dt>
           <dd>{{ detail.slip.maxDraftM ? detail.slip.maxDraftM + ' m' : '–' }}</dd>
           <dt>Status</dt>
           <dd><span :class="['status', detail.slip.status.toLowerCase()]">{{ statusLabel(detail.slip.status) }}</span></dd>
+          <template v-if="detail.slip.notes">
+            <dt>Kommentar</dt><dd class="notes-text">{{ detail.slip.notes }}</dd>
+          </template>
         </dl>
         <div class="boat-section">
           <div class="section-title">Tilldelad båt</div>
@@ -82,7 +83,6 @@
           <div v-else class="boat-block free">Ingen båt tilldelad</div>
         </div>
         <div class="detail-footer">
-          <button v-if="detail.assignment" class="btn-unassign" @click="doUnassign(detail.slip); detail = null">Avsluta tilldelning</button>
           <button class="btn-primary" @click="openSlipEdit(detail.slip); detail = null">Redigera plats</button>
         </div>
       </div>
@@ -105,63 +105,23 @@
         <label class="full">Platsnummer *<input v-model="slipForm.slipNumber" required /></label>
         <label>Max längd m *<input v-model.number="slipForm.maxLengthM" type="number" step="0.1" min="0" required /></label>
         <label>Max bredd m *<input v-model.number="slipForm.maxWidthM" type="number" step="0.1" min="0" required /></label>
-        <label class="full">Max djupgång m<input v-model.number="slipForm.maxDraftM" type="number" step="0.1" min="0" /></label>
+        <label class="full">Djup m<input v-model.number="slipForm.maxDraftM" type="number" step="0.1" min="0" /></label>
         <label v-if="!editingSlip" class="full">Brygga *
           <select v-model.number="slipForm.dockId" required>
             <option v-for="d in docks" :key="d.id" :value="d.id">{{ d.name }}</option>
           </select>
         </label>
-        <label class="full">Taxekategori
+        <label class="full">Tariff
           <select v-model="slipForm.category">
-            <option value="">Ingen kategori</option>
+            <option value="">Ingen tariff</option>
             <option v-for="cat in tariffCategories" :key="cat" :value="cat">{{ cat }}</option>
           </select>
         </label>
+        <label class="full">Kommentar<textarea v-model="slipForm.notes" rows="3" placeholder="Fritext…" /></label>
       </div>
       <p v-if="slipErr" class="error">{{ slipErr }}</p>
     </BaseModal>
 
-    <!-- Assign modal -->
-    <div v-if="assignModal" class="overlay" @click.self="assignModal = false">
-      <div class="assign-card">
-        <div class="assign-header">
-          <div>
-            <h3>Tilldela plats {{ assignSlip.slipNumber }}</h3>
-            <div class="assign-dims">Max {{ assignSlip.maxWidthM }} m bredd · {{ assignSlip.maxLengthM ?? '?' }} m längd</div>
-          </div>
-          <button class="close-btn" @click="assignModal = false">✕</button>
-        </div>
-
-        <div class="assign-scroll">
-          <div v-if="!unassignedBoats.length" class="no-boats">
-            Inga lediga båtar att tilldela.
-          </div>
-          <template v-else>
-            <div class="section-label">Passar platsen</div>
-            <div v-if="!fittingBoats.length" class="no-boats-section">Inga båtar passar måtten</div>
-            <div v-for="b in fittingBoats" :key="b.id" class="boat-row fits" @click="doAssign(b)">
-              <div class="boat-name">{{ b.name }}</div>
-              <div class="boat-meta">{{ b.ownerName }} · {{ b.widthM }} m × {{ b.lengthM }} m</div>
-            </div>
-
-            <div class="section-label warn-label">Passar ej (för stor)</div>
-            <div v-if="!nonFittingBoats.length" class="no-boats-section muted">Inga överstora båtar</div>
-            <div v-for="b in nonFittingBoats" :key="b.id" class="boat-row no-fit" @click="doAssign(b)">
-              <div class="boat-name">{{ b.name }}</div>
-              <div class="boat-meta">
-                {{ b.ownerName }} ·
-                <span :class="b.widthM > assignSlip.maxWidthM ? 'over' : ''">{{ b.widthM }} m bredd</span>
-                ·
-                <span :class="assignSlip.maxLengthM && b.lengthM > assignSlip.maxLengthM ? 'over' : ''">{{ b.lengthM }} m längd</span>
-              </div>
-              <span class="warn-tag">⚠ Passar ej</span>
-            </div>
-          </template>
-        </div>
-
-        <p v-if="assignErr" class="error assign-err">{{ assignErr }}</p>
-      </div>
-    </div>
   </AppLayout>
 </template>
 
@@ -173,7 +133,7 @@ import BaseModal from '../components/BaseModal.vue'
 import { getDocks, createDock, updateDock, deleteDock, getDockSlips } from '../api/docks'
 import { createSlip, updateSlip, deleteSlip } from '../api/slips'
 import { getBoats } from '../api/boats'
-import { getAssignments, createAssignment, endAssignment } from '../api/assignments'
+import { getAssignments } from '../api/assignments'
 import { getTariffs } from '../api/tariffs'
 
 const router = useRouter()
@@ -190,38 +150,12 @@ const editingSlip = ref(null)
 const dockErr = ref('')
 const slipErr = ref('')
 const dockForm = ref({ name: '', description: '' })
-const emptySlip = () => ({ slipNumber: '', maxLengthM: '', maxWidthM: '', maxDraftM: '', dockId: '', status: 'AVAILABLE', category: '' })
+const emptySlip = () => ({ slipNumber: '', maxLengthM: '', maxWidthM: '', maxDraftM: '', dockId: '', status: 'AVAILABLE', category: '', notes: '' })
 const slipForm = ref(emptySlip())
-
-const assignModal = ref(false)
-const assignSlip = ref(null)
-const assignErr = ref('')
 
 const detail = ref(null)
 const assignmentBySlipId = ref({})
 const boatById = ref({})
-
-const unassignedBoats = computed(() =>
-  allBoats.value.filter(b => !assignedBoatIds.value.has(b.id))
-)
-
-const fittingBoats = computed(() => {
-  if (!assignSlip.value) return []
-  return unassignedBoats.value.filter(b => boatFits(b, assignSlip.value))
-    .sort((a, b) => a.name.localeCompare(b.name))
-})
-
-const nonFittingBoats = computed(() => {
-  if (!assignSlip.value) return []
-  return unassignedBoats.value.filter(b => !boatFits(b, assignSlip.value))
-    .sort((a, b) => a.name.localeCompare(b.name))
-})
-
-function boatFits(boat, slip) {
-  if (boat.widthM > slip.maxWidthM) return false
-  if (slip.maxLengthM && boat.lengthM > slip.maxLengthM) return false
-  return true
-}
 
 function statusLabel(s) {
   return { AVAILABLE: 'Ledig', OCCUPIED: 'Tilldelad', MAINTENANCE: 'Underhåll' }[s] ?? s
@@ -248,7 +182,7 @@ async function load() {
 function openDockCreate() { editingDock.value = null; dockForm.value = { name: '', description: '' }; dockErr.value = ''; dockModal.value = true }
 function openDockEdit(d) { editingDock.value = d; dockForm.value = { name: d.name, description: d.description }; dockErr.value = ''; dockModal.value = true }
 function openSlipCreate() { editingSlip.value = null; slipForm.value = emptySlip(); slipErr.value = ''; slipModal.value = true }
-function openSlipEdit(s) { editingSlip.value = s; slipForm.value = { slipNumber: s.slipNumber, maxLengthM: s.maxLengthM, maxWidthM: s.maxWidthM, maxDraftM: s.maxDraftM, dockId: s.dockId, status: s.status, category: s.category || '' }; slipErr.value = ''; slipModal.value = true }
+function openSlipEdit(s) { editingSlip.value = s; slipForm.value = { slipNumber: s.slipNumber, maxLengthM: s.maxLengthM, maxWidthM: s.maxWidthM, maxDraftM: s.maxDraftM, dockId: s.dockId, status: s.status, category: s.category || '', notes: s.notes || '' }; slipErr.value = ''; slipModal.value = true }
 
 function openDetail(slip, dockName) {
   const assignment = assignmentBySlipId.value[slip.id] ?? null
@@ -258,35 +192,6 @@ function openDetail(slip, dockName) {
 
 function formatDate(d) {
   return d ? new Date(d + 'T00:00:00').toLocaleDateString('sv-SE') : '–'
-}
-
-async function doUnassign(slip) {
-  const assignment = assignmentBySlipId.value[slip.id]
-  if (!assignment) return
-  if (!confirm(`Avsluta tilldelningen för plats ${slip.slipNumber}?`)) return
-  try {
-    await endAssignment(assignment.id)
-    await load()
-  } catch (e) {
-    alert(e.response?.data?.error || 'Kunde inte avsluta tilldelningen')
-  }
-}
-
-function openAssign(slip) {
-  assignSlip.value = slip
-  assignErr.value = ''
-  assignModal.value = true
-}
-
-async function doAssign(boat) {
-  assignErr.value = ''
-  try {
-    await createAssignment({ boatId: boat.id, slipId: assignSlip.value.id })
-    assignModal.value = false
-    await load()
-  } catch (e) {
-    assignErr.value = e.response?.data?.error || 'Kunde inte tilldela platsen'
-  }
 }
 
 async function saveDock() {
@@ -301,7 +206,7 @@ async function saveDock() {
 async function saveSlip() {
   slipErr.value = ''
   try {
-    const payload = { ...slipForm.value, maxDraftM: slipForm.value.maxDraftM || null, category: slipForm.value.category || null }
+    const payload = { ...slipForm.value, maxDraftM: slipForm.value.maxDraftM || null, category: slipForm.value.category || null, notes: slipForm.value.notes || null }
     if (editingSlip.value) await updateSlip(editingSlip.value.id, payload)
     else await createSlip(payload)
     slipModal.value = false; await load()
@@ -355,10 +260,6 @@ td { padding: 0.6rem 1rem; border-top: 1px solid #f0f0f0; font-size: 0.9rem; }
 button { padding: 0.3rem 0.7rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.82rem; background: #e8f0fe; color: #1a3a5c; }
 button:hover { background: #d0e2ff; }
 button.danger { background: #fee; color: #c0392b; }
-button.assign-btn { background: #e8f5e9; color: #2e7d32; font-weight: 600; }
-button.assign-btn:hover { background: #c8e6c9; }
-button.unassign-btn { background: #fff3e0; color: #e65100; font-weight: 600; }
-button.unassign-btn:hover { background: #ffe0b2; }
 .btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; }
 .btn-primary:hover { background: #234e7a; }
 .btn-secondary { background: #eee; color: #333; padding: 0.5rem 1.1rem; border-radius: 6px; }
@@ -369,28 +270,8 @@ label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 
 label input, label select, label textarea { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
 .error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
 
-/* Assign modal */
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; }
-.assign-card { background: white; border-radius: 12px; width: 460px; max-width: 95vw; height: min(80vh, 700px); display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
-.assign-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1rem 1.25rem; border-bottom: 1px solid #eee; }
-.assign-header h3 { margin: 0 0 0.2rem; font-size: 1.05rem; }
-.assign-dims { font-size: 0.8rem; color: #888; }
 .close-btn { background: none; border: none; font-size: 1.1rem; color: #888; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
 .close-btn:hover { background: #f0f0f0; }
-.section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #555; padding: 0.6rem 1.25rem 0.3rem; background: #fafafa; border-top: 1px solid #f0f0f0; }
-.warn-label { color: #9a5000; background: #fffbf0; border-top-color: #ffe082; }
-.no-boats { padding: 1.25rem; color: #999; font-size: 0.9rem; }
-.no-boats-section { padding: 0.4rem 1.25rem 0.6rem; color: #bbb; font-size: 0.82rem; }
-.boat-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 1.25rem; cursor: pointer; border-top: 1px solid #f4f4f4; }
-.boat-row:hover { background: #f0f4ff; }
-.boat-row.no-fit { background: #fffbf0; }
-.boat-row.no-fit:hover { background: #fff3cd; }
-.boat-name { font-weight: 600; font-size: 0.9rem; min-width: 120px; }
-.boat-meta { font-size: 0.8rem; color: #666; flex: 1; }
-.over { color: #c0392b; font-weight: 700; }
-.warn-tag { font-size: 0.72rem; font-weight: 700; color: #9a5000; background: #ffe082; border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
-.assign-scroll { flex: 1; overflow-y: auto; min-height: 0; }
-.assign-err { padding: 0 1.25rem 1rem; margin: 0; }
 .clickable-row { cursor: pointer; transition: background 0.1s; }
 .clickable-row:hover { background: #f5f8ff; }
 
@@ -414,7 +295,6 @@ dd { font-size: 0.9rem; color: #222; margin: 0; }
 .boat-owner { font-size: 0.85rem; color: #721c24; }
 .boat-since { font-size: 0.78rem; color: #9a3a3a; margin-top: 0.2rem; opacity: 0.85; }
 .boat-block.free { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.88rem; }
-.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; gap: 0.75rem; }
-.btn-unassign { background: #fff3e0; color: #e65100; font-weight: 600; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-unassign:hover { background: #ffe0b2; }
+.notes-text { white-space: pre-wrap; color: #555; font-style: italic; }
+.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
 </style>
