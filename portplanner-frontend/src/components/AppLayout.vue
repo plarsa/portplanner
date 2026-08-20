@@ -8,7 +8,7 @@
       <router-link to="/docks">Bryggor</router-link>
       <router-link to="/assignments">Tilldelningar</router-link>
       <router-link to="/queue">Kö</router-link>
-      <router-link to="/tariffs">Taxelista</router-link>
+      <router-link to="/tariffs">Tariff</router-link>
       <router-link to="/import-export">Import / Export</router-link>
       <router-link to="/audit">Händelselogg</router-link>
       <div class="spacer" />
