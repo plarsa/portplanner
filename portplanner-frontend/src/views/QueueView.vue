@@ -74,7 +74,7 @@
           </select>
         </label>
         <label>Datum i kö
-          <input v-model="form.requestedDate" type="date" />
+          <input v-model="form.requestedDate" type="text" placeholder="ÅÅÅÅ-MM-DD" maxlength="10" />
         </label>
         <label>Anteckning
           <textarea v-model="form.notes" rows="3" placeholder="Ev. önskemål om plats…" />

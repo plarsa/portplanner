@@ -8,6 +8,7 @@ import se.portplanner.exception.ResourceNotFoundException;
 import se.portplanner.model.Person;
 import se.portplanner.repository.PersonRepository;
 
+import org.springframework.data.domain.Sort;
 import java.util.List;
 
 @Service
@@ -24,9 +25,10 @@ public class PersonService {
 
     @Transactional(readOnly = true)
     public List<PersonResponse> findAll(String search) {
+        Sort sort = Sort.by("lastName").ascending().and(Sort.by("firstName").ascending());
         List<Person> persons = (search != null && !search.isBlank())
-                ? personRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search, search)
-                : personRepository.findAll();
+                ? personRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCaseOrEmailContainingIgnoreCase(search, search, search, sort)
+                : personRepository.findAll(sort);
         return persons.stream().map(PersonResponse::from).toList();
     }
 
