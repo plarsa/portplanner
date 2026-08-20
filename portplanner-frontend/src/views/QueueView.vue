@@ -56,20 +56,25 @@
     <BaseModal v-if="modal" title="Lägg till i kö" @close="modal = false" @save="saveAdd">
       <div class="form-col">
         <label>Person *
-          <select v-model.number="form.personId" required @change="form.boatId = ''">
+          <input v-model="personSearch" type="text" placeholder="Sök namn…" class="search-input" @input="form.personId = ''; form.boatId = ''" />
+          <select v-model.number="form.personId" required size="5" @change="form.boatId = ''; boatSearch = ''">
             <option value="">Välj person…</option>
-            <option v-for="p in persons" :key="p.id" :value="p.id">
+            <option v-for="p in filteredPersons" :key="p.id" :value="p.id">
               {{ p.firstName }} {{ p.lastName }}
             </option>
           </select>
         </label>
         <label>Båt
-          <select v-model.number="form.boatId">
+          <input v-model="boatSearch" type="text" placeholder="Sök båt…" class="search-input" />
+          <select v-model.number="form.boatId" size="4">
             <option value="">Ingen båt (valfritt)…</option>
-            <option v-for="b in boatsForPerson" :key="b.id" :value="b.id">
+            <option v-for="b in filteredBoatsForPerson" :key="b.id" :value="b.id">
               {{ b.name }} – {{ b.lengthM }}×{{ b.widthM }}m
             </option>
           </select>
+        </label>
+        <label>Datum i kö
+          <input v-model="form.requestedDate" type="date" />
         </label>
         <label>Anteckning
           <textarea v-model="form.notes" rows="3" placeholder="Ev. önskemål om plats…" />
@@ -93,12 +98,29 @@ const persons = ref([])
 const allBoats = ref([])
 const modal = ref(false)
 const err = ref('')
-const form = ref({ personId: '', boatId: '', notes: '' })
+const form = ref({ personId: '', boatId: '', notes: '', requestedDate: '' })
+const personSearch = ref('')
+const boatSearch = ref('')
 const activeSuggestionId = ref(null)
 const suggestions = ref([])
 
+function todayStr() { return new Date().toISOString().slice(0, 10) }
+
+const filteredPersons = computed(() => {
+  const q = personSearch.value.toLowerCase()
+  if (!q) return persons.value
+  return persons.value.filter(p =>
+    (p.firstName + ' ' + p.lastName).toLowerCase().includes(q))
+})
+
 const boatsForPerson = computed(() =>
   form.value.personId ? allBoats.value.filter(b => b.ownerId === form.value.personId) : [])
+
+const filteredBoatsForPerson = computed(() => {
+  const q = boatSearch.value.toLowerCase()
+  if (!q) return boatsForPerson.value
+  return boatsForPerson.value.filter(b => b.name.toLowerCase().includes(q))
+})
 
 function formatDate(dt) {
   return dt ? new Date(dt).toLocaleDateString('sv-SE') : ''
@@ -111,7 +133,7 @@ async function load() {
   allBoats.value = b.data
 }
 
-function openAdd() { form.value = { personId: '', boatId: '', notes: '' }; err.value = ''; modal.value = true }
+function openAdd() { form.value = { personId: '', boatId: '', notes: '', requestedDate: todayStr() }; personSearch.value = ''; boatSearch.value = ''; err.value = ''; modal.value = true }
 
 async function saveAdd() {
   err.value = ''
@@ -182,6 +204,8 @@ button.assign-btn:hover { background: #234e7a; }
 .btn-primary:hover { background: #234e7a; }
 .form-col { display: flex; flex-direction: column; gap: 0.85rem; }
 label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
-label select, label textarea { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9rem; font-weight: 400; }
+label select, label textarea, label input[type="date"] { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9rem; font-weight: 400; }
+.search-input { padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 5px; font-size: 0.85rem; font-weight: 400; margin-bottom: 0.2rem; }
+label select[size] { min-height: 6rem; }
 .error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
 </style>

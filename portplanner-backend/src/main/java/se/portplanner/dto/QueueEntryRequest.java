@@ -2,4 +2,6 @@ package se.portplanner.dto;
 
 import jakarta.validation.constraints.NotNull;
 
-public record QueueEntryRequest(@NotNull Long personId, Long boatId, String notes) {}
+import java.time.LocalDate;
+
+public record QueueEntryRequest(@NotNull Long personId, Long boatId, String notes, LocalDate requestedDate) {}

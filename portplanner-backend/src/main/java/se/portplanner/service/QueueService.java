@@ -11,6 +11,7 @@ import se.portplanner.exception.ResourceNotFoundException;
 import se.portplanner.model.*;
 import se.portplanner.repository.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -58,6 +59,7 @@ public class QueueService {
         entry.setPerson(person);
         entry.setBoat(boat);
         entry.setNotes(req.notes());
+        entry.setRequestedDate(req.requestedDate() != null ? req.requestedDate().atStartOfDay() : LocalDateTime.now());
         entry.setStatus(QueueEntryStatus.WAITING);
 
         var saved = queueRepository.save(entry);
