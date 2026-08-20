@@ -65,7 +65,7 @@
           </thead>
           <tbody>
             <tr v-for="b in unassignedBoats" :key="b.id" class="clickable-row" @click="openBoatModal(b)">
-              <td>{{ b.name }}</td>
+              <td>{{ b.model }}</td>
               <td>{{ b.ownerName }}</td>
               <td>{{ b.lengthM }}</td>
               <td>{{ b.widthM }}</td>
@@ -148,13 +148,13 @@
             <div class="section-label">Passar platsen</div>
             <div v-if="!fittingBoats.length" class="no-boats-section">Inga båtar passar måtten</div>
             <div v-for="b in fittingBoats" :key="b.id" class="boat-row fits" @click="doAssign(b)">
-              <div class="boat-name">{{ b.name }}</div>
+              <div class="boat-name">{{ b.model }}</div>
               <div class="boat-meta">{{ b.ownerName }} · {{ b.widthM }} m × {{ b.lengthM }} m</div>
             </div>
             <div class="section-label warn-label">Passar ej (för stor)</div>
             <div v-if="!nonFittingBoats.length" class="no-boats-section muted">Inga överstora båtar</div>
             <div v-for="b in nonFittingBoats" :key="b.id" class="boat-row no-fit" @click="doAssign(b)">
-              <div class="boat-name">{{ b.name }}</div>
+              <div class="boat-name">{{ b.model }}</div>
               <div class="boat-meta">
                 {{ b.ownerName }} ·
                 <span :class="b.widthM > assignSlip.maxWidthM ? 'over' : ''">{{ b.widthM }} m bredd</span>
@@ -174,7 +174,7 @@
       <div class="assign-card">
         <div class="assign-header">
           <div>
-            <h3>{{ selectedBoat.name }}</h3>
+            <h3>{{ selectedBoat.model }}</h3>
             <div class="assign-dims">{{ selectedBoat.ownerName }} · {{ selectedBoat.widthM }} m bredd · {{ selectedBoat.lengthM }} m längd</div>
           </div>
           <button class="close-btn" @click="boatModal = false">✕</button>
@@ -235,7 +235,7 @@ const zoomLevel = ref(1.0)
 const isDockTab = computed(() => activeTab.value.startsWith('dock-'))
 
 const unassignedBoats = computed(() =>
-  allBoats.value.filter(b => !assignedBoatIds.value.has(b.id)).sort((a, b) => a.name.localeCompare(b.name))
+  allBoats.value.filter(b => !assignedBoatIds.value.has(b.id)).sort((a, b) => a.model.localeCompare(b.model))
 )
 const fittingBoats = computed(() => {
   if (!assignSlip.value) return []

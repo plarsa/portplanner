@@ -70,7 +70,7 @@
           <select v-model.number="form.boatId" size="4">
             <option value="">Ingen båt (valfritt)…</option>
             <option v-for="b in filteredBoatsForPerson" :key="b.id" :value="b.id">
-              {{ b.name }} – {{ b.lengthM }}×{{ b.widthM }}m
+              {{ b.model }} – {{ b.lengthM }}×{{ b.widthM }}m
             </option>
           </select>
         </label>
@@ -91,7 +91,7 @@
           <select v-model.number="editForm.boatId" size="4">
             <option value="">Ingen båt (valfritt)…</option>
             <option v-for="b in filteredBoatsForEdit" :key="b.id" :value="b.id">
-              {{ b.name }} – {{ b.lengthM }}×{{ b.widthM }}m
+              {{ b.model }} – {{ b.lengthM }}×{{ b.widthM }}m
             </option>
           </select>
         </label>
@@ -148,9 +148,9 @@ const boatsForPerson = computed(() =>
 const filteredBoatsForPerson = computed(() => {
   const q = boatSearch.value.toLowerCase()
   const list = q
-    ? boatsForPerson.value.filter(b => b.name.toLowerCase().includes(q))
+    ? boatsForPerson.value.filter(b => b.model.toLowerCase().includes(q))
     : boatsForPerson.value
-  return list.slice().sort((a, b) => a.name.localeCompare(b.name, 'sv'))
+  return list.slice().sort((a, b) => a.model.localeCompare(b.model, 'sv'))
 })
 
 const boatsForEditEntry = computed(() =>
@@ -159,9 +159,9 @@ const boatsForEditEntry = computed(() =>
 const filteredBoatsForEdit = computed(() => {
   const q = editBoatSearch.value.toLowerCase()
   const list = q
-    ? boatsForEditEntry.value.filter(b => b.name.toLowerCase().includes(q))
+    ? boatsForEditEntry.value.filter(b => b.model.toLowerCase().includes(q))
     : boatsForEditEntry.value
-  return list.slice().sort((a, b) => a.name.localeCompare(b.name, 'sv'))
+  return list.slice().sort((a, b) => a.model.localeCompare(b.model, 'sv'))
 })
 
 function formatDate(dt) {

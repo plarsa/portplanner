@@ -66,9 +66,8 @@
             <div v-else-if="!detail.boats.length" class="boats-empty">Inga registrerade båtar</div>
             <div v-for="b in detail.boats" :key="b.id" class="boat-block">
               <div class="boat-block-header">
-                <span class="boat-block-name">{{ b.name }}</span>
+                <span class="boat-block-name">{{ b.model }}</span>
                 <span class="boat-block-dims">{{ b.widthM }} m × {{ b.lengthM }} m</span>
-                <span v-if="b.registrationNumber" class="boat-block-reg">{{ b.registrationNumber }}</span>
               </div>
               <div v-if="b.assignment" class="boat-assignment">
                 <span class="assign-chip occupied">Tilldelad</span>

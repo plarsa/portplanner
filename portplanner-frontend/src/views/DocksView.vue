@@ -73,9 +73,8 @@
           <div class="section-title">Tilldelad båt</div>
           <div v-if="detail.boat" class="boat-block assigned">
             <div class="boat-block-header">
-              <span class="boat-name">{{ detail.boat.name }}</span>
+              <span class="boat-name">{{ detail.boat.model }}</span>
               <span class="boat-dims">{{ detail.boat.widthM }} m × {{ detail.boat.lengthM }} m</span>
-              <span v-if="detail.boat.registrationNumber" class="boat-reg">{{ detail.boat.registrationNumber }}</span>
             </div>
             <div class="boat-owner">{{ detail.boat.ownerName }}</div>
             <div v-if="detail.assignment" class="boat-since">Fr.o.m. {{ formatDate(detail.assignment.assignedDate) }}</div>
