@@ -63,7 +63,7 @@ public class QueueService {
         entry.setStatus(QueueEntryStatus.WAITING);
 
         var saved = queueRepository.save(entry);
-        String boatPart = boat != null ? boat.getName() + " – " : "";
+        String boatPart = boat != null ? boat.getModel() + " – " : "";
         auditService.log("QUEUED", "QUEUE_ENTRY", saved.getId(),
                 "Köpost tillagd: " + boatPart +
                 person.getFirstName() + " " + person.getLastName());
@@ -116,7 +116,7 @@ public class QueueService {
         entry.setStatus(QueueEntryStatus.ASSIGNED);
         queueRepository.save(entry);
 
-        String boatPart = entry.getBoat() != null ? entry.getBoat().getName() + " – " : "";
+        String boatPart = entry.getBoat() != null ? entry.getBoat().getModel() + " – " : "";
         auditService.log("QUEUE_ASSIGNED", "QUEUE_ENTRY", entryId,
                 "Från kö: " + boatPart +
                 entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName() + " tilldelad plats");
@@ -125,7 +125,7 @@ public class QueueService {
 
     public void cancel(Long id) {
         var entry = getOrThrow(id);
-        String boatPart = entry.getBoat() != null ? entry.getBoat().getName() + " – " : "";
+        String boatPart = entry.getBoat() != null ? entry.getBoat().getModel() + " – " : "";
         String desc = "Köpost avbruten: " + boatPart +
                 entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName();
         entry.setStatus(QueueEntryStatus.CANCELLED);

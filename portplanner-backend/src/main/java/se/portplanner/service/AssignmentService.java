@@ -77,7 +77,7 @@ public class AssignmentService {
 
         var saved = assignmentRepository.save(assignment);
         auditService.log("ASSIGNED", "ASSIGNMENT", saved.getId(),
-                "Tilldelning: " + boat.getName() + " → plats " + slip.getSlipNumber() +
+                "Tilldelning: " + boat.getModel() + " → plats " + slip.getSlipNumber() +
                 " (" + slip.getDock().getName() + ")");
         return AssignmentResponse.from(saved);
     }
@@ -98,7 +98,7 @@ public class AssignmentService {
 
         var saved = assignmentRepository.save(assignment);
         auditService.log("UNASSIGNED", "ASSIGNMENT", id,
-                "Tilldelning avslutad: " + saved.getBoat().getName() + " lämnar plats " +
+                "Tilldelning avslutad: " + saved.getBoat().getModel() + " lämnar plats " +
                 slip.getSlipNumber() + " (" + slip.getDock().getName() + ")");
         return AssignmentResponse.from(saved);
     }

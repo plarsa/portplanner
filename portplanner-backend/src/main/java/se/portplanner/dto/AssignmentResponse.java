@@ -16,7 +16,7 @@ public record AssignmentResponse(
     public static AssignmentResponse from(Assignment a) {
         return new AssignmentResponse(
                 a.getId(),
-                a.getBoat().getId(), a.getBoat().getName(),
+                a.getBoat().getId(), a.getBoat().getModel(),
                 a.getSlip().getId(), a.getSlip().getSlipNumber(), a.getSlip().getDock().getName(),
                 a.getBoat().getOwner().getFirstName() + " " + a.getBoat().getOwner().getLastName(),
                 a.getAssignedDate(), a.getEndDate(), a.getStatus());

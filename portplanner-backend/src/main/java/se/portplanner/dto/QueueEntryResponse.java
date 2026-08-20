@@ -21,7 +21,7 @@ public record QueueEntryResponse(
                 e.getPerson().getId(),
                 e.getPerson().getFirstName() + " " + e.getPerson().getLastName(),
                 boat != null ? boat.getId() : null,
-                boat != null ? boat.getName() : null,
+                boat != null ? boat.getModel() : null,
                 boat != null ? boat.getLengthM() : null,
                 boat != null ? boat.getWidthM() : null,
                 boat != null ? boat.getDraftM() : null,
