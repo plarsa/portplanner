@@ -274,7 +274,7 @@ button.assign-btn:hover { background: #234e7a; }
 .btn-primary:hover { background: #234e7a; }
 .form-col { display: flex; flex-direction: column; gap: 0.85rem; }
 label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
-label select, label textarea, label input[type="date"] { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9rem; font-weight: 400; }
+label input, label select, label textarea { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
 .search-input { padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 5px; font-size: 0.85rem; font-weight: 400; margin-bottom: 0.2rem; }
 label select[size] { min-height: 6rem; }
 .error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
