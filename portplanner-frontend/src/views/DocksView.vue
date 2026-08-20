@@ -106,16 +106,9 @@
         <label>Max längd m *<input v-model.number="slipForm.maxLengthM" type="number" step="0.1" min="0" required /></label>
         <label>Max bredd m *<input v-model.number="slipForm.maxWidthM" type="number" step="0.1" min="0" required /></label>
         <label class="full">Max djupgång m<input v-model.number="slipForm.maxDraftM" type="number" step="0.1" min="0" /></label>
-        <label class="full">Brygga *
+        <label v-if="!editingSlip" class="full">Brygga *
           <select v-model.number="slipForm.dockId" required>
             <option v-for="d in docks" :key="d.id" :value="d.id">{{ d.name }}</option>
-          </select>
-        </label>
-        <label class="full">Status
-          <select v-model="slipForm.status">
-            <option value="AVAILABLE">Ledig</option>
-            <option value="OCCUPIED">Tilldelad</option>
-            <option value="MAINTENANCE">Underhåll</option>
           </select>
         </label>
         <label class="full">Taxekategori

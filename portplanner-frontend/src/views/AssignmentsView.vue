@@ -286,6 +286,7 @@ h2 { font-size: 1.5rem; }
 .legend { display: flex; gap: 1.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
 .leg-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #555; }
 .leg-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.12); }
+.leg-swatch.land { background: #c8a97c; }
 .leg-swatch.available { background: #66bb6a; }
 .leg-swatch.occupied { background: #ef5350; }
 .leg-swatch.maintenance { background: #ffa726; }
@@ -302,7 +303,7 @@ h2 { font-size: 1.5rem; }
 .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: default; transition: filter 0.05s; }
 .cell:hover { filter: brightness(0.9); }
 .cell.water { background: #e3f2fd; }
-.cell.land { background: #66bb6a; }
+.cell.land { background: #c8a97c; }
 .cell.dock-cell { background: #757575; }
 .cell.slip { background: #66bb6a; }
 .cell.slip.occupied { background: #ef5350; }

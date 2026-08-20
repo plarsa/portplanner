@@ -336,8 +336,8 @@ button:hover { background: #d0e2ff; }
 .tl { font-size: 0.82rem; font-weight: 600; color: #555; }
 .tl-sep { flex: 1; }
 .mode-btn { font-weight: 600; }
-.mode-btn.land { background: #c8e6c9; color: #1b5e20; }
-.mode-btn.land:hover, .mode-btn.land.active { background: #4caf50; color: white; }
+.mode-btn.land { background: #f0e0c8; color: #7a5230; }
+.mode-btn.land:hover, .mode-btn.land.active { background: #c8a97c; color: white; }
 .mode-btn.dock { background: #e0e0e0; color: #333; }
 .mode-btn.dock:hover, .mode-btn.dock.active { background: #757575; color: white; }
 .mode-btn.plats { background: #bbdefb; color: #0d47a1; }
@@ -351,7 +351,7 @@ label input { width: 52px; padding: 0.25rem 0.4rem; border: 1px solid #ddd; bord
 .legend { display: flex; gap: 1.25rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
 .leg-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #555; }
 .leg-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.12); }
-.leg-swatch.land { background: #66bb6a; }
+.leg-swatch.land { background: #c8a97c; }
 .leg-swatch.dock { background: #757575; }
 .leg-swatch.available { background: #66bb6a; }
 .leg-swatch.occupied { background: #ef5350; }
@@ -372,7 +372,7 @@ label input { width: 52px; padding: 0.25rem 0.4rem; border: 1px solid #ddd; bord
 .cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: default; transition: filter 0.05s; }
 .cell:hover { filter: brightness(0.9); }
 .cell.water { background: #e3f2fd; }
-.cell.land { background: #66bb6a; }
+.cell.land { background: #c8a97c; }
 .cell.dock-cell { background: #757575; }
 .cell.slip { background: #66bb6a; cursor: default; }
 .cell.slip.occupied { background: #ef5350; }
