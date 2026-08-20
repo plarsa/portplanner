@@ -245,8 +245,7 @@ public class ImportExportService {
     public List<BoatImportDto> exportBoats() {
         return boatRepository.findAll().stream()
                 .map(b -> new BoatImportDto(
-                        b.getName(),
-                        b.getRegistrationNumber(),
+                        b.getModel(),
                         b.getLengthM(),
                         b.getWidthM(),
                         b.getDraftM(),
@@ -263,20 +262,20 @@ public class ImportExportService {
         List<String> details = new ArrayList<>();
 
         for (BoatImportDto dto : boats) {
-            if (dto.name() == null || dto.name().isBlank()) continue;
+            if (dto.model() == null || dto.model().isBlank()) continue;
             Person owner = dto.ownerEmail() != null
                     ? personsByEmail.get(dto.ownerEmail().toLowerCase()) : null;
             if (owner == null) {
                 ownersNotFound++;
-                details.add("Ägare ej hittad: " + dto.ownerEmail() + " (båt: " + dto.name() + ")");
+                details.add("Ägare ej hittad: " + dto.ownerEmail() + " (båt: " + dto.model() + ")");
                 continue;
             }
-            if (boatRepository.existsByNameIgnoreCaseAndOwnerId(dto.name(), owner.getId())) {
+            if (boatRepository.existsByModelIgnoreCaseAndOwnerId(dto.model(), owner.getId())) {
                 boatsExisting++;
-                details.add("Befintlig båt: " + dto.name() + " (" + owner.getFirstName() + " " + owner.getLastName() + ")");
+                details.add("Befintlig båt: " + dto.model() + " (" + owner.getFirstName() + " " + owner.getLastName() + ")");
             } else {
                 boatsNew++;
-                details.add("Ny båt: " + dto.name() + " – ägare " + owner.getFirstName() + " " + owner.getLastName());
+                details.add("Ny båt: " + dto.model() + " – ägare " + owner.getFirstName() + " " + owner.getLastName());
             }
         }
         return new BoatImportPreview(boatsNew, boatsExisting, ownersNotFound, details);
@@ -290,35 +289,34 @@ public class ImportExportService {
         List<String> warnings = new ArrayList<>();
 
         for (BoatImportDto dto : boats) {
-            if (dto.name() == null || dto.name().isBlank()) {
-                warnings.add("Post saknar båtnamn, hoppar över");
+            if (dto.model() == null || dto.model().isBlank()) {
+                warnings.add("Post saknar båtmodell, hoppar över");
                 boatsSkipped++;
                 continue;
             }
             if (dto.ownerEmail() == null || dto.ownerEmail().isBlank()) {
-                warnings.add("Båt " + dto.name() + " saknar ägarens e-post, hoppar över");
+                warnings.add("Båt " + dto.model() + " saknar ägarens e-post, hoppar över");
                 boatsSkipped++;
                 continue;
             }
             Person owner = personsByEmail.get(dto.ownerEmail().toLowerCase());
             if (owner == null) {
-                warnings.add("Ägare ej hittad för e-post " + dto.ownerEmail() + " (båt: " + dto.name() + "), hoppar över");
+                warnings.add("Ägare ej hittad för e-post " + dto.ownerEmail() + " (båt: " + dto.model() + "), hoppar över");
                 boatsSkipped++;
                 continue;
             }
-            if (boatRepository.existsByNameIgnoreCaseAndOwnerId(dto.name(), owner.getId())) {
+            if (boatRepository.existsByModelIgnoreCaseAndOwnerId(dto.model(), owner.getId())) {
                 boatsSkipped++;
                 continue;
             }
             if (dto.lengthM() == null || dto.widthM() == null) {
-                warnings.add("Båt " + dto.name() + " saknar längd eller bredd, hoppar över");
+                warnings.add("Båt " + dto.model() + " saknar längd eller bredd, hoppar över");
                 boatsSkipped++;
                 continue;
             }
 
             var boat = new Boat();
-            boat.setName(dto.name());
-            boat.setRegistrationNumber(dto.registrationNumber());
+            boat.setModel(dto.model());
             boat.setLengthM(dto.lengthM());
             boat.setWidthM(dto.widthM());
             boat.setDraftM(dto.draftM());

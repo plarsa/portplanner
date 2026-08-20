@@ -46,7 +46,7 @@ public class BoatService {
         mapFields(boat, req);
         var saved = boatRepository.save(boat);
         auditService.log("CREATED", "BOAT", saved.getId(),
-                "Båt skapad: " + saved.getName() +
+                "Båt skapad: " + saved.getModel() +
                 " (ägare: " + saved.getOwner().getFirstName() + " " + saved.getOwner().getLastName() + ")");
         return BoatResponse.from(saved);
     }
@@ -56,15 +56,15 @@ public class BoatService {
         mapFields(boat, req);
         var saved = boatRepository.save(boat);
         auditService.log("UPDATED", "BOAT", saved.getId(),
-                "Båt uppdaterad: " + saved.getName());
+                "Båt uppdaterad: " + saved.getModel());
         return BoatResponse.from(saved);
     }
 
     public void delete(Long id) {
         var boat = getOrThrow(id);
-        String name = boat.getName();
+        String model = boat.getModel();
         boatRepository.delete(boat);
-        auditService.log("DELETED", "BOAT", id, "Båt borttagen: " + name);
+        auditService.log("DELETED", "BOAT", id, "Båt borttagen: " + model);
     }
 
     private Boat getOrThrow(Long id) {
@@ -75,8 +75,7 @@ public class BoatService {
     private void mapFields(Boat boat, BoatRequest req) {
         var owner = personRepository.findById(req.ownerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Person " + req.ownerId() + " hittades inte"));
-        boat.setName(req.name());
-        boat.setRegistrationNumber(req.registrationNumber());
+        boat.setModel(req.model());
         boat.setLengthM(req.lengthM());
         boat.setWidthM(req.widthM());
         boat.setDraftM(req.draftM());

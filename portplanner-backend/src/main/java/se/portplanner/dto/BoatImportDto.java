@@ -3,8 +3,7 @@ package se.portplanner.dto;
 import java.math.BigDecimal;
 
 public record BoatImportDto(
-        String name,
-        String registrationNumber,
+        String model,
         BigDecimal lengthM,
         BigDecimal widthM,
         BigDecimal draftM,

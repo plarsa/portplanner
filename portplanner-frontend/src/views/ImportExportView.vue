@@ -73,7 +73,7 @@
     <!-- ═══ BÅTAR – EXPORT ═══════════════════════════════════════════════ -->
     <section class="card">
       <h3>Exportera båtar</h3>
-      <p class="desc">Laddar ner alla båtar (namn, mått, ägare via e-post) som en JSON-fil.</p>
+      <p class="desc">Laddar ner alla båtar (modell, mått, ägare via e-post) som en JSON-fil.</p>
       <button class="btn-primary" :disabled="boatExporting" @click="doBoatExport">
         {{ boatExporting ? 'Exporterar…' : '⬇ Ladda ner båtar.json' }}
       </button>
@@ -83,7 +83,7 @@
     <section class="card">
       <h3>Importera båtar</h3>
       <p class="desc">
-        Klistra in eller ladda upp en JSON-fil med båtar. Matchning sker på båtnamn + ägarens e-postadress –
+        Klistra in eller ladda upp en JSON-fil med båtar. Matchning sker på båtmodell + ägarens e-postadress –
         befintliga kombinationer hoppas över. Ägaren måste finnas som person i systemet.
       </p>
 
@@ -100,8 +100,7 @@
         rows="10"
         placeholder='[
   {
-    "name": "Mästerkatten",
-    "registrationNumber": "SE-1234",
+    "model": "Mästerkatten",
     "lengthM": 8.5,
     "widthM": 2.8,
     "draftM": 1.2,

@@ -17,10 +17,7 @@ public class Boat {
     private Long id;
 
     @Column(nullable = false)
-    private String name;
-
-    @Column(name = "registration_number")
-    private String registrationNumber;
+    private String model;
 
     @Column(name = "length_m", nullable = false, precision = 6, scale = 2)
     private BigDecimal lengthM;

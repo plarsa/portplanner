@@ -7,8 +7,7 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 
 public record BoatRequest(
-        @NotBlank String name,
-        String registrationNumber,
+        @NotBlank String model,
         @NotNull @Positive BigDecimal lengthM,
         @NotNull @Positive BigDecimal widthM,
         @Positive BigDecimal draftM,

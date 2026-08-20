@@ -12,14 +12,13 @@
       <table>
         <thead>
           <tr>
-            <th>Namn</th><th>Registrering</th><th>Ägare</th>
+            <th>Modell</th><th>Ägare</th>
             <th>L (m)</th><th>B (m)</th><th>Djup (m)</th><th></th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="b in filteredBoats" :key="b.id" class="clickable-row" @click="openDetail(b)">
-            <td>{{ b.name }}</td>
-            <td>{{ b.registrationNumber || '–' }}</td>
+            <td>{{ b.model }}</td>
             <td>{{ b.ownerName }}</td>
             <td>{{ b.lengthM }}</td>
             <td>{{ b.widthM }}</td>
@@ -30,7 +29,7 @@
             </td>
           </tr>
           <tr v-if="!filteredBoats.length">
-            <td colspan="7" class="empty">{{ search ? 'Inga träffar' : 'Inga båtar registrerade' }}</td>
+            <td colspan="6" class="empty">{{ search ? 'Inga träffar' : 'Inga båtar registrerade' }}</td>
           </tr>
         </tbody>
       </table>
@@ -41,13 +40,12 @@
       <div class="detail-card">
         <div class="detail-header">
           <div>
-            <h3>{{ detail.boat.name }}</h3>
+            <h3>{{ detail.boat.model }}</h3>
             <div class="detail-owner">{{ detail.boat.ownerName }}</div>
           </div>
           <button class="close-btn" @click="detail = null">✕</button>
         </div>
         <dl class="detail-grid">
-          <dt>Registrering</dt><dd>{{ detail.boat.registrationNumber || '–' }}</dd>
           <dt>Längd</dt><dd>{{ detail.boat.lengthM }} m</dd>
           <dt>Bredd</dt><dd>{{ detail.boat.widthM }} m</dd>
           <dt>Djupgång</dt><dd>{{ detail.boat.draftM ? detail.boat.draftM + ' m' : '–' }}</dd>
@@ -70,8 +68,7 @@
     <BaseModal v-if="modal" :title="editing ? 'Redigera båt' : 'Ny båt'"
                @close="modal = false" @save="save">
       <div class="form-grid">
-        <label class="full">Båtnamn *<input v-model="form.name" required /></label>
-        <label class="full">Registreringsnummer<input v-model="form.registrationNumber" /></label>
+        <label class="full">Båtmodell *<input v-model="form.model" required /></label>
         <label>Längd m *<input v-model.number="form.lengthM" type="number" step="0.1" min="0" required /></label>
         <label>Bredd m *<input v-model.number="form.widthM" type="number" step="0.1" min="0" required /></label>
         <label class="full">Djupgång m<input v-model.number="form.draftM" type="number" step="0.1" min="0" /></label>
@@ -108,14 +105,13 @@ const filteredBoats = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (!q) return boats.value
   return boats.value.filter(b =>
-    b.name.toLowerCase().includes(q) ||
-    (b.ownerName ?? '').toLowerCase().includes(q) ||
-    (b.registrationNumber ?? '').toLowerCase().includes(q)
+    b.model.toLowerCase().includes(q) ||
+    (b.ownerName ?? '').toLowerCase().includes(q)
   )
 })
 const editing = ref(null)
 const err = ref('')
-const emptyForm = () => ({ name: '', registrationNumber: '', lengthM: '', widthM: '', draftM: '', ownerId: '' })
+const emptyForm = () => ({ model: '', lengthM: '', widthM: '', draftM: '', ownerId: '' })
 const form = ref(emptyForm())
 
 async function load() {
@@ -142,7 +138,7 @@ async function openDetail(b) {
 function openCreate() { editing.value = null; form.value = emptyForm(); err.value = ''; modal.value = true }
 function openEdit(b) {
   editing.value = b
-  form.value = { name: b.name, registrationNumber: b.registrationNumber, lengthM: b.lengthM, widthM: b.widthM, draftM: b.draftM, ownerId: b.ownerId }
+  form.value = { model: b.model, lengthM: b.lengthM, widthM: b.widthM, draftM: b.draftM, ownerId: b.ownerId }
   err.value = ''
   modal.value = true
 }
@@ -161,7 +157,7 @@ async function save() {
 }
 
 async function remove(b) {
-  if (!confirm(`Ta bort ${b.name}?`)) return
+  if (!confirm(`Ta bort ${b.model}?`)) return
   await deleteBoat(b.id)
   await load()
 }
