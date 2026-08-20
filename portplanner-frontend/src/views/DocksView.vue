@@ -8,41 +8,54 @@
       </div>
     </div>
 
-    <div v-for="dock in docks" :key="dock.id" class="dock-card">
-      <div class="dock-header">
-        <div>
-          <strong>{{ dock.name }}</strong>
-          <span class="desc">{{ dock.description }}</span>
-        </div>
-        <div class="dock-actions">
-          <span class="badge">{{ dock.slipCount }} platser</span>
-          <button @click="router.push('/docks/' + dock.id + '/layout')">Visa layout</button>
-          <button @click="openDockEdit(dock)">Redigera</button>
-          <button class="danger" @click="removeDock(dock)">Ta bort</button>
-        </div>
-      </div>
-
-      <table v-if="slipsByDock[dock.id]?.length">
-        <thead>
-          <tr><th>Plats</th><th>Kategori</th><th>Max L</th><th>Max B</th><th>Max Djup</th><th>Status</th><th></th></tr>
-        </thead>
-        <tbody>
-          <tr v-for="s in slipsByDock[dock.id]" :key="s.id" class="clickable-row" @click="openDetail(s, dock.name)">
-            <td>{{ s.slipNumber }}</td>
-            <td><span v-if="s.category" class="cat-badge">{{ s.category }}</span><span v-else class="muted">–</span></td>
-            <td>{{ s.maxLengthM }} m</td>
-            <td>{{ s.maxWidthM }} m</td>
-            <td>{{ s.maxDraftM ? s.maxDraftM + ' m' : '–' }}</td>
-            <td><span :class="['status', s.status.toLowerCase()]">{{ statusLabel(s.status) }}</span></td>
-            <td class="actions" @click.stop>
-              <button @click="openSlipEdit(s)">Redigera</button>
-              <button class="danger" @click="removeSlip(s)">Ta bort</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <p v-else class="no-slips">Inga platser registrerade</p>
+    <!-- Sub-navigation -->
+    <div class="sub-nav">
+      <button
+        v-for="dock in docks" :key="dock.id"
+        :class="['nav-btn', { active: activeTab === dock.id }]"
+        @click="activeTab = dock.id"
+      >{{ dock.name }}</button>
     </div>
+
+    <!-- Active dock content -->
+    <template v-if="activeDock">
+      <div class="dock-card">
+        <div class="dock-header">
+          <div>
+            <strong>{{ activeDock.name }}</strong>
+            <span v-if="activeDock.description" class="desc">{{ activeDock.description }}</span>
+          </div>
+          <div class="dock-actions">
+            <span class="badge">{{ activeDock.slipCount }} platser</span>
+            <button @click="router.push('/docks/' + activeDock.id + '/layout')">Visa layout</button>
+            <button @click="openDockEdit(activeDock)">Redigera</button>
+            <button class="danger" @click="removeDock(activeDock)">Ta bort</button>
+          </div>
+        </div>
+
+        <table v-if="slipsByDock[activeDock.id]?.length">
+          <thead>
+            <tr><th>Plats</th><th>Kategori</th><th>Max L</th><th>Max B</th><th>Max Djup</th><th>Status</th><th></th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="s in slipsByDock[activeDock.id]" :key="s.id" class="clickable-row" @click="openDetail(s, activeDock.name)">
+              <td>{{ s.slipNumber }}</td>
+              <td><span v-if="s.category" class="cat-badge">{{ s.category }}</span><span v-else class="muted">–</span></td>
+              <td>{{ s.maxLengthM }} m</td>
+              <td>{{ s.maxWidthM }} m</td>
+              <td>{{ s.maxDraftM ? s.maxDraftM + ' m' : '–' }}</td>
+              <td><span :class="['status', s.status.toLowerCase()]">{{ statusLabel(s.status) }}</span></td>
+              <td class="actions" @click.stop>
+                <button @click="openSlipEdit(s)">Redigera</button>
+                <button class="danger" @click="removeSlip(s)">Ta bort</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <p v-else class="no-slips">Inga platser registrerade</p>
+      </div>
+    </template>
+    <div v-else-if="!docks.length" class="empty-state">Inga bryggor registrerade</div>
 
     <!-- Slip detail overlay -->
     <div v-if="detail" class="detail-overlay" @click.self="detail = null">
@@ -137,6 +150,8 @@ import { getTariffs } from '../api/tariffs'
 
 const router = useRouter()
 const docks = ref([])
+const activeTab = ref(null)
+const activeDock = computed(() => docks.value.find(d => d.id === activeTab.value) ?? null)
 const slipsByDock = ref({})
 const tariffCategories = ref([])
 const allBoats = ref([])
@@ -165,6 +180,7 @@ async function load() {
     await Promise.all([getDocks(), getTariffs(), getBoats(), getAssignments()])
 
   docks.value = docksData
+  if (!activeTab.value && docksData.length) activeTab.value = docksData[0].id
   tariffCategories.value = [...new Set(tariffs.map(t => t.category))].sort()
   allBoats.value = boatsData
   const activeAssignments = assignments.filter(a => a.status === 'ACTIVE')
@@ -180,7 +196,7 @@ async function load() {
 
 function openDockCreate() { editingDock.value = null; dockForm.value = { name: '', description: '' }; dockErr.value = ''; dockModal.value = true }
 function openDockEdit(d) { editingDock.value = d; dockForm.value = { name: d.name, description: d.description }; dockErr.value = ''; dockModal.value = true }
-function openSlipCreate() { editingSlip.value = null; slipForm.value = emptySlip(); slipErr.value = ''; slipModal.value = true }
+function openSlipCreate() { editingSlip.value = null; slipForm.value = { ...emptySlip(), dockId: activeTab.value ?? '' }; slipErr.value = ''; slipModal.value = true }
 function openSlipEdit(s) { editingSlip.value = s; slipForm.value = { slipNumber: s.slipNumber, maxLengthM: s.maxLengthM, maxWidthM: s.maxWidthM, maxDraftM: s.maxDraftM, dockId: s.dockId, status: s.status, category: s.category || '', notes: s.notes || '' }; slipErr.value = ''; slipModal.value = true }
 
 function openDetail(slip, dockName) {
@@ -239,6 +255,11 @@ onMounted(load)
 .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
 h2 { font-size: 1.5rem; }
 .header-actions { display: flex; gap: 0.75rem; }
+.sub-nav { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
+.nav-btn { background: #eef2f7; color: #1a3a5c; border: none; border-radius: 20px; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+.nav-btn:hover { background: #dce6f5; }
+.nav-btn.active { background: #1a3a5c; color: white; }
+.empty-state { color: #999; text-align: center; padding: 3rem; background: white; border-radius: 10px; }
 .dock-card { background: white; border-radius: 10px; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); overflow: hidden; }
 .dock-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid #eee; }
 .dock-header strong { font-size: 1rem; }
