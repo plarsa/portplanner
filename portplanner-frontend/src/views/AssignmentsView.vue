@@ -45,6 +45,27 @@
       <p v-else class="no-layout">Ingen layout sparad – gå till Bryggor & Båtplatser för att rita en.</p>
     </div>
 
+    <!-- Oplacerade båtar -->
+    <div class="unassigned-section">
+      <div class="section-heading">Oplacerade båtar <span class="count-badge">{{ unassignedBoats.length }}</span></div>
+      <div v-if="!unassignedBoats.length" class="no-unassigned">Alla registrerade båtar har en plats.</div>
+      <div v-else class="unassigned-table-wrap">
+        <table class="unassigned-table">
+          <thead>
+            <tr><th>Båt</th><th>Ägare</th><th>L (m)</th><th>B (m)</th></tr>
+          </thead>
+          <tbody>
+            <tr v-for="b in unassignedBoats" :key="b.id" class="clickable-row" @click="openBoatModal(b)">
+              <td>{{ b.name }}</td>
+              <td>{{ b.ownerName }}</td>
+              <td>{{ b.lengthM }}</td>
+              <td>{{ b.widthM }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
     <!-- Info-popup för tilldelade/underhåll-platser -->
     <div v-if="popup" class="popup-overlay" @click.self="popup = null">
       <div class="popup-card">
@@ -112,6 +133,41 @@
         <p v-if="assignErr" class="error assign-err">{{ assignErr }}</p>
       </div>
     </div>
+
+    <!-- Båt → plats-modal (från oplacerade listan) -->
+    <div v-if="boatModal" class="overlay" @click.self="boatModal = false">
+      <div class="assign-card">
+        <div class="assign-header">
+          <div>
+            <h3>{{ selectedBoat.name }}</h3>
+            <div class="assign-dims">{{ selectedBoat.ownerName }} · {{ selectedBoat.widthM }} m bredd · {{ selectedBoat.lengthM }} m längd</div>
+          </div>
+          <button class="close-btn" @click="boatModal = false">✕</button>
+        </div>
+        <div class="assign-scroll">
+          <div v-if="!availableSlips.length" class="no-boats">Inga lediga platser.</div>
+          <template v-else>
+            <div class="section-label">Passar platsen</div>
+            <div v-if="!fittingSlips.length" class="no-boats-section">Inga platser passar båtens mått</div>
+            <div v-for="s in fittingSlips" :key="s.id" class="boat-row fits" @click="doAssignBoatToSlip(s)">
+              <div class="boat-name">{{ s.dockName }} · Plats {{ s.slipNumber }}</div>
+              <div class="boat-meta">Max {{ s.maxWidthM }} m bredd · {{ s.maxLengthM ?? '?' }} m längd</div>
+            </div>
+            <div class="section-label warn-label">Passar ej (för stor)</div>
+            <div v-if="!nonFittingSlips.length" class="no-boats-section muted">Inga överstora platser</div>
+            <div v-for="s in nonFittingSlips" :key="s.id" class="boat-row no-fit" @click="doAssignBoatToSlip(s)">
+              <div class="boat-name">{{ s.dockName }} · Plats {{ s.slipNumber }}</div>
+              <div class="boat-meta">
+                Max <span :class="selectedBoat.widthM > s.maxWidthM ? 'over' : ''">{{ s.maxWidthM }} m bredd</span>
+                · <span :class="s.maxLengthM && selectedBoat.lengthM > s.maxLengthM ? 'over' : ''">{{ s.maxLengthM ?? '?' }} m längd</span>
+              </div>
+              <span class="warn-tag">⚠ Passar ej</span>
+            </div>
+          </template>
+        </div>
+        <p v-if="boatAssignErr" class="error assign-err">{{ boatAssignErr }}</p>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
@@ -126,6 +182,7 @@ const docks = ref([])
 const slipsByDock = ref({})
 const dockLayouts = ref({})
 const allBoats = ref([])
+const allSlips = ref([])
 const assignmentsBySlipId = ref({})
 const assignedBoatIds = ref(new Set())
 
@@ -135,18 +192,35 @@ const assignSlip = ref(null)
 const assignDockName = ref('')
 const assignErr = ref('')
 
+const boatModal = ref(false)
+const selectedBoat = ref(null)
+const boatAssignErr = ref('')
+
 const zoomLevel = ref(1.0)
 
 const unassignedBoats = computed(() =>
-  allBoats.value.filter(b => !assignedBoatIds.value.has(b.id))
+  allBoats.value.filter(b => !assignedBoatIds.value.has(b.id)).sort((a, b) => a.name.localeCompare(b.name))
 )
 const fittingBoats = computed(() => {
   if (!assignSlip.value) return []
-  return unassignedBoats.value.filter(b => boatFits(b, assignSlip.value)).sort((a, b) => a.name.localeCompare(b.name))
+  return unassignedBoats.value.filter(b => boatFits(b, assignSlip.value))
 })
 const nonFittingBoats = computed(() => {
   if (!assignSlip.value) return []
-  return unassignedBoats.value.filter(b => !boatFits(b, assignSlip.value)).sort((a, b) => a.name.localeCompare(b.name))
+  return unassignedBoats.value.filter(b => !boatFits(b, assignSlip.value))
+})
+const availableSlips = computed(() =>
+  allSlips.value.filter(s => s.status === 'AVAILABLE').sort((a, b) =>
+    a.dockName.localeCompare(b.dockName) || String(a.slipNumber).localeCompare(String(b.slipNumber))
+  )
+)
+const fittingSlips = computed(() => {
+  if (!selectedBoat.value) return []
+  return availableSlips.value.filter(s => boatFits(selectedBoat.value, s))
+})
+const nonFittingSlips = computed(() => {
+  if (!selectedBoat.value) return []
+  return availableSlips.value.filter(s => !boatFits(selectedBoat.value, s))
 })
 
 function boatFits(boat, slip) {
@@ -214,6 +288,23 @@ function onCellClick(dockId, r, c) {
 function zoomIn()  { zoomLevel.value = Math.min(2.0,  Math.round((zoomLevel.value + 0.25) * 4) / 4) }
 function zoomOut() { zoomLevel.value = Math.max(0.25, Math.round((zoomLevel.value - 0.25) * 4) / 4) }
 
+function openBoatModal(boat) {
+  selectedBoat.value = boat
+  boatAssignErr.value = ''
+  boatModal.value = true
+}
+
+async function doAssignBoatToSlip(slip) {
+  boatAssignErr.value = ''
+  try {
+    await createAssignment({ boatId: selectedBoat.value.id, slipId: slip.id })
+    boatModal.value = false
+    await load()
+  } catch (e) {
+    boatAssignErr.value = e.response?.data?.error || 'Kunde inte tilldela platsen'
+  }
+}
+
 async function doAssign(boat) {
   assignErr.value = ''
   try {
@@ -263,13 +354,16 @@ async function load() {
 
   const layouts = {}
   const slipMap = {}
+  const flatSlips = []
   for (const dock of docksData) {
     const { data: slips } = await getDockSlips(dock.id)
     slipMap[dock.id] = slips
+    for (const s of slips) flatSlips.push({ ...s, dockName: dock.name })
     const parsed = parseLayout(dock.layoutJson)
     if (parsed) layouts[dock.id] = parsed
   }
   slipsByDock.value = slipMap
+  allSlips.value = flatSlips
   dockLayouts.value = layouts
 }
 
@@ -361,4 +455,16 @@ dd { font-size: 0.88rem; margin: 0; }
 .error { color: #c0392b; font-size: 0.85rem; }
 .assign-err { padding: 0 1.25rem 1rem; margin: 0; }
 .muted { color: #bbb; }
+
+/* Unassigned boats */
+.unassigned-section { margin-top: 2rem; }
+.section-heading { font-size: 1.05rem; font-weight: 700; color: #1a3a5c; margin-bottom: 0.6rem; display: flex; align-items: center; gap: 0.5rem; }
+.count-badge { background: #e8f0fe; color: #1a3a5c; font-size: 0.78rem; font-weight: 700; padding: 0.1rem 0.55rem; border-radius: 20px; }
+.no-unassigned { color: #bbb; font-size: 0.88rem; padding: 0.5rem 0; }
+.unassigned-table-wrap { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+.unassigned-table { width: 100%; border-collapse: collapse; }
+.unassigned-table th { background: #f8f8f8; padding: 0.6rem 1rem; text-align: left; font-size: 0.82rem; color: #555; border-bottom: 1px solid #eee; }
+.unassigned-table td { padding: 0.65rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
+.clickable-row { cursor: pointer; transition: background 0.1s; }
+.clickable-row:hover { background: #f5f8ff; }
 </style>
