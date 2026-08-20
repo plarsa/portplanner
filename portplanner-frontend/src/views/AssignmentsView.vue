@@ -2,147 +2,363 @@
   <AppLayout>
     <div class="page-header">
       <h2>Tilldelningar</h2>
-      <button class="btn-primary" @click="openCreate">+ Ny tilldelning</button>
-    </div>
-
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Båt</th><th>Ägare</th><th>Brygga</th><th>Plats</th>
-            <th>Från</th><th>Status</th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="a in assignments" :key="a.id">
-            <td>{{ a.boatName }}</td>
-            <td>{{ a.ownerName }}</td>
-            <td>{{ a.dockName }}</td>
-            <td>{{ a.slipNumber }}</td>
-            <td>{{ a.assignedDate }}</td>
-            <td><span class="badge active">Aktiv</span></td>
-            <td>
-              <button class="danger" @click="end(a)">Avsluta</button>
-            </td>
-          </tr>
-          <tr v-if="!assignments.length">
-            <td colspan="7" class="empty">Inga aktiva tilldelningar</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <BaseModal v-if="modal" title="Ny tilldelning" @close="modal = false" @save="save">
-      <div class="form-col">
-        <label>Båt *
-          <select v-model.number="form.boatId" required @change="onBoatChange">
-            <option value="">Välj båt…</option>
-            <option v-for="b in boats" :key="b.id" :value="b.id">
-              {{ b.name }} ({{ b.ownerName }}) – {{ b.lengthM }}×{{ b.widthM }}m
-            </option>
-          </select>
-        </label>
-        <label>Ledig båtplats *
-          <select v-model.number="form.slipId" required>
-            <option value="">Välj plats…</option>
-            <option v-for="s in availableSlips" :key="s.id" :value="s.id"
-                    :disabled="!slipFits(s)">
-              {{ s.dockName }} – {{ s.slipNumber }}
-              (max {{ s.maxLengthM }}×{{ s.maxWidthM }}m)
-              {{ !slipFits(s) ? '⚠ passar ej' : '' }}
-            </option>
-          </select>
-        </label>
-        <p v-if="form.boatId && selectedBoat" class="boat-info">
-          Vald båt: {{ selectedBoat.lengthM }}m lång, {{ selectedBoat.widthM }}m bred
-          <span v-if="selectedBoat.draftM">, {{ selectedBoat.draftM }}m djupgång</span>
-        </p>
+      <div class="zoom-controls">
+        <button @click="zoomOut" :disabled="zoomLevel <= 0.25">−</button>
+        <span class="zoom-label">{{ Math.round(zoomLevel * 100) }}%</span>
+        <button @click="zoomIn" :disabled="zoomLevel >= 2.0">+</button>
+        <button @click="zoomLevel = 1.0" title="Återställ zoom">↺</button>
       </div>
-      <p v-if="err" class="error">{{ err }}</p>
-    </BaseModal>
+    </div>
+
+    <div class="legend">
+      <span class="leg-item"><span class="leg-swatch available"></span> Ledig (klicka för att tilldela)</span>
+      <span class="leg-item"><span class="leg-swatch occupied"></span> Tilldelad (klicka för info)</span>
+      <span class="leg-item"><span class="leg-swatch maintenance"></span> Underhåll</span>
+    </div>
+
+    <div v-for="dock in docks" :key="dock.id" class="dock-section">
+      <div class="dock-heading">
+        {{ dock.name }}
+        <span v-if="dock.description" class="dock-desc">{{ dock.description }}</span>
+      </div>
+
+      <div v-if="dockLayouts[dock.id]" class="grid-scroll" @wheel.prevent="onWheel">
+        <div class="grid-wrapper"
+             :style="{ width: dockLayouts[dock.id].gridWidth * 32 * zoomLevel + 'px',
+                       height: dockLayouts[dock.id].gridHeight * 32 * zoomLevel + 'px' }">
+          <div class="grid"
+               :style="{ transform: `scale(${zoomLevel})`, transformOrigin: '0 0',
+                         gridTemplateColumns: `repeat(${dockLayouts[dock.id].gridWidth}, 32px)` }">
+            <template v-for="r in dockLayouts[dock.id].gridHeight" :key="r">
+              <div v-for="c in dockLayouts[dock.id].gridWidth" :key="`${r-1},${c-1}`"
+                   :class="cellClass(dock.id, r-1, c-1)"
+                   :title="cellTitle(dock.id, r-1, c-1)"
+                   @click="onCellClick(dock.id, r-1, c-1)">
+                <span v-if="slipForCell(dock.id, r-1, c-1)" class="slip-label">
+                  {{ slipForCell(dock.id, r-1, c-1).slipNumber }}
+                </span>
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
+      <p v-else class="no-layout">Ingen layout sparad – gå till Bryggor & Båtplatser för att rita en.</p>
+    </div>
+
+    <!-- Info-popup för tilldelade/underhåll-platser -->
+    <div v-if="popup" class="popup-overlay" @click.self="popup = null">
+      <div class="popup-card">
+        <div class="popup-header">
+          <div>
+            <h3>Plats {{ popup.slip.slipNumber }}</h3>
+            <div class="popup-dock">{{ popup.dockName }}</div>
+          </div>
+          <button class="close-btn" @click="popup = null">✕</button>
+        </div>
+        <dl class="popup-dl">
+          <dt>Kategori</dt><dd>{{ popup.slip.category || '–' }}</dd>
+          <dt>Max bredd</dt><dd>{{ popup.slip.maxWidthM }} m</dd>
+          <dt>Max längd</dt><dd>{{ popup.slip.maxLengthM ?? '–' }} m</dd>
+          <dt>Max djup</dt><dd>{{ popup.slip.maxDraftM ? popup.slip.maxDraftM + ' m' : '–' }}</dd>
+          <dt>Status</dt>
+          <dd><span :class="['status-badge', popup.slip.status.toLowerCase()]">{{ statusLabel(popup.slip.status) }}</span></dd>
+        </dl>
+        <div v-if="popup.assignment" class="popup-assignment">
+          <div class="assign-label">Tilldelad båt</div>
+          <div class="assign-boat">{{ popup.assignment.boatName }}</div>
+          <div class="assign-owner">{{ popup.assignment.ownerName }}</div>
+          <div class="assign-date">Fr.o.m. {{ formatDate(popup.assignment.assignedDate) }}</div>
+        </div>
+        <div class="popup-footer">
+          <button v-if="popup.assignment" class="btn-unassign"
+                  @click="doUnassign(popup.assignment)">Avsluta tilldelning</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tilldela-modal för lediga platser -->
+    <div v-if="assignModal" class="overlay" @click.self="assignModal = false">
+      <div class="assign-card">
+        <div class="assign-header">
+          <div>
+            <h3>Tilldela plats {{ assignSlip.slipNumber }}</h3>
+            <div class="assign-dims">{{ assignDockName }} · Max {{ assignSlip.maxWidthM }} m bredd · {{ assignSlip.maxLengthM ?? '?' }} m längd</div>
+          </div>
+          <button class="close-btn" @click="assignModal = false">✕</button>
+        </div>
+        <div class="assign-scroll">
+          <div v-if="!unassignedBoats.length" class="no-boats">Inga lediga båtar att tilldela.</div>
+          <template v-else>
+            <div class="section-label">Passar platsen</div>
+            <div v-if="!fittingBoats.length" class="no-boats-section">Inga båtar passar måtten</div>
+            <div v-for="b in fittingBoats" :key="b.id" class="boat-row fits" @click="doAssign(b)">
+              <div class="boat-name">{{ b.name }}</div>
+              <div class="boat-meta">{{ b.ownerName }} · {{ b.widthM }} m × {{ b.lengthM }} m</div>
+            </div>
+            <div class="section-label warn-label">Passar ej (för stor)</div>
+            <div v-if="!nonFittingBoats.length" class="no-boats-section muted">Inga överstora båtar</div>
+            <div v-for="b in nonFittingBoats" :key="b.id" class="boat-row no-fit" @click="doAssign(b)">
+              <div class="boat-name">{{ b.name }}</div>
+              <div class="boat-meta">
+                {{ b.ownerName }} ·
+                <span :class="b.widthM > assignSlip.maxWidthM ? 'over' : ''">{{ b.widthM }} m bredd</span>
+                ·
+                <span :class="assignSlip.maxLengthM && b.lengthM > assignSlip.maxLengthM ? 'over' : ''">{{ b.lengthM }} m längd</span>
+              </div>
+              <span class="warn-tag">⚠ Passar ej</span>
+            </div>
+          </template>
+        </div>
+        <p v-if="assignErr" class="error assign-err">{{ assignErr }}</p>
+      </div>
+    </div>
   </AppLayout>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
-import BaseModal from '../components/BaseModal.vue'
-import { getAssignments, createAssignment, endAssignment } from '../api/assignments'
+import { getDocks, getDockSlips } from '../api/docks'
 import { getBoats } from '../api/boats'
-import { getSlips } from '../api/slips'
+import { getAssignments, createAssignment, endAssignment } from '../api/assignments'
 
-const assignments = ref([])
-const boats = ref([])
-const allSlips = ref([])
-const modal = ref(false)
-const err = ref('')
-const form = ref({ boatId: '', slipId: '' })
+const docks = ref([])
+const slipsByDock = ref({})
+const dockLayouts = ref({})
+const allBoats = ref([])
+const assignmentsBySlipId = ref({})
+const assignedBoatIds = ref(new Set())
 
-const availableSlips = computed(() => allSlips.value.filter(s => s.status === 'AVAILABLE'))
-const selectedBoat = computed(() => boats.value.find(b => b.id === form.value.boatId))
+const popup = ref(null)
+const assignModal = ref(false)
+const assignSlip = ref(null)
+const assignDockName = ref('')
+const assignErr = ref('')
 
-function slipFits(slip) {
-  const b = selectedBoat.value
-  if (!b) return true
-  if (Number(b.lengthM) > Number(slip.maxLengthM)) return false
-  if (Number(b.widthM) > Number(slip.maxWidthM)) return false
-  if (b.draftM && slip.maxDraftM && Number(b.draftM) > Number(slip.maxDraftM)) return false
+const zoomLevel = ref(1.0)
+
+const unassignedBoats = computed(() =>
+  allBoats.value.filter(b => !assignedBoatIds.value.has(b.id))
+)
+const fittingBoats = computed(() => {
+  if (!assignSlip.value) return []
+  return unassignedBoats.value.filter(b => boatFits(b, assignSlip.value)).sort((a, b) => a.name.localeCompare(b.name))
+})
+const nonFittingBoats = computed(() => {
+  if (!assignSlip.value) return []
+  return unassignedBoats.value.filter(b => !boatFits(b, assignSlip.value)).sort((a, b) => a.name.localeCompare(b.name))
+})
+
+function boatFits(boat, slip) {
+  if (boat.widthM > slip.maxWidthM) return false
+  if (slip.maxLengthM && boat.lengthM > slip.maxLengthM) return false
   return true
 }
 
-function onBoatChange() { form.value.slipId = '' }
+function key(r, c) { return `${r},${c}` }
 
-async function load() {
-  const [a, b, s] = await Promise.all([getAssignments(), getBoats(), getSlips()])
-  assignments.value = a.data
-  boats.value = b.data
-  allSlips.value = s.data
+function slipForCell(dockId, r, c) {
+  const layout = dockLayouts.value[dockId]
+  if (!layout) return null
+  const cell = layout.cells[key(r, c)]
+  if (!cell || cell.type !== 'SLIP') return null
+  return (slipsByDock.value[dockId] ?? []).find(s => s.id === cell.slipId) ?? null
 }
 
-function openCreate() { form.value = { boatId: '', slipId: '' }; err.value = ''; modal.value = true }
+function cellClass(dockId, r, c) {
+  const layout = dockLayouts.value[dockId]
+  if (!layout) return 'cell water'
+  const cell = layout.cells[key(r, c)]
+  if (!cell) return 'cell water'
+  if (cell.type === 'LAND') return 'cell land'
+  if (cell.type === 'DOCK') return 'cell dock-cell'
+  if (cell.type === 'SLIP') {
+    const slip = (slipsByDock.value[dockId] ?? []).find(s => s.id === cell.slipId)
+    const st = slip?.status?.toLowerCase() ?? 'available'
+    return `cell slip ${st} clickable`
+  }
+  return 'cell water'
+}
 
-async function save() {
-  err.value = ''
-  try {
-    await createAssignment(form.value)
-    modal.value = false
-    await load()
-  } catch (e) {
-    err.value = e.response?.data?.error || 'Något gick fel'
+function cellTitle(dockId, r, c) {
+  const slip = slipForCell(dockId, r, c)
+  return slip ? `Plats ${slip.slipNumber} – ${statusLabel(slip.status)}` : ''
+}
+
+function statusLabel(s) {
+  return { AVAILABLE: 'Ledig', OCCUPIED: 'Tilldelad', MAINTENANCE: 'Underhåll' }[s] ?? s
+}
+
+function formatDate(d) {
+  return d ? new Date(d + 'T00:00:00').toLocaleDateString('sv-SE') : '–'
+}
+
+function onCellClick(dockId, r, c) {
+  const slip = slipForCell(dockId, r, c)
+  if (!slip) return
+  const dock = docks.value.find(d => d.id === dockId)
+  if (slip.status === 'AVAILABLE') {
+    assignSlip.value = slip
+    assignDockName.value = dock?.name ?? ''
+    assignErr.value = ''
+    assignModal.value = true
+  } else {
+    popup.value = {
+      slip,
+      dockName: dock?.name ?? '',
+      assignment: assignmentsBySlipId.value[slip.id] ?? null,
+    }
   }
 }
 
-async function end(a) {
-  if (!confirm(`Avsluta tilldelningen för ${a.boatName} på plats ${a.slipNumber}?`)) return
+function zoomIn()  { zoomLevel.value = Math.min(2.0,  Math.round((zoomLevel.value + 0.25) * 4) / 4) }
+function zoomOut() { zoomLevel.value = Math.max(0.25, Math.round((zoomLevel.value - 0.25) * 4) / 4) }
+function onWheel(e) { e.deltaY > 0 ? zoomOut() : zoomIn() }
+
+async function doAssign(boat) {
+  assignErr.value = ''
   try {
-    await endAssignment(a.id)
+    await createAssignment({ boatId: boat.id, slipId: assignSlip.value.id })
+    assignModal.value = false
+    await load()
+  } catch (e) {
+    assignErr.value = e.response?.data?.error || 'Kunde inte tilldela platsen'
+  }
+}
+
+async function doUnassign(assignment) {
+  if (!confirm(`Avsluta tilldelningen för ${assignment.boatName} på plats ${assignment.slipNumber}?`)) return
+  popup.value = null
+  try {
+    await endAssignment(assignment.id)
     await load()
   } catch (e) {
     alert(e.response?.data?.error || 'Något gick fel')
   }
 }
 
+function parseLayout(json) {
+  if (!json) return null
+  try {
+    const data = JSON.parse(json)
+    const cells = {}
+    for (const cell of data.cells ?? []) {
+      cells[key(cell.row, cell.col)] = cell.type === 'SLIP'
+        ? { type: 'SLIP', slipId: cell.slipId }
+        : { type: cell.type }
+    }
+    return { cells, gridWidth: data.gridWidth ?? 30, gridHeight: data.gridHeight ?? 20 }
+  } catch { return null }
+}
+
+async function load() {
+  const [{ data: docksData }, { data: boatsData }, { data: assignments }] =
+    await Promise.all([getDocks(), getBoats(), getAssignments()])
+
+  docks.value = docksData
+  allBoats.value = boatsData
+
+  const active = assignments.filter(a => a.status === 'ACTIVE')
+  assignedBoatIds.value = new Set(active.map(a => a.boatId))
+  assignmentsBySlipId.value = Object.fromEntries(active.map(a => [a.slipId, a]))
+
+  const layouts = {}
+  const slipMap = {}
+  for (const dock of docksData) {
+    const { data: slips } = await getDockSlips(dock.id)
+    slipMap[dock.id] = slips
+    const parsed = parseLayout(dock.layoutJson)
+    if (parsed) layouts[dock.id] = parsed
+  }
+  slipsByDock.value = slipMap
+  dockLayouts.value = layouts
+}
+
 onMounted(load)
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
 h2 { font-size: 1.5rem; }
-.table-wrap { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-table { width: 100%; border-collapse: collapse; }
-th { background: #f8f8f8; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: #555; border-bottom: 1px solid #eee; }
-td { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-.empty { color: #999; text-align: center; padding: 2rem; }
-.badge { padding: 0.2rem 0.7rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
-.badge.active { background: #d4edda; color: #155724; }
-button { padding: 0.35rem 0.8rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.85rem; background: #e8f0fe; color: #1a3a5c; }
-button.danger { background: #fee; color: #c0392b; }
-button.danger:hover { background: #fcc; }
-.btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-primary:hover { background: #234e7a; }
-.form-col { display: flex; flex-direction: column; gap: 0.85rem; }
-label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
-label select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9rem; font-weight: 400; }
-.boat-info { background: #e8f0fe; padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.85rem; color: #1a3a5c; }
-.error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
+
+.zoom-controls { display: flex; align-items: center; gap: 0.3rem; }
+.zoom-label { font-size: 0.82rem; font-weight: 600; color: #555; min-width: 3rem; text-align: center; }
+
+.legend { display: flex; gap: 1.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+.leg-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #555; }
+.leg-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.12); }
+.leg-swatch.available { background: #66bb6a; }
+.leg-swatch.occupied { background: #ef5350; }
+.leg-swatch.maintenance { background: #ffa726; }
+
+.dock-section { margin-bottom: 2rem; }
+.dock-heading { font-size: 1.05rem; font-weight: 700; color: #1a3a5c; margin-bottom: 0.6rem; }
+.dock-desc { font-size: 0.85rem; font-weight: 400; color: #888; margin-left: 0.6rem; }
+.no-layout { color: #bbb; font-size: 0.88rem; padding: 0.5rem 0; }
+
+.grid-scroll { overflow: auto; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1rem; }
+.grid-wrapper { position: relative; overflow: visible; }
+.grid { display: grid; gap: 1px; background: rgba(0,0,0,0.06); width: fit-content; user-select: none; }
+
+.cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: default; transition: filter 0.05s; }
+.cell:hover { filter: brightness(0.9); }
+.cell.water { background: #e3f2fd; }
+.cell.land { background: #66bb6a; }
+.cell.dock-cell { background: #757575; }
+.cell.slip { background: #66bb6a; }
+.cell.slip.occupied { background: #ef5350; }
+.cell.slip.maintenance { background: #ffa726; }
+.cell.slip.clickable { cursor: pointer; }
+.slip-label { font-size: 0.6rem; font-weight: 700; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.4); line-height: 1; text-align: center; }
+
+button { padding: 0.4rem 0.85rem; border: none; border-radius: 6px; cursor: pointer; background: #e8f0fe; color: #1a3a5c; font-size: 0.85rem; }
+button:hover:not(:disabled) { background: #d0e2ff; }
+button:disabled { opacity: 0.45; cursor: default; }
+.close-btn { background: none; border: none; font-size: 1.1rem; color: #888; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
+.close-btn:hover { background: #f0f0f0; color: #333; }
+
+/* Info popup */
+.popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.popup-card { background: white; border-radius: 12px; width: 360px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
+.popup-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1rem 1.25rem; border-bottom: 1px solid #eee; }
+.popup-header h3 { margin: 0 0 0.15rem; font-size: 1.1rem; }
+.popup-dock { font-size: 0.82rem; color: #888; }
+.popup-dl { display: grid; grid-template-columns: 110px 1fr; gap: 0.4rem 0.75rem; padding: 1rem 1.25rem; margin: 0; }
+dt { font-size: 0.8rem; font-weight: 600; color: #888; align-self: center; }
+dd { font-size: 0.88rem; margin: 0; }
+.status-badge { padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
+.status-badge.available { background: #c8e6c9; color: #1b5e20; }
+.status-badge.occupied { background: #ffcdd2; color: #b71c1c; }
+.status-badge.maintenance { background: #ffe0b2; color: #e65100; }
+.popup-assignment { padding: 0.85rem 1.25rem; border-top: 1px solid #eee; }
+.assign-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 0.4rem; }
+.assign-boat { font-size: 1rem; font-weight: 700; color: #1a3a5c; margin-bottom: 0.15rem; }
+.assign-owner { font-size: 0.88rem; color: #444; margin-bottom: 0.2rem; }
+.assign-date { font-size: 0.8rem; color: #888; }
+.popup-footer { padding: 0.75rem 1.25rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
+.btn-unassign { background: #fff3e0; color: #e65100; font-weight: 600; padding: 0.45rem 1rem; border-radius: 6px; border: none; cursor: pointer; }
+.btn-unassign:hover { background: #ffe0b2; }
+
+/* Assign modal */
+.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; }
+.assign-card { background: white; border-radius: 12px; width: 460px; max-width: 95vw; height: min(80vh, 700px); display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
+.assign-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1rem 1.25rem; border-bottom: 1px solid #eee; }
+.assign-header h3 { margin: 0 0 0.2rem; font-size: 1.05rem; }
+.assign-dims { font-size: 0.8rem; color: #888; }
+.assign-scroll { flex: 1; overflow-y: auto; min-height: 0; }
+.section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #555; padding: 0.6rem 1.25rem 0.3rem; background: #fafafa; border-top: 1px solid #f0f0f0; }
+.warn-label { color: #9a5000; background: #fffbf0; border-top-color: #ffe082; }
+.no-boats { padding: 1.25rem; color: #999; font-size: 0.9rem; }
+.no-boats-section { padding: 0.4rem 1.25rem 0.6rem; color: #bbb; font-size: 0.82rem; }
+.boat-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 1.25rem; cursor: pointer; border-top: 1px solid #f4f4f4; }
+.boat-row:hover { background: #f0f4ff; }
+.boat-row.no-fit { background: #fffbf0; }
+.boat-row.no-fit:hover { background: #fff3cd; }
+.boat-name { font-weight: 600; font-size: 0.9rem; min-width: 120px; }
+.boat-meta { font-size: 0.8rem; color: #666; flex: 1; }
+.over { color: #c0392b; font-weight: 700; }
+.warn-tag { font-size: 0.72rem; font-weight: 700; color: #9a5000; background: #ffe082; border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
+.error { color: #c0392b; font-size: 0.85rem; }
+.assign-err { padding: 0 1.25rem 1rem; margin: 0; }
+.muted { color: #bbb; }
 </style>
