@@ -23,6 +23,7 @@
           <button v-if="entry.boatId" @click="loadSuggestions(entry)">
             {{ activeSuggestionId === entry.id ? 'Dölj förslag' : 'Visa lediga platser' }}
           </button>
+          <button @click="openEdit(entry)">Redigera</button>
           <button class="danger" @click="cancel(entry)">Avboka</button>
         </div>
       </div>
@@ -82,6 +83,27 @@
       </div>
       <p v-if="err" class="error">{{ err }}</p>
     </BaseModal>
+    <!-- Redigera kö-post modal -->
+    <BaseModal v-if="editModal && editingEntry" :title="'Redigera – ' + editingEntry.personName" @close="editModal = false" @save="saveEdit">
+      <div class="form-col">
+        <label>Båt
+          <input v-model="editBoatSearch" type="text" placeholder="Sök båt…" class="search-input" />
+          <select v-model.number="editForm.boatId" size="4">
+            <option value="">Ingen båt (valfritt)…</option>
+            <option v-for="b in filteredBoatsForEdit" :key="b.id" :value="b.id">
+              {{ b.name }} – {{ b.lengthM }}×{{ b.widthM }}m
+            </option>
+          </select>
+        </label>
+        <label>Datum i kö
+          <input v-model="editForm.requestedDate" type="text" placeholder="ÅÅÅÅ-MM-DD" maxlength="10" />
+        </label>
+        <label>Anteckning
+          <textarea v-model="editForm.notes" rows="4" placeholder="Ev. önskemål om plats…" />
+        </label>
+      </div>
+      <p v-if="editErr" class="error">{{ editErr }}</p>
+    </BaseModal>
   </AppLayout>
 </template>
 
@@ -89,7 +111,7 @@
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import BaseModal from '../components/BaseModal.vue'
-import { getQueue, addToQueue, getSuggestions, assignFromQueue, cancelQueueEntry } from '../api/queue'
+import { getQueue, addToQueue, updateQueueEntry, getSuggestions, assignFromQueue, cancelQueueEntry } from '../api/queue'
 import { getPersons } from '../api/persons'
 import { getBoats } from '../api/boats'
 
@@ -97,10 +119,15 @@ const queue = ref([])
 const persons = ref([])
 const allBoats = ref([])
 const modal = ref(false)
+const editModal = ref(false)
+const editingEntry = ref(null)
 const err = ref('')
+const editErr = ref('')
 const form = ref({ personId: '', boatId: '', notes: '', requestedDate: '' })
+const editForm = ref({ boatId: '', notes: '', requestedDate: '' })
 const personSearch = ref('')
 const boatSearch = ref('')
+const editBoatSearch = ref('')
 const activeSuggestionId = ref(null)
 const suggestions = ref([])
 
@@ -123,6 +150,17 @@ const filteredBoatsForPerson = computed(() => {
   const list = q
     ? boatsForPerson.value.filter(b => b.name.toLowerCase().includes(q))
     : boatsForPerson.value
+  return list.slice().sort((a, b) => a.name.localeCompare(b.name, 'sv'))
+})
+
+const boatsForEditEntry = computed(() =>
+  editingEntry.value ? allBoats.value.filter(b => b.ownerId === editingEntry.value.personId) : [])
+
+const filteredBoatsForEdit = computed(() => {
+  const q = editBoatSearch.value.toLowerCase()
+  const list = q
+    ? boatsForEditEntry.value.filter(b => b.name.toLowerCase().includes(q))
+    : boatsForEditEntry.value
   return list.slice().sort((a, b) => a.name.localeCompare(b.name, 'sv'))
 })
 
@@ -168,6 +206,34 @@ async function assign(entry, slip) {
     await load()
   } catch (e) {
     alert(e.response?.data?.error || 'Något gick fel')
+  }
+}
+
+function openEdit(entry) {
+  editingEntry.value = entry
+  editBoatSearch.value = ''
+  editErr.value = ''
+  editForm.value = {
+    boatId: entry.boatId ?? '',
+    notes: entry.notes ?? '',
+    requestedDate: entry.requestedDate ? entry.requestedDate.slice(0, 10) : todayStr(),
+  }
+  editModal.value = true
+}
+
+async function saveEdit() {
+  editErr.value = ''
+  try {
+    await updateQueueEntry(editingEntry.value.id, {
+      personId: editingEntry.value.personId,
+      boatId: editForm.value.boatId || null,
+      notes: editForm.value.notes || null,
+      requestedDate: editForm.value.requestedDate || null,
+    })
+    editModal.value = false
+    await load()
+  } catch (e) {
+    editErr.value = e.response?.data?.error || 'Något gick fel'
   }
 }
 

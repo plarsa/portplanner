@@ -49,6 +49,12 @@ public class QueueController {
         return queueService.assignFromQueue(id, slipId);
     }
 
+    @PutMapping("/{id}")
+    @Operation(summary = "Uppdatera kö-post (anteckning, båt, datum)")
+    public QueueEntryResponse update(@PathVariable Long id, @Valid @RequestBody QueueEntryRequest req) {
+        return queueService.update(id, req);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Avboka kö-post")

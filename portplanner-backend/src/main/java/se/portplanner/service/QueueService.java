@@ -86,6 +86,25 @@ public class QueueService {
                 .toList();
     }
 
+    public QueueEntryResponse update(Long id, QueueEntryRequest req) {
+        var entry = getOrThrow(id);
+
+        Boat boat = null;
+        if (req.boatId() != null) {
+            boat = boatRepository.findById(req.boatId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Båt " + req.boatId() + " hittades inte"));
+        }
+        entry.setBoat(boat);
+        entry.setNotes(req.notes());
+        if (req.requestedDate() != null) {
+            entry.setRequestedDate(req.requestedDate().atStartOfDay());
+        }
+        var saved = queueRepository.save(entry);
+        auditService.log("UPDATED", "QUEUE_ENTRY", id,
+                "Köpost uppdaterad: " + entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName());
+        return QueueEntryResponse.from(saved);
+    }
+
     public AssignmentResponse assignFromQueue(Long entryId, Long slipId) {
         var entry = getOrThrow(entryId);
         if (entry.getStatus() != QueueEntryStatus.WAITING) {
