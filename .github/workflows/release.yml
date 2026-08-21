@@ -19,7 +19,7 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build JAR
+      - name: Build JAR (includes frontend via Maven)
         working-directory: portplanner-backend
         run: mvn -B package -DskipTests
 
