@@ -21,7 +21,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import api from '../api/axios'
 import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
@@ -34,7 +34,7 @@ async function submit() {
   loading.value = true
   error.value = ''
   try {
-    const { data } = await axios.post('/api/auth/login', form.value)
+    const { data } = await api.post('/auth/login', form.value)
     auth.setUser(data)
     router.push('/dashboard')
   } catch {

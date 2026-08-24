@@ -1,33 +1,45 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import router from '../router'
+import api from '../api/axios'
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref(localStorage.getItem('token'))
   const username = ref(localStorage.getItem('username'))
   const role = ref(localStorage.getItem('role'))
 
-  const isLoggedIn = computed(() => !!token.value)
+  const isLoggedIn = computed(() => !!username.value)
   const isAdmin = computed(() => role.value === 'ADMIN')
 
+  async function checkAuth() {
+    try {
+      const { data } = await api.get('/auth/me')
+      username.value = data.username
+      role.value = data.role
+      localStorage.setItem('username', data.username)
+      localStorage.setItem('role', data.role)
+    } catch {
+      username.value = null
+      role.value = null
+      localStorage.removeItem('username')
+      localStorage.removeItem('role')
+    }
+  }
+
   function setUser(data) {
-    token.value = data.token
     username.value = data.username
     role.value = data.role
-    localStorage.setItem('token', data.token)
     localStorage.setItem('username', data.username)
     localStorage.setItem('role', data.role)
   }
 
-  function logout() {
-    token.value = null
+  async function logout() {
+    try { await api.post('/auth/logout') } catch {}
     username.value = null
     role.value = null
-    localStorage.removeItem('token')
     localStorage.removeItem('username')
     localStorage.removeItem('role')
     router.push('/login')
   }
 
-  return { token, username, role, isLoggedIn, isAdmin, setUser, logout }
+  return { username, role, isLoggedIn, isAdmin, checkAuth, setUser, logout }
 })

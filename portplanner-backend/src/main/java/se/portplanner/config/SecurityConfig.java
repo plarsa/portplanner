@@ -12,11 +12,9 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import se.portplanner.security.JwtFilter;
 import se.portplanner.security.UserDetailsServiceImpl;
 
 import java.util.List;
@@ -25,11 +23,9 @@ import java.util.List;
 @EnableMethodSecurity
 public class SecurityConfig {
 
-    private final JwtFilter jwtFilter;
     private final UserDetailsServiceImpl userDetailsService;
 
-    public SecurityConfig(JwtFilter jwtFilter, UserDetailsServiceImpl userDetailsService) {
-        this.jwtFilter = jwtFilter;
+    public SecurityConfig(UserDetailsServiceImpl userDetailsService) {
         this.userDetailsService = userDetailsService;
     }
 
@@ -38,7 +34,9 @@ public class SecurityConfig {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .sessionManagement(s -> s
+                .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                .maximumSessions(10))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
@@ -48,8 +46,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/me/**").hasAnyRole("MEMBER", "ADMIN", "HARBOUR_MASTER")
                 .anyRequest().authenticated()
             )
-            .headers(h -> h.frameOptions(f -> f.sameOrigin()))
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            .logout(l -> l
+                .logoutUrl("/api/auth/logout")
+                .deleteCookies("SESSION")
+                .logoutSuccessHandler((req, res, authentication) -> res.setStatus(200)))
+            .headers(h -> h.frameOptions(f -> f.sameOrigin()));
         return http.build();
     }
 
@@ -74,7 +75,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         var config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
+        config.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:5174", "http://localhost:3000"));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
