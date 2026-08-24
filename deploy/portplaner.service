@@ -1,0 +1,16 @@
+[Unit]
+Description=Portplaner
+After=network.target
+
+[Service]
+User=portplaner
+WorkingDirectory=/opt/portplaner
+EnvironmentFile=/opt/portplaner/.env
+ExecStart=/usr/bin/java -jar /opt/portplaner/app.jar
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
