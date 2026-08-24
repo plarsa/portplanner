@@ -3,6 +3,7 @@ package se.portplanner.model;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
+import se.portplanner.model.Person;
 
 @Entity
 @Table(name = "app_users")
@@ -23,4 +24,8 @@ public class AppUser {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Role role;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "person_id")
+    private Person person;
 }

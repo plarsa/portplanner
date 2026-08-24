@@ -8,4 +8,6 @@ import java.util.List;
 
 public interface QueueEntryRepository extends JpaRepository<QueueEntry, Long> {
     List<QueueEntry> findByStatusOrderByRequestedDateAsc(QueueEntryStatus status);
+    List<QueueEntry> findByStatusInOrderByRequestedDateAsc(List<QueueEntryStatus> statuses);
+    List<QueueEntry> findByPersonId(Long personId);
 }

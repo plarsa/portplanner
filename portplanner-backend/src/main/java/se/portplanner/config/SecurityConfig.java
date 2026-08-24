@@ -44,6 +44,8 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
                 .requestMatchers("/", "/index.html", "/assets/**", "/*.js", "/*.css", "/*.ico", "/*.png").permitAll()
+                .requestMatchers("/admin", "/admin/**").hasAnyRole("ADMIN", "HARBOUR_MASTER")
+                .requestMatchers("/api/me/**").hasAnyRole("MEMBER", "ADMIN", "HARBOUR_MASTER")
                 .anyRequest().authenticated()
             )
             .headers(h -> h.frameOptions(f -> f.sameOrigin()))

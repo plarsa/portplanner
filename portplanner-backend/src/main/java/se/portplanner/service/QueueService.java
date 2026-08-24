@@ -41,7 +41,8 @@ public class QueueService {
 
     @Transactional(readOnly = true)
     public List<QueueEntryResponse> findWaiting() {
-        return queueRepository.findByStatusOrderByRequestedDateAsc(QueueEntryStatus.WAITING)
+        return queueRepository.findByStatusInOrderByRequestedDateAsc(
+                List.of(QueueEntryStatus.WAITING, QueueEntryStatus.OFFERED))
                 .stream().map(QueueEntryResponse::from).toList();
     }
 
@@ -121,6 +122,49 @@ public class QueueService {
                 "Från kö: " + boatPart +
                 entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName() + " tilldelad plats");
         return assignment;
+    }
+
+    public QueueEntryResponse offer(Long entryId, Long slipId) {
+        var entry = getOrThrow(entryId);
+        if (entry.getStatus() != QueueEntryStatus.WAITING) {
+            throw new IllegalArgumentException("Kö-posten måste ha status WAITING för att erbjuda plats");
+        }
+        var slip = slipRepository.findById(slipId)
+                .orElseThrow(() -> new ResourceNotFoundException("Plats " + slipId + " hittades inte"));
+        entry.setOfferedSlip(slip);
+        entry.setStatus(QueueEntryStatus.OFFERED);
+        var saved = queueRepository.save(entry);
+        auditService.log("OFFERED", "QUEUE_ENTRY", entryId,
+                "Plats erbjuden: " + slip.getSlipNumber() + " till " +
+                entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName());
+        return QueueEntryResponse.from(saved);
+    }
+
+    public AssignmentResponse acceptOffer(Long entryId) {
+        var entry = getOrThrow(entryId);
+        if (entry.getStatus() != QueueEntryStatus.OFFERED || entry.getOfferedSlip() == null) {
+            throw new IllegalArgumentException("Ingen aktiv erbjudanden på denna kö-post");
+        }
+        var assignment = assignmentService.create(new AssignmentRequest(entry.getBoat().getId(), entry.getOfferedSlip().getId()));
+        entry.setStatus(QueueEntryStatus.ASSIGNED);
+        entry.setOfferedSlip(null);
+        queueRepository.save(entry);
+        auditService.log("OFFER_ACCEPTED", "QUEUE_ENTRY", entryId,
+                "Erbjudande accepterat: " + entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName());
+        return assignment;
+    }
+
+    public QueueEntryResponse declineOffer(Long entryId) {
+        var entry = getOrThrow(entryId);
+        if (entry.getStatus() != QueueEntryStatus.OFFERED) {
+            throw new IllegalArgumentException("Ingen aktiv erbjudanden på denna kö-post");
+        }
+        entry.setStatus(QueueEntryStatus.WAITING);
+        entry.setOfferedSlip(null);
+        var saved = queueRepository.save(entry);
+        auditService.log("OFFER_DECLINED", "QUEUE_ENTRY", entryId,
+                "Erbjudande avböjt: " + entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName());
+        return QueueEntryResponse.from(saved);
     }
 
     public void cancel(Long id) {

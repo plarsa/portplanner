@@ -14,4 +14,5 @@ public interface AssignmentRepository extends JpaRepository<Assignment, Long> {
     Optional<Assignment> findBySlipIdAndStatus(Long slipId, AssignmentStatus status);
     boolean existsBySlipIdAndStatus(Long slipId, AssignmentStatus status);
     void deleteBySlipId(Long slipId);
+    List<Assignment> findByBoatOwnerIdAndStatus(Long personId, AssignmentStatus status);
 }
