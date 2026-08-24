@@ -18,6 +18,10 @@ portplaner-backend/data/
 # Node
 portplaner-frontend/node_modules/
 portplaner-frontend/dist/
+portplanner-frontend/node_modules/
+portplanner-frontend/dist/
+portplanner-member/node_modules/
+portplanner-member/dist/
 
 # Eclipse m2e generated files
 # Eclipse Core
