@@ -24,9 +24,12 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
-  if (!to.meta.public && !auth.isLoggedIn) return '/login'
+  if (!to.meta.public && !auth.isLoggedIn) {
+    await auth.checkAuth()
+    if (!auth.isLoggedIn) return '/login'
+  }
 })
 
 export default router
