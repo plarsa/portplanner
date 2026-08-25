@@ -7,35 +7,28 @@
         <button class="btn-primary" @click="openCreate">+ Ny båt</button>
       </div>
     </div>
-
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
             <th>Modell</th><th>Ägare</th>
-            <th>L (m)</th><th>B (m)</th><th>Djup (m)</th><th></th>
+            <th class="col-dim">L (m)</th><th class="col-dim">B (m)</th><th class="col-draft">Djup (m)</th>
           </tr>
         </thead>
         <tbody>
           <tr v-for="b in filteredBoats" :key="b.id" class="clickable-row" @click="openDetail(b)">
             <td>{{ b.model }}</td>
             <td>{{ b.ownerName }}</td>
-            <td>{{ b.lengthM }}</td>
-            <td>{{ b.widthM }}</td>
-            <td>{{ b.draftM || '–' }}</td>
-            <td class="actions" @click.stop>
-              <button @click="openEdit(b)">Redigera</button>
-              <button class="danger" @click="remove(b)">Ta bort</button>
-            </td>
+            <td class="col-dim">{{ b.lengthM }}</td>
+            <td class="col-dim">{{ b.widthM }}</td>
+            <td class="col-draft">{{ b.draftM || '–' }}</td>
           </tr>
           <tr v-if="!filteredBoats.length">
-            <td colspan="6" class="empty">{{ search ? 'Inga träffar' : 'Inga båtar registrerade' }}</td>
+            <td colspan="5" class="empty">{{ search ? 'Inga träffar' : 'Inga båtar registrerade' }}</td>
           </tr>
         </tbody>
       </table>
     </div>
-
-    <!-- Detaljvy -->
     <div v-if="detail" class="detail-overlay" @click.self="detail = null">
       <div class="detail-card">
         <div class="detail-header">
@@ -60,13 +53,12 @@
           <div v-else class="assignment-block free">Ingen aktiv plats</div>
         </div>
         <div class="detail-footer">
+          <button class="btn-danger" @click="removeFromDetail">Ta bort</button>
           <button class="btn-primary" @click="openEdit(detail.boat); detail = null">Redigera</button>
         </div>
       </div>
     </div>
-
-    <BaseModal v-if="modal" :title="editing ? 'Redigera båt' : 'Ny båt'"
-               @close="modal = false" @save="save">
+    <BaseModal v-if="modal" :title="editing ? 'Redigera båt' : 'Ny båt'" @close="modal = false" @save="save">
       <div class="form-grid">
         <label class="full">Båtmodell *<input v-model="form.model" required /></label>
         <label>Längd m *<input v-model.number="form.lengthM" type="number" step="0.1" min="0" required /></label>
@@ -75,9 +67,7 @@
         <label class="full">Ägare *
           <select v-model.number="form.ownerId" required>
             <option value="">Välj ägare…</option>
-            <option v-for="p in persons" :key="p.id" :value="p.id">
-              {{ p.firstName }} {{ p.lastName }}
-            </option>
+            <option v-for="p in persons" :key="p.id" :value="p.id">{{ p.firstName }} {{ p.lastName }}</option>
           </select>
         </label>
       </div>
@@ -100,14 +90,10 @@ const search = ref('')
 const modal = ref(false)
 const detail = ref(null)
 const detailLoading = ref(false)
-
 const filteredBoats = computed(() => {
   const q = search.value.trim().toLowerCase()
   if (!q) return boats.value
-  return boats.value.filter(b =>
-    b.model.toLowerCase().includes(q) ||
-    (b.ownerName ?? '').toLowerCase().includes(q)
-  )
+  return boats.value.filter(b => b.model.toLowerCase().includes(q) || (b.ownerName ?? '').toLowerCase().includes(q))
 })
 const editing = ref(null)
 const err = ref('')
@@ -116,72 +102,62 @@ const form = ref(emptyForm())
 
 async function load() {
   const [b, p] = await Promise.all([getBoats(), getPersons()])
-  boats.value = b.data
-  persons.value = p.data
+  boats.value = b.data; persons.value = p.data
 }
-
-function formatDate(d) {
-  return d ? new Date(d + 'T00:00:00').toLocaleDateString('sv-SE') : '–'
-}
-
+function formatDate(d) { return d ? new Date(d + 'T00:00:00').toLocaleDateString('sv-SE') : '–' }
 async function openDetail(b) {
   detail.value = { boat: b, assignment: null }
   detailLoading.value = true
   try {
     const { data: assignments } = await getAssignments()
     detail.value.assignment = assignments.find(a => a.status === 'ACTIVE' && a.boatId === b.id) ?? null
-  } finally {
-    detailLoading.value = false
-  }
+  } finally { detailLoading.value = false }
 }
-
 function openCreate() { editing.value = null; form.value = emptyForm(); err.value = ''; modal.value = true }
 function openEdit(b) {
   editing.value = b
   form.value = { model: b.model, lengthM: b.lengthM, widthM: b.widthM, draftM: b.draftM, ownerId: b.ownerId }
-  err.value = ''
-  modal.value = true
+  err.value = ''; modal.value = true
 }
-
 async function save() {
   err.value = ''
   try {
     const payload = { ...form.value, draftM: form.value.draftM || null }
     if (editing.value) await updateBoat(editing.value.id, payload)
     else await createBoat(payload)
-    modal.value = false
-    await load()
-  } catch (e) {
-    err.value = e.response?.data?.error || 'Något gick fel'
-  }
+    modal.value = false; await load()
+  } catch (e) { err.value = e.response?.data?.error || 'Något gick fel' }
 }
-
 async function remove(b) {
   if (!confirm(`Ta bort ${b.model}?`)) return
-  await deleteBoat(b.id)
-  await load()
+  await deleteBoat(b.id); await load()
 }
-
+async function removeFromDetail() {
+  const b = detail.value.boat
+  if (!confirm(`Ta bort ${b.model}?`)) return
+  try { await deleteBoat(b.id); detail.value = null; await load() }
+  catch (e) { alert(e.response?.data?.error || 'Kunde inte ta bort båten') }
+}
 onMounted(load)
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
 h2 { font-size: 1.5rem; }
-.header-right { display: flex; gap: 0.75rem; align-items: center; }
-.search-input { padding: 0.45rem 0.85rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: 220px; }
+.header-right { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
+.search-input { padding: 0.45rem 0.85rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: min(220px, 100%); }
 .search-input:focus { outline: none; border-color: #1a3a5c; }
-.table-wrap { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+.table-wrap { background: white; border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
 table { width: 100%; border-collapse: collapse; }
 th { background: #f8f8f8; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: #555; border-bottom: 1px solid #eee; }
 td { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-.actions { display: flex; gap: 0.5rem; }
 .empty { color: #999; text-align: center; padding: 2rem; }
 button { padding: 0.35rem 0.8rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.85rem; background: #e8f0fe; color: #1a3a5c; }
 button:hover { background: #d0e2ff; }
-button.danger { background: #fee; color: #c0392b; }
 .btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
 .btn-primary:hover { background: #234e7a; }
+.btn-danger { background: #fee; color: #c0392b; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
+.btn-danger:hover { background: #fcc; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .form-grid .full { grid-column: 1 / -1; }
 label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
@@ -207,5 +183,11 @@ dd { font-size: 0.9rem; color: #222; margin: 0; }
 .assign-location { font-weight: 700; font-size: 0.95rem; color: #721c24; }
 .assign-date { font-size: 0.8rem; color: #721c24; margin-top: 0.2rem; opacity: 0.8; }
 .assignment-block.free { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.88rem; }
-.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
+.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+@media (max-width: 640px) {
+  .col-draft { display: none; }
+  .page-header { flex-direction: column; align-items: stretch; }
+  .header-right { flex-direction: column; align-items: stretch; }
+}
+@media (max-width: 400px) { .col-dim { display: none; } }
 </style>
