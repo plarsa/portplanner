@@ -12,10 +12,12 @@ public record QueueEntryResponse(
         Long boatId, String boatName,
         BigDecimal boatLengthM, BigDecimal boatWidthM, BigDecimal boatDraftM,
         LocalDateTime requestedDate, String notes,
-        QueueEntryStatus status) {
+        QueueEntryStatus status,
+        Long offeredSlipId, String offeredSlipNumber, String offeredDockName) {
 
     public static QueueEntryResponse from(QueueEntry e) {
         var boat = e.getBoat();
+        var offered = e.getOfferedSlip();
         return new QueueEntryResponse(
                 e.getId(),
                 e.getPerson().getId(),
@@ -25,6 +27,9 @@ public record QueueEntryResponse(
                 boat != null ? boat.getLengthM() : null,
                 boat != null ? boat.getWidthM() : null,
                 boat != null ? boat.getDraftM() : null,
-                e.getRequestedDate(), e.getNotes(), e.getStatus());
+                e.getRequestedDate(), e.getNotes(), e.getStatus(),
+                offered != null ? offered.getId() : null,
+                offered != null ? offered.getSlipNumber() : null,
+                offered != null ? offered.getDock().getName() : null);
     }
 }

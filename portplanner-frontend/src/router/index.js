@@ -20,13 +20,20 @@ const routes = [
 ]
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory('/admin'),
   routes
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
   const auth = useAuthStore()
-  if (!to.meta.public && !auth.isLoggedIn) return '/login'
+  if (!to.meta.public && !auth.isLoggedIn) {
+    await auth.checkAuth()
+    if (!auth.isLoggedIn) return '/login'
+  }
+  if (!to.meta.public && auth.role === 'MEMBER') {
+    window.location.href = '/'
+    return false
+  }
 })
 
 export default router

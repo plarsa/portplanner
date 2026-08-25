@@ -17,7 +17,6 @@
 
     <properties>
         <java.version>21</java.version>
-        <jjwt.version>0.12.6</jjwt.version>
         <springdoc.version>2.8.3</springdoc.version>
     </properties>
 
@@ -57,21 +56,8 @@
         </dependency>
 
         <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-api</artifactId>
-            <version>${jjwt.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-impl</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.jsonwebtoken</groupId>
-            <artifactId>jjwt-jackson</artifactId>
-            <version>${jjwt.version}</version>
-            <scope>runtime</scope>
+            <groupId>org.springframework.session</groupId>
+            <artifactId>spring-session-jdbc</artifactId>
         </dependency>
 
         <dependency>
@@ -107,47 +93,87 @@
                 </configuration>
             </plugin>
 
-            <!-- Build Vue frontend as part of Maven build -->
+            <!-- Build both Vue frontends as part of Maven build -->
             <plugin>
                 <groupId>com.github.eirslett</groupId>
                 <artifactId>frontend-maven-plugin</artifactId>
                 <version>1.15.0</version>
                 <configuration>
-                    <workingDirectory>${project.basedir}/../portplanner-frontend</workingDirectory>
                     <installDirectory>${project.build.directory}/node</installDirectory>
                 </configuration>
                 <executions>
+                    <!-- Install Node once (shared) -->
                     <execution>
                         <id>install-node-and-npm</id>
                         <goals><goal>install-node-and-npm</goal></goals>
                         <configuration>
                             <nodeVersion>v22.11.0</nodeVersion>
+                            <workingDirectory>${project.basedir}/../portplanner-frontend</workingDirectory>
                         </configuration>
                     </execution>
+
+                    <!-- Admin SPA -->
                     <execution>
-                        <id>npm-install</id>
+                        <id>npm-install-admin</id>
                         <goals><goal>npm</goal></goals>
                         <configuration>
+                            <workingDirectory>${project.basedir}/../portplanner-frontend</workingDirectory>
                             <arguments>install</arguments>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>npm-build</id>
+                        <id>npm-build-admin</id>
                         <goals><goal>npm</goal></goals>
                         <configuration>
+                            <workingDirectory>${project.basedir}/../portplanner-frontend</workingDirectory>
+                            <arguments>run build</arguments>
+                        </configuration>
+                    </execution>
+
+                    <!-- Member SPA -->
+                    <execution>
+                        <id>npm-install-member</id>
+                        <goals><goal>npm</goal></goals>
+                        <configuration>
+                            <workingDirectory>${project.basedir}/../portplanner-member</workingDirectory>
+                            <arguments>install</arguments>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>npm-build-member</id>
+                        <goals><goal>npm</goal></goals>
+                        <configuration>
+                            <workingDirectory>${project.basedir}/../portplanner-member</workingDirectory>
                             <arguments>run build</arguments>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
 
-            <!-- Copy built frontend into Spring Boot static resources -->
+            <!-- Copy built frontends into Spring Boot static resources -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
+                    <!-- Admin SPA → static/admin/ -->
                     <execution>
-                        <id>copy-frontend</id>
+                        <id>copy-admin-frontend</id>
+                        <phase>generate-resources</phase>
+                        <goals><goal>copy-resources</goal></goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/static/admin</outputDirectory>
+                            <overwrite>true</overwrite>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/../portplanner-frontend/dist</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
+                    <!-- Member SPA → static/ -->
+                    <execution>
+                        <id>copy-member-frontend</id>
                         <phase>generate-resources</phase>
                         <goals><goal>copy-resources</goal></goals>
                         <configuration>
@@ -155,7 +181,7 @@
                             <overwrite>true</overwrite>
                             <resources>
                                 <resource>
-                                    <directory>${project.basedir}/../portplanner-frontend/dist</directory>
+                                    <directory>${project.basedir}/../portplanner-member/dist</directory>
                                     <filtering>false</filtering>
                                 </resource>
                             </resources>

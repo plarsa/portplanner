@@ -29,6 +29,10 @@ public class QueueEntry {
 
     private String notes;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "offered_slip_id")
+    private Slip offeredSlip;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private QueueEntryStatus status = QueueEntryStatus.WAITING;

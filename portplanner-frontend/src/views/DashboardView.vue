@@ -1,101 +1,144 @@
 <template>
   <AppLayout>
-    <h2>Dashboard</h2>
-    <p style="color:#666; margin-top:0.5rem">Välkommen, {{ auth.username }}!</p>
-    <div class="cards">
-      <div class="card">
-        <div class="card-title">Lediga platser</div>
-        <div class="card-value">{{ stats.available ?? '–' }}</div>
-        <div class="card-sub">av {{ stats.totalSlips ?? '–' }} totalt</div>
+    <div class="dashboard-header">
+      <div>
+        <h2>Dashboard</h2>
+        <p class="welcome">Välkommen, {{ auth.username }}!</p>
       </div>
-      <div class="card">
-        <div class="card-title">Tilldelade platser</div>
-        <div class="card-value">{{ stats.occupied ?? '–' }}</div>
+      <button class="btn-configure" @click="showConfig = !showConfig">
+        {{ showConfig ? 'Stäng' : '⚙ Konfigurera' }}
+      </button>
+    </div>
+
+    <div v-if="showConfig" class="config-panel">
+      <h3>Välj badges att visa</h3>
+      <div class="config-list">
+        <label v-for="badge in allBadges" :key="badge.id" class="config-item">
+          <input type="checkbox" :value="badge.id" v-model="visibleIds" />
+          <div class="config-info">
+            <span class="config-name">{{ badge.name }}</span>
+            <span class="config-desc">{{ badge.description }}</span>
+          </div>
+        </label>
       </div>
-      <div class="card">
-        <div class="card-title">Kölängd</div>
-        <div class="card-value">{{ stats.queueLength ?? '–' }}</div>
+    </div>
+
+    <div v-if="loading" class="loading">Laddar...</div>
+
+    <div v-else class="cards">
+      <div
+        v-for="badge in visibleBadges"
+        :key="badge.id"
+        class="card"
+        :class="{ 'card-money': badge.id.includes('revenue') }"
+      >
+        <div class="card-title">{{ badge.name }}</div>
+        <div class="card-value">{{ badge.value }}</div>
+        <div class="card-sub">{{ badge.description }}</div>
       </div>
-      <div class="card">
-        <div class="card-title">Bryggor</div>
-        <div class="card-value">{{ stats.docks ?? '–' }}</div>
-      </div>
-      <div class="card card-money">
-        <div class="card-title">Intäkt tilldelade platser</div>
-        <div class="card-value">{{ formatKr(stats.occupiedRevenue) }}</div>
-        <div class="card-sub">kr / år</div>
-      </div>
-      <div class="card card-money">
-        <div class="card-title">Maximal intäkt (fullt uthyrt)</div>
-        <div class="card-value">{{ formatKr(stats.totalRevenue) }}</div>
-        <div class="card-sub">kr / år</div>
+      <div v-if="visibleBadges.length === 0 && !showConfig" class="empty">
+        Inga badges valda. Klicka på <strong>Konfigurera</strong> för att lägga till.
       </div>
     </div>
   </AppLayout>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import { useAuthStore } from '../stores/auth'
-import { getSlips } from '../api/slips'
-import { getDocks } from '../api/docks'
-import { getQueue } from '../api/queue'
-import { getTariffs } from '../api/tariffs'
+import api from '../api/axios'
+
+const STORAGE_KEY = 'dashboard-visible-badges'
+const DEFAULT_IDS = ['available-slips', 'occupied-slips', 'queue-length', 'dock-count', 'occupied-revenue', 'total-revenue']
 
 const auth = useAuthStore()
-const stats = ref({})
+const allBadges = ref([])
+const loading = ref(true)
+const showConfig = ref(false)
 
-function formatKr(val) {
-  if (val == null) return '–'
-  return new Intl.NumberFormat('sv-SE', { maximumFractionDigits: 0 }).format(val)
-}
+const visibleIds = ref((() => {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    return stored ? JSON.parse(stored) : DEFAULT_IDS
+  } catch {
+    return DEFAULT_IDS
+  }
+})())
+
+watch(visibleIds, (ids) => {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(ids)) } catch {}
+}, { deep: true })
+
+const visibleBadges = computed(() =>
+  allBadges.value.filter(b => visibleIds.value.includes(b.id))
+)
 
 onMounted(async () => {
-  const [{ data: slips }, { data: docks }, { data: queue }, { data: tariffs }] = await Promise.all([
-    getSlips(), getDocks(), getQueue(), getTariffs()
-  ])
-
-  const today = new Date().toISOString().slice(0, 10)
-  const activeTariffs = tariffs.filter(t =>
-    t.validFrom <= today && (!t.validTo || t.validTo >= today)
-  )
-  const feeByCategory = {}
-  for (const t of activeTariffs) {
-    if (!(t.category in feeByCategory)) feeByCategory[t.category] = 0
-    feeByCategory[t.category] += Number(t.annualFeeKr)
-  }
-
-  let occupiedRevenue = 0
-  let totalRevenue = 0
-  for (const s of slips) {
-    const fee = s.category ? (feeByCategory[s.category] ?? 0) : 0
-    totalRevenue += fee
-    if (s.status === 'OCCUPIED') occupiedRevenue += fee
-  }
-
-  stats.value = {
-    totalSlips: slips.length,
-    available: slips.filter(s => s.status === 'AVAILABLE').length,
-    occupied: slips.filter(s => s.status === 'OCCUPIED').length,
-    docks: docks.length,
-    queueLength: queue.length,
-    occupiedRevenue,
-    totalRevenue,
+  try {
+    const { data } = await api.get('/dashboard/badges')
+    allBadges.value = data
+  } finally {
+    loading.value = false
   }
 })
 </script>
 
 <style scoped>
-h2 { font-size: 1.5rem; }
+.dashboard-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+h2 { font-size: 1.5rem; margin: 0; }
+.welcome { color: #666; margin-top: 0.25rem; margin-bottom: 0; }
+
+.btn-configure {
+  margin-top: 0.25rem;
+  padding: 0.4rem 1rem;
+  background: #f0f4f8;
+  border: 1px solid #ccd6e0;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  white-space: nowrap;
+}
+.btn-configure:hover { background: #e2eaf2; }
+
+.config-panel {
+  margin-top: 1.5rem;
+  background: #f8fafc;
+  border: 1px solid #dde6ef;
+  border-radius: 10px;
+  padding: 1.25rem 1.5rem;
+}
+.config-panel h3 { margin: 0 0 1rem; font-size: 0.95rem; }
+.config-list { display: flex; flex-direction: column; gap: 0.5rem; }
+.config-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+.config-item input { margin-top: 0.2rem; }
+.config-info { display: flex; flex-direction: column; }
+.config-name { font-weight: 600; font-size: 0.9rem; }
+.config-desc { font-size: 0.8rem; color: #888; }
+
+.loading { margin-top: 2rem; color: #888; }
+.empty { color: #999; font-size: 0.95rem; margin-top: 0.5rem; }
+
 .cards { display: flex; gap: 1.5rem; margin-top: 2rem; flex-wrap: wrap; }
 .card {
-  background: white; border-radius: 10px;
-  padding: 1.5rem 2rem; min-width: 160px;
+  background: white;
+  border-radius: 10px;
+  padding: 1.5rem 2rem;
+  min-width: 180px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.07);
 }
 .card-money { border-left: 4px solid #1a3a5c; }
 .card-title { font-size: 0.85rem; color: #666; margin-bottom: 0.5rem; }
 .card-value { font-size: 2rem; font-weight: 700; color: #1a3a5c; }
-.card-sub { font-size: 0.8rem; color: #aaa; margin-top: 0.25rem; }
+.card-sub { font-size: 0.78rem; color: #aaa; margin-top: 0.3rem; }
 </style>

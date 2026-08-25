@@ -55,6 +55,24 @@ public class QueueController {
         return queueService.update(id, req);
     }
 
+    @PostMapping("/{id}/offer")
+    @Operation(summary = "Erbjud en specifik plats till kö-personen (admin)")
+    public QueueEntryResponse offer(@PathVariable Long id, @RequestParam Long slipId) {
+        return queueService.offer(id, slipId);
+    }
+
+    @PostMapping("/{id}/accept-offer")
+    @Operation(summary = "Medlem accepterar erbjuden plats")
+    public AssignmentResponse acceptOffer(@PathVariable Long id) {
+        return queueService.acceptOffer(id);
+    }
+
+    @PostMapping("/{id}/decline-offer")
+    @Operation(summary = "Medlem avböjer erbjuden plats (behåller köplats)")
+    public QueueEntryResponse declineOffer(@PathVariable Long id) {
+        return queueService.declineOffer(id);
+    }
+
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Avboka kö-post")

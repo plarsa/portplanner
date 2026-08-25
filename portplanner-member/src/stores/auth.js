@@ -8,7 +8,6 @@ export const useAuthStore = defineStore('auth', () => {
   const role = ref(localStorage.getItem('role'))
 
   const isLoggedIn = computed(() => !!username.value)
-  const isAdmin = computed(() => role.value === 'ADMIN')
 
   async function checkAuth() {
     try {
@@ -41,5 +40,5 @@ export const useAuthStore = defineStore('auth', () => {
     router.push('/login')
   }
 
-  return { username, role, isLoggedIn, isAdmin, checkAuth, setUser, logout }
+  return { username, role, isLoggedIn, checkAuth, setUser, logout }
 })
