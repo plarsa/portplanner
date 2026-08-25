@@ -21,7 +21,7 @@
     <template v-if="activeDock">
       <div class="dock-card">
         <div class="dock-header">
-          <div>
+          <div class="dock-info">
             <strong>{{ activeDock.name }}</strong>
             <span v-if="activeDock.description" class="desc">{{ activeDock.description }}</span>
           </div>
@@ -33,26 +33,31 @@
           </div>
         </div>
 
-        <table v-if="slipsByDock[activeDock.id]?.length">
-          <thead>
-            <tr><th>Plats</th><th>Kategori</th><th>Max L</th><th>Max B</th><th>Max Djup</th><th>Status</th><th></th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="s in slipsByDock[activeDock.id]" :key="s.id" class="clickable-row" @click="openDetail(s, activeDock.name)">
-              <td>{{ s.slipNumber }}</td>
-              <td><span v-if="s.category" class="cat-badge">{{ s.category }}</span><span v-else class="muted">–</span></td>
-              <td>{{ s.maxLengthM }} m</td>
-              <td>{{ s.maxWidthM }} m</td>
-              <td>{{ s.maxDraftM ? s.maxDraftM + ' m' : '–' }}</td>
-              <td><span :class="['status', s.status.toLowerCase()]">{{ statusLabel(s.status) }}</span></td>
-              <td class="actions" @click.stop>
-                <button @click="openSlipEdit(s)">Redigera</button>
-                <button class="danger" @click="removeSlip(s)">Ta bort</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <p v-else class="no-slips">Inga platser registrerade</p>
+        <div class="table-wrap">
+          <table v-if="slipsByDock[activeDock.id]?.length">
+            <thead>
+              <tr>
+                <th>Plats</th>
+                <th class="col-cat">Kategori</th>
+                <th class="col-dim">Max L</th>
+                <th class="col-dim">Max B</th>
+                <th class="col-draft">Max Djup</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="s in slipsByDock[activeDock.id]" :key="s.id" class="clickable-row" @click="openDetail(s, activeDock.name)">
+                <td>{{ s.slipNumber }}</td>
+                <td class="col-cat"><span v-if="s.category" class="cat-badge">{{ s.category }}</span><span v-else class="muted">–</span></td>
+                <td class="col-dim">{{ s.maxLengthM }} m</td>
+                <td class="col-dim">{{ s.maxWidthM }} m</td>
+                <td class="col-draft">{{ s.maxDraftM ? s.maxDraftM + ' m' : '–' }}</td>
+                <td><span :class="['status', s.status.toLowerCase()]">{{ statusLabel(s.status) }}</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p v-if="!slipsByDock[activeDock.id]?.length" class="no-slips">Inga platser registrerade</p>
       </div>
     </template>
     <div v-else-if="!docks.length" class="empty-state">Inga bryggor registrerade</div>
@@ -95,6 +100,7 @@
           <div v-else class="boat-block free">Ingen båt tilldelad</div>
         </div>
         <div class="detail-footer">
+          <button class="btn-danger" @click="removeSlipFromDetail">Ta bort</button>
           <button class="btn-primary" @click="openSlipEdit(detail.slip); detail = null">Redigera plats</button>
         </div>
       </div>
@@ -248,29 +254,41 @@ async function removeSlip(s) {
   }
 }
 
+async function removeSlipFromDetail() {
+  const s = detail.value.slip
+  if (!confirm(`Ta bort plats ${s.slipNumber}?`)) return
+  try {
+    await deleteSlip(s.id)
+    detail.value = null
+    await load()
+  } catch (e) {
+    alert(e.response?.data?.error || 'Kunde inte ta bort platsen')
+  }
+}
+
 onMounted(load)
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
+.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
 h2 { font-size: 1.5rem; }
-.header-actions { display: flex; gap: 0.75rem; }
+.header-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
 .sub-nav { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
 .nav-btn { background: #eef2f7; color: #1a3a5c; border: none; border-radius: 20px; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
 .nav-btn:hover { background: #dce6f5; }
 .nav-btn.active { background: #1a3a5c; color: white; }
 .empty-state { color: #999; text-align: center; padding: 3rem; background: white; border-radius: 10px; }
 .dock-card { background: white; border-radius: 10px; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); overflow: hidden; }
-.dock-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid #eee; }
-.dock-header strong { font-size: 1rem; }
+.dock-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid #eee; gap: 0.75rem; flex-wrap: wrap; }
+.dock-info strong { font-size: 1rem; }
 .desc { color: #666; font-size: 0.85rem; margin-left: 0.75rem; }
-.dock-actions { display: flex; gap: 0.5rem; align-items: center; }
+.dock-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .badge { background: #e8f0fe; color: #1a3a5c; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .no-slips { color: #999; padding: 1rem 1.25rem; font-size: 0.9rem; }
 table { width: 100%; border-collapse: collapse; }
-th { background: #f8f8f8; padding: 0.6rem 1rem; text-align: left; font-size: 0.82rem; color: #555; }
+th { background: #f8f8f8; padding: 0.6rem 1rem; text-align: left; font-size: 0.82rem; color: #555; white-space: nowrap; }
 td { padding: 0.6rem 1rem; border-top: 1px solid #f0f0f0; font-size: 0.9rem; }
-.actions { display: flex; gap: 0.5rem; }
 .cat-badge { background: #1a3a5c; color: white; border-radius: 4px; padding: 0.1rem 0.45rem; font-size: 0.78rem; font-weight: 700; }
 .muted { color: #bbb; }
 .status { padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
@@ -283,6 +301,8 @@ button.danger { background: #fee; color: #c0392b; }
 .btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; }
 .btn-primary:hover { background: #234e7a; }
 .btn-secondary { background: #eee; color: #333; padding: 0.5rem 1.1rem; border-radius: 6px; }
+.btn-danger { background: #fee2e2; color: #b91c1c; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
+.btn-danger:hover { background: #fecaca; }
 .form-col { display: flex; flex-direction: column; gap: 0.75rem; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .form-grid .full { grid-column: 1 / -1; }
@@ -296,8 +316,8 @@ label input, label select, label textarea { padding: 0.5rem; border: 1px solid #
 .clickable-row:hover { background: #f5f8ff; }
 
 /* Slip detail overlay */
-.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
-.detail-card { background: white; border-radius: 12px; width: 420px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
+.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.detail-card { background: white; border-radius: 12px; width: 420px; max-width: 100%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
 .detail-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1rem 1.4rem; border-bottom: 1px solid #eee; }
 .detail-header h3 { font-size: 1.15rem; margin: 0 0 0.15rem; }
 .detail-sub { font-size: 0.85rem; color: #666; }
@@ -316,5 +336,18 @@ dd { font-size: 0.9rem; color: #222; margin: 0; }
 .boat-since { font-size: 0.78rem; color: #9a3a3a; margin-top: 0.2rem; opacity: 0.85; }
 .boat-block.free { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.88rem; }
 .notes-text { white-space: pre-wrap; color: #555; font-style: italic; }
-.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
+.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+
+/* Responsive */
+@media (max-width: 640px) {
+  .col-cat, .col-draft { display: none; }
+  .page-header { flex-direction: column; align-items: stretch; }
+  .dock-header { flex-direction: column; align-items: flex-start; }
+}
+
+@media (max-width: 400px) {
+  .detail-grid { grid-template-columns: 1fr; }
+  dt { margin-top: 0.4rem; }
+  .col-dim { display: none; }
+}
 </style>
