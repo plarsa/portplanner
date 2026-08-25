@@ -36,14 +36,7 @@
         <div class="table-wrap">
           <table v-if="slipsByDock[activeDock.id]?.length">
             <thead>
-              <tr>
-                <th>Plats</th>
-                <th class="col-cat">Kategori</th>
-                <th class="col-dim">Max L</th>
-                <th class="col-dim">Max B</th>
-                <th class="col-draft">Max Djup</th>
-                <th>Status</th>
-              </tr>
+              <tr><th>Plats</th><th class="col-cat">Kategori</th><th class="col-dim">Max L</th><th class="col-dim">Max B</th><th class="col-draft">Max Djup</th><th>Status</th></tr>
             </thead>
             <tbody>
               <tr v-for="s in slipsByDock[activeDock.id]" :key="s.id" class="clickable-row" @click="openDetail(s, activeDock.name)">
@@ -279,15 +272,16 @@ h2 { font-size: 1.5rem; }
 .nav-btn.active { background: #1a3a5c; color: white; }
 .empty-state { color: #999; text-align: center; padding: 3rem; background: white; border-radius: 10px; }
 .dock-card { background: white; border-radius: 10px; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); overflow: hidden; }
-.dock-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid #eee; gap: 0.75rem; flex-wrap: wrap; }
-.dock-info strong { font-size: 1rem; }
-.desc { color: #666; font-size: 0.85rem; margin-left: 0.75rem; }
+.dock-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid #eee; flex-wrap: wrap; gap: 0.5rem; }
+.dock-info { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
+.dock-header strong { font-size: 1rem; }
+.desc { color: #666; font-size: 0.85rem; }
 .dock-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
 .badge { background: #e8f0fe; color: #1a3a5c; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
 .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 .no-slips { color: #999; padding: 1rem 1.25rem; font-size: 0.9rem; }
 table { width: 100%; border-collapse: collapse; }
-th { background: #f8f8f8; padding: 0.6rem 1rem; text-align: left; font-size: 0.82rem; color: #555; white-space: nowrap; }
+th { background: #f8f8f8; padding: 0.6rem 1rem; text-align: left; font-size: 0.82rem; color: #555; }
 td { padding: 0.6rem 1rem; border-top: 1px solid #f0f0f0; font-size: 0.9rem; }
 .cat-badge { background: #1a3a5c; color: white; border-radius: 4px; padding: 0.1rem 0.45rem; font-size: 0.78rem; font-weight: 700; }
 .muted { color: #bbb; }
@@ -301,8 +295,8 @@ button.danger { background: #fee; color: #c0392b; }
 .btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; }
 .btn-primary:hover { background: #234e7a; }
 .btn-secondary { background: #eee; color: #333; padding: 0.5rem 1.1rem; border-radius: 6px; }
-.btn-danger { background: #fee2e2; color: #b91c1c; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-danger:hover { background: #fecaca; }
+.btn-danger { background: #fee; color: #c0392b; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
+.btn-danger:hover { background: #fcc; }
 .form-col { display: flex; flex-direction: column; gap: 0.75rem; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .form-grid .full { grid-column: 1 / -1; }
@@ -316,8 +310,8 @@ label input, label select, label textarea { padding: 0.5rem; border: 1px solid #
 .clickable-row:hover { background: #f5f8ff; }
 
 /* Slip detail overlay */
-.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-.detail-card { background: white; border-radius: 12px; width: 420px; max-width: 100%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
+.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.detail-card { background: white; border-radius: 12px; width: 420px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
 .detail-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1rem 1.4rem; border-bottom: 1px solid #eee; }
 .detail-header h3 { font-size: 1.15rem; margin: 0 0 0.15rem; }
 .detail-sub { font-size: 0.85rem; color: #666; }
@@ -331,23 +325,17 @@ dd { font-size: 0.9rem; color: #222; margin: 0; }
 .boat-block-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
 .boat-block .boat-name { font-weight: 700; font-size: 0.95rem; color: #721c24; }
 .boat-block .boat-dims { font-size: 0.78rem; color: #9a3a3a; }
-.boat-block .boat-reg { font-size: 0.78rem; color: #b05050; margin-left: auto; }
 .boat-owner { font-size: 0.85rem; color: #721c24; }
 .boat-since { font-size: 0.78rem; color: #9a3a3a; margin-top: 0.2rem; opacity: 0.85; }
 .boat-block.free { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.88rem; }
 .notes-text { white-space: pre-wrap; color: #555; font-style: italic; }
-.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
 
-/* Responsive */
 @media (max-width: 640px) {
   .col-cat, .col-draft { display: none; }
-  .page-header { flex-direction: column; align-items: stretch; }
-  .dock-header { flex-direction: column; align-items: flex-start; }
+  .dock-header { flex-direction: column; align-items: stretch; }
 }
-
 @media (max-width: 400px) {
-  .detail-grid { grid-template-columns: 1fr; }
-  dt { margin-top: 0.4rem; }
   .col-dim { display: none; }
 }
 </style>

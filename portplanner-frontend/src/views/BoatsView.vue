@@ -12,11 +12,8 @@
       <table>
         <thead>
           <tr>
-            <th>Modell</th>
-            <th>Ägare</th>
-            <th class="col-dim">L (m)</th>
-            <th class="col-dim">B (m)</th>
-            <th class="col-draft">Djup (m)</th>
+            <th>Modell</th><th>Ägare</th>
+            <th class="col-dim">L (m)</th><th class="col-dim">B (m)</th><th class="col-draft">Djup (m)</th>
           </tr>
         </thead>
         <tbody>
@@ -183,17 +180,17 @@ h2 { font-size: 1.5rem; }
 .header-right { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
 .search-input { padding: 0.45rem 0.85rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: min(220px, 100%); }
 .search-input:focus { outline: none; border-color: #1a3a5c; }
-.table-wrap { background: white; border-radius: 10px; overflow-x: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.07); -webkit-overflow-scrolling: touch; }
+.table-wrap { background: white; border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
 table { width: 100%; border-collapse: collapse; }
-th { background: #f8f8f8; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: #555; border-bottom: 1px solid #eee; white-space: nowrap; }
+th { background: #f8f8f8; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: #555; border-bottom: 1px solid #eee; }
 td { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
 .empty { color: #999; text-align: center; padding: 2rem; }
 button { padding: 0.35rem 0.8rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.85rem; background: #e8f0fe; color: #1a3a5c; }
 button:hover { background: #d0e2ff; }
 .btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
 .btn-primary:hover { background: #234e7a; }
-.btn-danger { background: #fee2e2; color: #b91c1c; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-danger:hover { background: #fecaca; }
+.btn-danger { background: #fee; color: #c0392b; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
+.btn-danger:hover { background: #fcc; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
 .form-grid .full { grid-column: 1 / -1; }
 label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
@@ -201,8 +198,8 @@ label input, label select { padding: 0.5rem; border: 1px solid #ddd; border-radi
 .error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
 .clickable-row { cursor: pointer; transition: background 0.1s; }
 .clickable-row:hover { background: #f5f8ff; }
-.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; }
-.detail-card { background: white; border-radius: 12px; width: 420px; max-width: 100%; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
+.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
+.detail-card { background: white; border-radius: 12px; width: 420px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
 .detail-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1rem 1.4rem; border-bottom: 1px solid #eee; }
 .detail-header h3 { font-size: 1.15rem; margin: 0 0 0.15rem; }
 .detail-owner { font-size: 0.85rem; color: #666; }
@@ -219,15 +216,13 @@ dd { font-size: 0.9rem; color: #222; margin: 0; }
 .assign-location { font-weight: 700; font-size: 0.95rem; color: #721c24; }
 .assign-date { font-size: 0.8rem; color: #721c24; margin-top: 0.2rem; opacity: 0.8; }
 .assignment-block.free { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.88rem; }
-.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; }
+.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
 
-/* Responsive */
 @media (max-width: 640px) {
   .col-draft { display: none; }
   .page-header { flex-direction: column; align-items: stretch; }
   .header-right { flex-direction: column; align-items: stretch; }
 }
-
 @media (max-width: 400px) {
   .col-dim { display: none; }
 }
