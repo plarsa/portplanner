@@ -11,5 +11,6 @@ public record BoatRequest(
         @NotNull @Positive BigDecimal lengthM,
         @NotNull @Positive BigDecimal widthM,
         @Positive BigDecimal draftM,
-        @NotNull Long ownerId
+        @NotNull Long ownerId,
+        String hullType
 ) {}

@@ -7,6 +7,7 @@
         <router-link to="/slip">Min plats</router-link>
         <router-link to="/boats">Mina båtar</router-link>
         <router-link to="/queue">Kö</router-link>
+        <router-link to="/haul-out">Vinterupptagning</router-link>
         <router-link to="/profile">Profil</router-link>
       </div>
       <div class="nav-user">

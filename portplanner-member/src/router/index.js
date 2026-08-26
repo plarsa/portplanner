@@ -10,6 +10,7 @@ const routes = [
   { path: '/boats', component: () => import('../views/MyBoatsView.vue') },
   { path: '/queue', component: () => import('../views/MyQueueView.vue') },
   { path: '/profile', component: () => import('../views/ProfileView.vue') },
+  { path: '/haul-out', component: () => import('../views/HaulOutView.vue') },
 ]
 
 const router = createRouter({
