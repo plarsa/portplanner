@@ -48,4 +48,23 @@ public class MeController {
     public List<QueueEntryResponse> getMyQueue() {
         return meService.getMyQueue();
     }
+
+    @GetMapping("/haul-out-slots/available")
+    @Operation(summary = "Lediga upptagningstider")
+    public List<HaulOutSlotResponse> getAvailableHaulOutSlots() {
+        return meService.getAvailableHaulOutSlots();
+    }
+
+    @GetMapping("/haul-out-bookings")
+    @Operation(summary = "Mina vinterupptagningsanmälningar")
+    public List<HaulOutBookingResponse> getMyHaulOutBookings() {
+        return meService.getMyHaulOutBookings();
+    }
+
+    @PostMapping("/haul-out-bookings")
+    @Operation(summary = "Anmäl båt till vinterupptagning")
+    public HaulOutBookingResponse createMyHaulOutBooking(@RequestParam Long slotId,
+                                                          @RequestParam Long boatId) {
+        return meService.createMyHaulOutBooking(slotId, boatId);
+    }
 }

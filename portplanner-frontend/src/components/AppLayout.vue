@@ -11,6 +11,7 @@
       <router-link to="/tariffs">Tariff</router-link>
       <router-link to="/import-export">Import / Export</router-link>
       <router-link to="/audit">Händelselogg</router-link>
+      <router-link to="/winter">Vinterupptagning</router-link>
       <div class="spacer" />
       <div class="user-info">
         <span>{{ auth.username }}</span>

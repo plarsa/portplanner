@@ -6,6 +6,7 @@ import se.portplanner.dto.BoatRequest;
 import se.portplanner.dto.BoatResponse;
 import se.portplanner.exception.ResourceNotFoundException;
 import se.portplanner.model.Boat;
+import se.portplanner.model.HullType;
 import se.portplanner.repository.BoatRepository;
 import se.portplanner.repository.PersonRepository;
 
@@ -80,5 +81,6 @@ public class BoatService {
         boat.setWidthM(req.widthM());
         boat.setDraftM(req.draftM());
         boat.setOwner(owner);
+        boat.setHullType(req.hullType() != null ? HullType.valueOf(req.hullType()) : null);
     }
 }

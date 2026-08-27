@@ -17,6 +17,8 @@ const routes = [
   { path: '/tariffs', component: () => import('../views/TariffsView.vue') },
   { path: '/import-export', component: () => import('../views/ImportExportView.vue') },
   { path: '/audit', component: () => import('../views/AuditView.vue') },
+  { path: '/winter', component: () => import('../views/WinterSeasonsView.vue') },
+  { path: '/winter/yard/:seasonId', component: () => import('../views/StorageYardView.vue') },
 ]
 
 const router = createRouter({

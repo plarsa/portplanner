@@ -31,4 +31,8 @@ public class Boat {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "owner_id", nullable = false)
     private Person owner;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "hull_type", length = 20)
+    private HullType hullType;
 }

@@ -1,0 +1,1 @@
+ALTER TABLE boats ADD COLUMN hull_type VARCHAR(20);
