@@ -1,6 +1,6 @@
 CREATE TABLE winter_seasons (
     id         BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    year       INT          NOT NULL,
+    "year"     INT          NOT NULL,
     name       VARCHAR(255) NOT NULL,
     start_date DATE,
     end_date   DATE,
