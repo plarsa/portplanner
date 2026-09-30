@@ -1,5 +1,6 @@
 package se.portplanner.controller;
 
+import se.portplanner.module.RequiresModule;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,6 +11,7 @@ import se.portplanner.repository.AuditLogRepository;
 import java.util.List;
 
 @RestController
+@RequiresModule("audit")
 @RequestMapping("/api/audit")
 @Tag(name = "Audit")
 @Transactional(readOnly = true)

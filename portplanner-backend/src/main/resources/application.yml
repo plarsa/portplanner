@@ -41,3 +41,27 @@ server:
 logging:
   level:
     se.portplanner: DEBUG
+
+portplanner:
+  modules:
+    base:
+      enabled: true            # måste vara true, appen vägrar starta annars
+      access: { HARBOUR_MASTER: write, ADMIN: write, MEMBER: write }   # MEMBER: egna data
+    storage:                   # Uppläggningsplatser
+      enabled: true
+      access: { HARBOUR_MASTER: write, ADMIN: write, MEMBER: write }
+      default-season-start: 09-15
+      max-boats-per-packing-group: 6
+    member-portal:
+      enabled: true
+      access: { HARBOUR_MASTER: write, ADMIN: write, MEMBER: write }
+    audit:
+      enabled: true
+      access: { HARBOUR_MASTER: read, ADMIN: read }
+    reports:
+      enabled: false
+    ai-mail:
+      enabled: false
+    import-export:
+      enabled: true
+      access: { HARBOUR_MASTER: write, ADMIN: write }

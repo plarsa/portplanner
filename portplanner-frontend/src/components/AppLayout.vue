@@ -9,9 +9,9 @@
       <router-link to="/assignments">Tilldelningar</router-link>
       <router-link to="/queue">Kö</router-link>
       <router-link to="/tariffs">Tariff</router-link>
-      <router-link to="/import-export">Import / Export</router-link>
-      <router-link to="/audit">Händelselogg</router-link>
-      <router-link to="/winter">Vinterupptagning</router-link>
+      <router-link v-if="modules.isAccessible('import-export')" to="/import-export">Import / Export</router-link>
+      <router-link v-if="modules.isAccessible('audit')" to="/audit">Händelselogg</router-link>
+      <router-link v-if="modules.isAccessible('storage')" to="/winter">Vinterupptagning</router-link>
       <div class="spacer" />
       <div class="user-info">
         <span>{{ auth.username }}</span>
@@ -27,7 +27,9 @@
 
 <script setup>
 import { useAuthStore } from '../stores/auth'
+import { useModulesStore } from '../stores/modules'
 const auth = useAuthStore()
+const modules = useModulesStore()
 </script>
 
 <style scoped>

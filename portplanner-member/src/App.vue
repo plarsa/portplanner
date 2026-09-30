@@ -4,11 +4,11 @@
       <span class="nav-brand">⚓ Medlemsportal</span>
       <div class="nav-links">
         <router-link to="/dashboard">Hem</router-link>
-        <router-link to="/slip">Min plats</router-link>
-        <router-link to="/boats">Mina båtar</router-link>
-        <router-link to="/queue">Kö</router-link>
-        <router-link to="/haul-out">Vinterupptagning</router-link>
-        <router-link to="/profile">Profil</router-link>
+        <router-link v-if="modules.isAccessible('member-portal')" to="/slip">Min plats</router-link>
+        <router-link v-if="modules.isAccessible('member-portal')" to="/boats">Mina båtar</router-link>
+        <router-link v-if="modules.isAccessible('member-portal')" to="/queue">Kö</router-link>
+        <router-link v-if="modules.isAccessible('storage')" to="/haul-out">Vinterupptagning</router-link>
+        <router-link v-if="modules.isAccessible('member-portal')" to="/profile">Profil</router-link>
       </div>
       <div class="nav-user">
         <span>{{ auth.username }}</span>
@@ -23,7 +23,9 @@
 
 <script setup>
 import { useAuthStore } from './stores/auth'
+import { useModulesStore } from './stores/modules'
 const auth = useAuthStore()
+const modules = useModulesStore()
 </script>
 
 <style>

@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import router from '../router'
 import api from '../api/axios'
+import { useModulesStore } from './modules'
 
 export const useAuthStore = defineStore('auth', () => {
   const username = ref(localStorage.getItem('username'))
@@ -25,6 +26,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function setUser(data) {
+    useModulesStore().clear()
     username.value = data.username
     role.value = data.role
     localStorage.setItem('username', data.username)
@@ -37,6 +39,7 @@ export const useAuthStore = defineStore('auth', () => {
     role.value = null
     localStorage.removeItem('username')
     localStorage.removeItem('role')
+    useModulesStore().clear()
     router.push('/login')
   }
 

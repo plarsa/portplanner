@@ -1,5 +1,6 @@
 package se.portplanner.controller;
 
+import se.portplanner.module.RequiresModule;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +10,7 @@ import se.portplanner.service.ImportExportService;
 import java.util.List;
 
 @RestController
+@RequiresModule("import-export")
 @RequestMapping("/api")
 @Tag(name = "Import / Export")
 public class ImportExportController {

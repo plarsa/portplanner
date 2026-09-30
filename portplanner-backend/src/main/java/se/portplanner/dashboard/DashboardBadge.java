@@ -5,4 +5,7 @@ public interface DashboardBadge {
     String getName();
     String getDescription();
     String getValue();
+
+    /** Id för modulen badgen tillhör; badgen döljs när modulen är avstängd eller otillgänglig. */
+    default String module() { return "base"; }
 }

@@ -1,5 +1,6 @@
 package se.portplanner.controller;
 
+import se.portplanner.module.RequiresModule;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
 import se.portplanner.dto.StoragePlacementRequest;
@@ -9,6 +10,7 @@ import se.portplanner.service.StoragePlacementService;
 import java.util.List;
 
 @RestController
+@RequiresModule("storage")
 @RequestMapping("/api/storage-placements")
 @Tag(name = "Vinterupptagning – placeringar")
 public class StoragePlacementController {

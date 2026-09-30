@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
+import { useModulesStore } from '../stores/modules'
 import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 
@@ -13,12 +14,12 @@ const routes = [
   { path: '/docks/:id/layout', component: () => import('../views/DockLayoutView.vue') },
   { path: '/assignments', component: () => import('../views/AssignmentsView.vue') },
   { path: '/queue', component: () => import('../views/QueueView.vue') },
-  { path: '/mail', component: () => import('../views/MailView.vue') },
+  { path: '/mail', meta: { module: 'ai-mail' }, component: () => import('../views/MailView.vue') },
   { path: '/tariffs', component: () => import('../views/TariffsView.vue') },
-  { path: '/import-export', component: () => import('../views/ImportExportView.vue') },
-  { path: '/audit', component: () => import('../views/AuditView.vue') },
-  { path: '/winter', component: () => import('../views/WinterSeasonsView.vue') },
-  { path: '/winter/yard/:seasonId', component: () => import('../views/StorageYardView.vue') },
+  { path: '/import-export', meta: { module: 'import-export' }, component: () => import('../views/ImportExportView.vue') },
+  { path: '/audit', meta: { module: 'audit' }, component: () => import('../views/AuditView.vue') },
+  { path: '/winter', meta: { module: 'storage' }, component: () => import('../views/WinterSeasonsView.vue') },
+  { path: '/winter/yard/:seasonId', meta: { module: 'storage' }, component: () => import('../views/StorageYardView.vue') },
 ]
 
 const router = createRouter({
@@ -35,6 +36,14 @@ router.beforeEach(async (to) => {
   if (!to.meta.public && auth.role === 'MEMBER') {
     window.location.href = '/'
     return false
+  }
+  if (!to.meta.public) {
+    const modules = useModulesStore()
+    if (!modules.loaded) await modules.load()
+    if (to.meta.module && !modules.isAccessible(to.meta.module)) {
+      modules.notice = 'Funktionen är inte aktiverad eller saknar behörighet för din roll.'
+      return '/dashboard'
+    }
   }
 })
 

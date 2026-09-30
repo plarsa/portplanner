@@ -1,5 +1,6 @@
 <template>
   <AppLayout>
+    <div v-if="modules.notice" class="notice" @click="modules.notice = ''">{{ modules.notice }}</div>
     <div class="dashboard-header">
       <div>
         <h2>Dashboard</h2>
@@ -47,12 +48,14 @@
 import { ref, computed, watch, onMounted } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import { useAuthStore } from '../stores/auth'
+import { useModulesStore } from '../stores/modules'
 import api from '../api/axios'
 
 const STORAGE_KEY = 'dashboard-visible-badges'
 const DEFAULT_IDS = ['available-slips', 'occupied-slips', 'queue-length', 'dock-count', 'occupied-revenue', 'total-revenue']
 
 const auth = useAuthStore()
+const modules = useModulesStore()
 const allBadges = ref([])
 const loading = ref(true)
 const showConfig = ref(false)
@@ -85,6 +88,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.notice { background: #fff4e5; border: 1px solid #f0c987; border-radius: 6px; padding: 0.6rem 1rem; margin-bottom: 1rem; cursor: pointer; }
 .dashboard-header {
   display: flex;
   align-items: flex-start;

@@ -1,5 +1,6 @@
 package se.portplanner.controller;
 
+import se.portplanner.module.RequiresModule;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.web.bind.annotation.*;
@@ -9,6 +10,7 @@ import se.portplanner.service.MeService;
 import java.util.List;
 
 @RestController
+@RequiresModule("member-portal")
 @RequestMapping("/api/me")
 @Tag(name = "Medlemsportal")
 public class MeController {
@@ -49,18 +51,21 @@ public class MeController {
         return meService.getMyQueue();
     }
 
+    @RequiresModule("storage")
     @GetMapping("/haul-out-slots/available")
     @Operation(summary = "Lediga upptagningstider")
     public List<HaulOutSlotResponse> getAvailableHaulOutSlots() {
         return meService.getAvailableHaulOutSlots();
     }
 
+    @RequiresModule("storage")
     @GetMapping("/haul-out-bookings")
     @Operation(summary = "Mina vinterupptagningsanmälningar")
     public List<HaulOutBookingResponse> getMyHaulOutBookings() {
         return meService.getMyHaulOutBookings();
     }
 
+    @RequiresModule("storage")
     @PostMapping("/haul-out-bookings")
     @Operation(summary = "Anmäl båt till vinterupptagning")
     public HaulOutBookingResponse createMyHaulOutBooking(@RequestParam Long slotId,

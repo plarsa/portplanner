@@ -1,5 +1,6 @@
 package se.portplanner.controller;
 
+import se.portplanner.module.RequiresModule;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -11,6 +12,7 @@ import se.portplanner.service.WinterSeasonService;
 import java.util.List;
 
 @RestController
+@RequiresModule("storage")
 @RequestMapping("/api/winter-seasons")
 @Tag(name = "Vinterupptagning – säsonger")
 public class WinterSeasonController {

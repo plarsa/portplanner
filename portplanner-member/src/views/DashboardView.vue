@@ -1,5 +1,6 @@
 <template>
   <div>
+    <div v-if="modules.notice" class="notice" @click="modules.notice = ''">{{ modules.notice }}</div>
     <h2>Välkommen, {{ auth.username }}!</h2>
 
     <div v-if="loading" class="loading">Laddar...</div>
@@ -34,9 +35,11 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useAuthStore } from '../stores/auth'
+import { useModulesStore } from '../stores/modules'
 import api from '../api/axios'
 
 const auth = useAuthStore()
+const modules = useModulesStore()
 const loading = ref(true)
 const me = ref(null)
 const assignments = ref([])
@@ -70,6 +73,7 @@ onMounted(async () => {
 </script>
 
 <style scoped>
+.notice { background: #fff4e5; border: 1px solid #f0c987; border-radius: 6px; padding: 0.6rem 1rem; margin-bottom: 1rem; cursor: pointer; }
 h2 { margin: 0 0 1.5rem; font-size: 1.4rem; }
 .loading { color: #888; }
 .cards { display: flex; gap: 1.25rem; flex-wrap: wrap; }
