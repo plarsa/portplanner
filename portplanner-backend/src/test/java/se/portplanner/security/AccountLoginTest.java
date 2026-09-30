@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -81,8 +80,8 @@ class AccountLoginTest {
                 .andExpect(jsonPath("$.loginMethods[0]").value("PASSWORD"))
                 .andExpect(jsonPath("$.status").value("ACTIVE"))
                 .andReturn();
-        var session = (MockHttpSession) result.getRequest().getSession(false);
-        mvc.perform(get("/api/auth/me").session(session))
+        var cookie = result.getResponse().getCookie("SESSION");
+        mvc.perform(get("/api/auth/me").cookie(cookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.roles.length()").value(2));
         assertNotNull(users.findByUsername("anna@hamn.se").orElseThrow().getLastLoginAt());

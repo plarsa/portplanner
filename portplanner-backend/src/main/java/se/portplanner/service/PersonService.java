@@ -6,6 +6,8 @@ import se.portplanner.dto.PersonRequest;
 import se.portplanner.dto.PersonResponse;
 import se.portplanner.exception.ResourceNotFoundException;
 import se.portplanner.model.Person;
+import se.portplanner.exception.ConflictException;
+import se.portplanner.repository.AppUserRepository;
 import se.portplanner.repository.PersonRepository;
 
 import org.springframework.data.domain.Sort;
@@ -17,10 +19,13 @@ public class PersonService {
 
     private final PersonRepository personRepository;
     private final AuditService auditService;
+    private final AppUserRepository userRepository;
 
-    public PersonService(PersonRepository personRepository, AuditService auditService) {
+    public PersonService(PersonRepository personRepository, AuditService auditService,
+                         AppUserRepository userRepository) {
         this.personRepository = personRepository;
         this.auditService = auditService;
+        this.userRepository = userRepository;
     }
 
     @Transactional(readOnly = true)
@@ -57,6 +62,9 @@ public class PersonService {
 
     public void delete(Long id) {
         var person = getOrThrow(id);
+        if (userRepository.existsByPersonId(id)) {
+            throw new ConflictException("Personen har ett konto. Ta bort kopplingen eller inaktivera kontot först");
+        }
         String name = person.getFirstName() + " " + person.getLastName();
         personRepository.delete(person);
         auditService.log("DELETED", "PERSON", id, "Person borttagen: " + name);

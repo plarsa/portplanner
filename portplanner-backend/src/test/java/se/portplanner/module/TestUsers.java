@@ -7,14 +7,18 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import java.util.Arrays;
 
 /** Testkonton med rolltilldelningar på formen {@code roll:nivå}. */
-final class TestUsers {
+public final class TestUsers {
 
     private TestUsers() {}
 
-    static RequestPostProcessor asUser(String... grants) {
+    public static RequestPostProcessor asUser(String... grants) {
+        return asUserNamed("u", grants);
+    }
+
+    public static RequestPostProcessor asUserNamed(String username, String... grants) {
         var authorities = Arrays.stream(grants)
                 .map(g -> new SimpleGrantedAuthority(RoleGrant.valueOf(g).toAuthority()))
                 .toList();
-        return SecurityMockMvcRequestPostProcessors.user("u").authorities(authorities);
+        return SecurityMockMvcRequestPostProcessors.user(username).authorities(authorities);
     }
 }

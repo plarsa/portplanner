@@ -7,6 +7,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.Collection;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -69,5 +70,9 @@ public class SuperAdminRegistry {
     /** Träff även för avstängda konton, så att inloggning inte faller tillbaka på databaskonto med samma namn. */
     public Optional<Account> find(String username) {
         return username == null ? Optional.empty() : Optional.ofNullable(accounts.get(key(username)));
+    }
+
+    public Collection<Account> all() {
+        return java.util.List.copyOf(accounts.values());
     }
 }

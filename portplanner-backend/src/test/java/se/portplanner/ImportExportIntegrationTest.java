@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import se.portplanner.service.DockService;
@@ -32,7 +31,7 @@ class ImportExportIntegrationTest {
     @Autowired DockRepository dockRepository;
     @Autowired DockService dockService;
 
-    private MockHttpSession session;
+    private jakarta.servlet.http.Cookie session;
 
     @BeforeEach
     void login() throws Exception {
@@ -41,7 +40,7 @@ class ImportExportIntegrationTest {
                 .content("{\"username\":\"admin\",\"password\":\"admin123\"}"))
                 .andExpect(status().isOk())
                 .andReturn();
-        session = (MockHttpSession) result.getRequest().getSession(false);
+        session = result.getResponse().getCookie("SESSION");
     }
 
     @AfterEach
@@ -61,7 +60,7 @@ class ImportExportIntegrationTest {
 
         // 1. Import bryggor.json – should create 2 docks and 61 slips
         mvc.perform(post("/api/import/docks")
-                .session(session)
+                .cookie(session)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
@@ -70,24 +69,24 @@ class ImportExportIntegrationTest {
                 .andExpect(jsonPath("$.warnings").isEmpty());
 
         // 2. Verify both docks are visible in the docks list
-        mvc.perform(get("/api/docks").session(session))
+        mvc.perform(get("/api/docks").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.name=='badhusb')]").exists())
                 .andExpect(jsonPath("$[?(@.name=='ytterbyvik')]").exists());
 
         // 3. Fetch all dock IDs and delete each one
         String docksJson = mvc.perform(get("/api/docks")
-                .session(session))
+                .cookie(session))
                 .andReturn().getResponse().getContentAsString();
 
         for (JsonNode dock : objectMapper.readTree(docksJson)) {
             mvc.perform(delete("/api/docks/" + dock.get("id").asLong())
-                    .session(session))
+                    .cookie(session))
                     .andExpect(status().isNoContent());
         }
 
         // 4. Verify no docks remain
-        mvc.perform(get("/api/docks").session(session))
+        mvc.perform(get("/api/docks").cookie(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
@@ -101,7 +100,7 @@ class ImportExportIntegrationTest {
 
         // First import
         mvc.perform(post("/api/import/docks")
-                .session(session)
+                .cookie(session)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
@@ -109,7 +108,7 @@ class ImportExportIntegrationTest {
 
         // Second import – both docks already exist, no slips added
         mvc.perform(post("/api/import/docks")
-                .session(session)
+                .cookie(session)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())

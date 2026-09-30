@@ -117,6 +117,8 @@ Fel ger 403 med kod (t.ex. `ROLE_ASSIGNMENT_FORBIDDEN`, `SELF_MODIFICATION`, `UN
 
 ### Fas 6: Första lösenord och lösenordsbyte
 
+_Status: engångslösenordet genereras redan vid skapande (fas 5). Kvar: `must_change_password`-spärren och `POST /api/auth/change-password`._
+
 Ingen e-post finns än (välkomstbrev kommer i en senare fas). Tillfällig lösning tills dess:
 
 - Skapande av konto genererar ett kryptografiskt slumpat engångslösenord som hashas och returneras **en gång** till admin. Status `INVITED`, `must_change_password = true`.
@@ -180,6 +182,8 @@ Manuellt: starta med konfigurerad `superadmin`, skapa konton med olika roller, l
 Varje fas ska kunna committas för sig och lämna systemet i körbart skick.
 
 ## 6. Risker
+
+- **Sessionslagring (upptäckt i fas 5):** efter uppgraderingen till Spring Boot 4 användes `spring-session-jdbc` utan autokonfiguration, så sessioner låg i Tomcats minne och inte i databasen. Åtgärdat genom att byta beroendet till `spring-boot-starter-session-jdbc`. Sessioner överlever nu omstart och kan avslutas per konto. Befintliga inloggningar upphör vid driftsättning; tabellerna `SPRING_SESSION*` skapas automatiskt.
 
 - **Utelåsning:** utan seedat `admin`-konto är den konfigurerade `superadmin` enda vägen in. Mitigering: startkontroll (ROL-6), tydligt felmeddelande, dokumentation i README.
 - **Befintliga databaser:** konton från tiden före ändringen (`admin` m.fl.) migreras till `admin:rw`, och får inte längre `superadmin`. Den konfigurerade `superadmin` behövs för att ändra dem.
