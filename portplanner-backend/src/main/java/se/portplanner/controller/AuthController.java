@@ -9,12 +9,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.web.bind.annotation.*;
 import se.portplanner.dto.LoginRequest;
 import se.portplanner.dto.LoginResponse;
+import se.portplanner.security.AccountService;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -22,9 +22,11 @@ import se.portplanner.dto.LoginResponse;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
+    private final AccountService accounts;
 
-    public AuthController(AuthenticationManager authenticationManager) {
+    public AuthController(AuthenticationManager authenticationManager, AccountService accounts) {
         this.authenticationManager = authenticationManager;
+        this.accounts = accounts;
     }
 
     @PostMapping("/login")
@@ -40,8 +42,8 @@ public class AuthController {
                 HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
                 SecurityContextHolder.getContext());
 
-        String role = extractRole(auth);
-        return ResponseEntity.ok(new LoginResponse(auth.getName(), role));
+        accounts.recordLogin(auth.getName());
+        return ResponseEntity.ok(accounts.describe(auth));
     }
 
     @GetMapping("/me")
@@ -50,16 +52,6 @@ public class AuthController {
         if (auth == null || !auth.isAuthenticated()) {
             return ResponseEntity.status(401).build();
         }
-        return ResponseEntity.ok(new LoginResponse(auth.getName(), extractRole(auth)));
-    }
-
-    private String extractRole(Authentication auth) {
-        // Övergång: gamla rollauthorities (utan ':') används tills roll-listor når SPA:erna.
-        return auth.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .filter(a -> !a.contains(":"))
-                .findFirst()
-                .orElse("")
-                .replace("ROLE_", "");
+        return ResponseEntity.ok(accounts.describe(auth));
     }
 }

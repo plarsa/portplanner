@@ -1,13 +1,15 @@
 package se.portplanner.security;
 
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-import se.portplanner.model.Role;
+import org.springframework.transaction.annotation.Transactional;
+import se.portplanner.model.AppUser;
+import se.portplanner.model.LoginMethod;
+import se.portplanner.model.UserStatus;
 import se.portplanner.repository.AppUserRepository;
 
 import java.util.List;
@@ -24,27 +26,28 @@ public class UserDetailsServiceImpl implements UserDetailsService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         var configured = superAdmins.find(username);
         if (configured.isPresent()) {
             var sa = configured.get();
-            if (!sa.enabled()) throw new UsernameNotFoundException("User not found: " + username);
+            if (!sa.enabled()) throw notFound(username);
             // Övergång: HARBOUR_MASTER-authority behålls tills SecurityConfig och SPA:erna använder roll-listor.
             return new User(sa.username(), sa.passwordHash(), List.of(
                     new SimpleGrantedAuthority("ROLE_superadmin:rw"),
-                    new SimpleGrantedAuthority("ROLE_" + Role.HARBOUR_MASTER.name())));
+                    new SimpleGrantedAuthority(LegacyAuthorities.SUPERADMIN)));
         }
-        var user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found: " + username));
-        return new User(user.getUsername(), user.getPasswordHash(), authoritiesFor(user.getRole()));
+        AppUser user = userRepository.findByUsername(username)
+                .or(() -> userRepository.findByEmailIgnoreCase(username))
+                .orElseThrow(() -> notFound(username));
+        // Samma neutrala fel som fel lösenord om kontot saknar metoden PASSWORD (LOG-12).
+        if (!user.getLoginMethods().contains(LoginMethod.PASSWORD)) throw notFound(username);
+        boolean enabled = user.getStatus() != UserStatus.DISABLED;
+        return new User(user.getUsername(), user.getPasswordHash(), enabled, true, true, true,
+                LegacyAuthorities.of(user));
     }
 
-    /**
-     * Övergång tills konton har egna rolltilldelningar (fas 3): den enda rollen översätts till en tilldelning,
-     * och den gamla authorityn behålls för SecurityConfig och SPA:erna.
-     */
-    static List<GrantedAuthority> authoritiesFor(Role role) {
-        var grant = role == Role.MEMBER ? "member:rw" : "admin:rw";
-        return List.of(new SimpleGrantedAuthority("ROLE_" + grant), new SimpleGrantedAuthority("ROLE_" + role.name()));
+    private static UsernameNotFoundException notFound(String username) {
+        return new UsernameNotFoundException("User not found: " + username);
     }
 }

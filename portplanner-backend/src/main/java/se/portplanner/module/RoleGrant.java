@@ -1,5 +1,10 @@
 package se.portplanner.module;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+
 import java.util.Optional;
 import java.util.regex.Pattern;
 
@@ -7,7 +12,10 @@ import java.util.regex.Pattern;
  * En roll med nivå, skriven {@code roll:nivå} (t.ex. {@code admin:rw}). Används både för kontots
  * tilldelningar och för posterna i en moduls {@code access}-lista.
  */
-public record RoleGrant(String role, Level level) {
+@Embeddable
+public record RoleGrant(
+        @Column(name = "role_name") String role,
+        @Enumerated(EnumType.STRING) @Column(name = "access_level") Level level) {
 
     public static final String AUTHORITY_PREFIX = "ROLE_";
     private static final Pattern ROLE_NAME = Pattern.compile("[a-z][a-z0-9_]*");
