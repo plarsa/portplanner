@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static se.portplanner.module.TestUsers.asUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -23,8 +23,8 @@ class ModuleAllEnabledTest {
 
     @Test
         void storageWorksWhenEnabled() throws Exception {
-        mvc.perform(get("/api/winter-seasons").with(user("u").roles("ADMIN"))).andExpect(status().isOk());
-        mvc.perform(get("/api/modules/storage").with(user("u").roles("ADMIN")))
+        mvc.perform(get("/api/winter-seasons").with(asUser("admin:rw"))).andExpect(status().isOk());
+        mvc.perform(get("/api/modules/storage").with(asUser("admin:rw")))
                 .andExpect(jsonPath("$.settings.defaultSeasonStart").value("09-15"));
     }
 }

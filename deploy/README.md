@@ -56,6 +56,9 @@ sudo nano /opt/portplaner/.env
 # Innehåll:
 # JWT_SECRET=lång-slumpmässig-sträng
 # SPRING_DATASOURCE_URL=jdbc:h2:file:/opt/portplaner/data/portdb
+# SUPERADMIN_USERNAME=din@epost.se
+# SUPERADMIN_PASSWORD={bcrypt}$2a$10$...   (bcrypt-hash; klartext ger varning)
+# Obligatoriskt: appen startar inte utan en aktiverad superadmin. Inget standardkonto skapas.
 
 sudo systemctl daemon-reload
 sudo systemctl enable portplaner

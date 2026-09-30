@@ -7,7 +7,7 @@ PortPlanner ska vara uppdelat i **moduler** som kan slås på och av per install
 - Varje modul konfigureras i `application.yml` och har alltid `enabled: true|false`, plus egna inställningar.
 - `base` ingår alltid (båtar, bryggor, tilldelning m.m.).
 - Backend exponerar ett REST-API där frontend frågar vilka moduler som är aktiva och anpassar meny, routes och vyer.
-- Åtkomst styrs per **roll** (`SUPERADMIN`, `ADMIN`, `MEMBER`) med en **åtkomstnivå** per modul: `none`, `read` eller `write`. En modul är tillgänglig för en användare bara om den är aktiverad **och** rollens nivå är minst `read`. `SUPERADMIN` tilldelas nivå per modul som övriga roller. Se `iam_spec.md` avsnitt 5. Menyer, routes och endpoints följer den inloggades roll och nivå.
+- Åtkomst styrs av **rolltilldelningar** på kontot (`admin:rw`, `admin:r`, `member:rw`, ...) och en lista `access` av `roll:nivå` per modul. Nivån i `access` är ett tak. Kontots beräknade nivå i modulen är `none`, `read` eller `write`, och modulen är tillgänglig bara om den är aktiverad **och** nivån är minst `read`. Roller definieras implicit av vad som står i modulernas `access`. Se `iam_spec.md` avsnitt 4 och 5. Menyer, routes och endpoints följer den inloggades beräknade nivå.
 - Avstängd modul ger inga endpoints, ingen meny, inga dashboard-badges och inga bakgrundsjobb.
 - Undantag: **händelseloggningen skrivs alltid**. Modulen `audit` styr bara visning och hantering av loggen.
 
@@ -63,27 +63,27 @@ portplanner:
   modules:
     base:
       enabled: true            # måste vara true, appen vägrar starta annars
-      access: { SUPERADMIN: write, ADMIN: write, MEMBER: write }   # MEMBER: egna data
+      access: [superadmin:rw, admin:rw, member:rw]   # member: egna data
     storage:                   # Uppläggningsplatser (tidigare "winter")
       enabled: false
-      access: { SUPERADMIN: write, ADMIN: write, MEMBER: write }   # medlemmar bokar via medlemsportalen
+      access: [superadmin:rw, admin:rw, member:rw]   # medlemmar bokar via medlemsportalen
       # modulspecifikt:
       default-season-start: 09-15
       max-boats-per-packing-group: 6
     member-portal:
       enabled: true
-      access: { SUPERADMIN: write, MEMBER: write }
+      access: [superadmin:rw, member:rw]
       allow-member-boat-edit: false
     audit:
       enabled: true
-      access: { SUPERADMIN: read, ADMIN: read }
+      access: [superadmin:r, admin:r]
       retention-days: 730
     reports:
       enabled: false
-      access: { SUPERADMIN: write, ADMIN: read }
+      access: [superadmin:rw, admin:r]
     ai-mail:
       enabled: false
-      access: { SUPERADMIN: write, ADMIN: write }
+      access: [superadmin:rw, admin:rw]
       gmail:
         credentials-file: ${GMAIL_CREDENTIALS:}
       claude:
@@ -91,13 +91,14 @@ portplanner:
         api-key: ${ANTHROPIC_API_KEY:}
     import-export:
       enabled: true
-      access: { SUPERADMIN: write, ADMIN: write }
+      access: [superadmin:rw, admin:rw]
 ```
 
 - Modulinställningar kan överstyras per kund via profilfil (`application-kundx.yml`) eller miljövariabler (`PORTPLANNER_MODULES_STORAGE_ENABLED=true`).
 - En modul som saknas i yaml räknas som `enabled: false` (utom `base`).
-- `access` är valfritt. Saknas det används modulens standardnivåer ur `PortModule` (samma som i exemplet ovan). En roll som saknas i `access` har `none` (gäller även `SUPERADMIN`; `base.access` måste ge `SUPERADMIN` `write`). `access` kan aldrig ge en roll mer än vad modulens endpoints medger.
-- Nivåerna kan variera per kund: t.ex. `reports.access: { SUPERADMIN: write, ADMIN: write }` om administratören även ska få ändra rapportinställningar. Enbart den som konfigurerar systemet kan ändra nivåer, inte en `ADMIN` i gränssnittet.
+- `access` är en lista av `roll:nivå` (nivå `r` eller `rw`) och valfri. Saknas den används modulens standardposter ur `PortModule` (samma som i exemplet ovan). Ett konto vars roller inte matchar någon post har `none` (gäller även `superadmin`; `base.access` måste innehålla `superadmin:rw`). Nivån i `access` är ett tak: kontots nivå är `min(kontots nivå, postens nivå)`, och vid flera matchande poster gäller den högsta. `access` kan aldrig ge ett konto mer än vad kontots egen tilldelning och modulens endpoints medger.
+- Nya roller skapas genom att skriva dem i en moduls `access`, t.ex. `audit.access: [admin:r, audit_master:r]`. Rollen blir då tillgänglig att tilldela konton i kontohanteringen (`GET /api/roles`).
+- Taket kan variera per kund: t.ex. `reports.access: [superadmin:rw, admin:rw]` om administratören även ska få ändra rapportinställningar. Enbart den som konfigurerar systemet kan ändra `access`, inte en `admin` i gränssnittet.
 - Hemligheter (API-nycklar, Gmail-uppgifter) läses via miljövariabler, aldrig incheckade.
 - Ändring kräver omstart av backend (ingen körtidsväxling i första versionen).
 
@@ -107,14 +108,15 @@ Paket: `se.portplanner.module`.
 
 1. **`PortModule`-enum/register.** Statisk lista över kända moduler med id, visningsnamn, beskrivning och `dependsOn`. Enums ger kontrollerade id:n; okänd yaml-nyckel loggas som varning.
 2. **`ModulesProperties`** (`@ConfigurationProperties("portplanner.modules")`).
-   - Bas: `Map<String, ModuleConfig>` med `boolean enabled` och `Map<Role, AccessLevel> access` (`NONE`, `READ`, `WRITE`).
+   - Bas: `Map<String, ModuleConfig>` med `boolean enabled` och `List<RoleGrant> access` där `RoleGrant` är `(String role, Level level)` och `Level` är `R` eller `RW`. Rollnamn valideras mot mönstret `[a-z][a-z0-9_]*`.
    - Modulspecifika inställningar som egna typade klasser (`StorageProperties`, `AiMailProperties`, ...) bundna till samma prefix och med `@Validated`.
-3. **`ModuleService`** (`isEnabled(id)`, `accessLevel(id, role)`, `accessibleModules(role)`, `requireAccess(id, level, authentication)`). Rollen hämtas från Spring Security-`Authentication` (befintlig `Role`-enum, `ROLE_`-prefix).
+3. **`ModuleService`** (`isEnabled(id)`, `accessLevel(id, role)`, `accessibleModules(role)`, `requireAccess(id, level, authentication)`). Kontots rolltilldelningar hämtas från Spring Security-`Authentication` (en authority per tilldelning, t.ex. `ROLE_admin:rw`, tolkas till `RoleGrant`). Nivån beräknas som `max` över matchande poster av `min(kontots nivå, postens nivå)`. `ModuleService` exponerar även rollkatalogen (alla rollnamn i alla moduler), som kontohanteringen använder.
 4. **Start-validering** (fail fast):
    - `base.enabled` måste vara true.
    - Om modul A är aktiv och `dependsOn` B är avstängd stoppas start med tydligt felmeddelande.
-   - `access` får bara innehålla kända roller och nivåer (`none`, `read`, `write`); okänd roll eller nivå stoppar start.
-   - Varning i loggen om en modul är tillgänglig för en roll som saknar åtkomst till en modul den beror på (t.ex. `storage` för `MEMBER` men `member-portal` av eller utan `MEMBER`-nivå).
+   - `access` får bara innehålla poster på formen `roll:nivå` med nivå `r` eller `rw` och giltigt rollnamn; ogiltig post stoppar start. En ny, okänd roll är inte ett fel (den skapar rollen).
+   - `base.access` måste innehålla `superadmin:rw`.
+   - Varning i loggen om en roll finns i en moduls `access` men saknas i `access` för en modul den beror på (t.ex. `storage` för `member` men `member-portal` av eller utan `member`).
    - Obligatoriska modulinställningar kontrolleras (t.ex. `ai-mail` kräver API-nyckel).
 5. **Åtkomstkontroll på HTTP-nivå.**
    - Åtkomstnivån räknas ut automatiskt: `GET` kräver minst `read`, alla andra metoder kräver `write`. Annotationen kan höja kravet för en särskild endpoint: `@RequiresModule(value = "storage", level = WRITE)`.
@@ -128,7 +130,7 @@ Paket: `se.portplanner.module`.
    - `AuditService.log(...)` skriver **alltid**, oavsett om `audit` är på. Modulen `audit` gatear bara `AuditController` (visning) och `AuditView`. Retention-rensning är ett bakgrundsjobb i modulen och körs bara när den är på.
    - Dashboard: `DashboardBadge` får metoden `String module()` (default `base`). `DashboardService` filtrerar bort badges från avstängda moduler **och** moduler som den inloggades roll inte har åtkomst till.
    - Kopplingar från `base` till `storage` (t.ex. personradering som kontrollerar bokningar) ska gå via en händelse/`Optional`-injektion, aldrig direktreferens till modulens service.
-7. **SecurityConfig.** `/api/modules` läggs till som `authenticated()` (redan default). `/api/me/**` är oförändrad men skyddas av `@RequiresModule("member-portal")`. Åtkomstnivåerna per modul ger en grov rollkontroll och täcker därmed delvis den kända bristen att t.ex. MEMBER kan anropa admin-API:er (för endpoints i annoterade controllers). Kontohantering (IAM) styrs av rollreglerna i `iam_spec.md`, inte av modulnivåer. Finare regler per operation (`@PreAuthorize`) är ett separat spår.
+7. **SecurityConfig.** `/api/modules` läggs till som `authenticated()` (redan default). `/api/me/**` är oförändrad men skyddas av `@RequiresModule("member-portal")`. Åtkomstnivåerna per modul ger en grov rollkontroll och täcker därmed delvis den kända bristen att t.ex. `member` kan anropa admin-API:er (för endpoints i annoterade controllers). Kontohantering (IAM) styrs av rollreglerna i `iam_spec.md`, inte av modulnivåer. Finare regler per operation (`@PreAuthorize`) är ett separat spår.
 
 ## 6. REST-API
 
@@ -146,7 +148,7 @@ Paket: `se.portplanner.module`.
 ```
 
 - Alla kända moduler returneras med `enabled`, så UI kan även visa "ej inkluderad".
-- `enabled` = modulen ingår i installationen. `accessible` = `enabled` **och** den inloggades nivå är minst `read`. `access` är den inloggades nivå: `none`, `read` eller `write`. Frontend styr meny och routes med `accessible`, och döljer ändringsknappar när `access` är `read`. Övriga rollers nivåer skickas inte med.
+- `enabled` = modulen ingår i installationen. `accessible` = `enabled` **och** den inloggades beräknade nivå är minst `read`. `access` är den beräknade nivån: `none`, `read` eller `write`. Frontend styr meny och routes med `accessible`, och döljer ändringsknappar när `access` är `read`. Modulernas `access`-listor och andra kontons roller skickas inte med.
 - `settings` innehåller endast en **whitelistad delmängd** av inställningarna som frontend behöver. Aldrig hemligheter eller nycklar.
 - `GET /api/modules/{id}` för en enskild modul (404 om okänd). Inloggningssvaret från `/api/auth` och `/api/me` behöver inte ändras; frontend hämtar alltid modullistan efter inloggning.
 - Dokumenteras i OpenAPI (`OpenApiConfig`), tag "Modules".
@@ -184,11 +186,14 @@ Båda SPA:erna (`portplanner-frontend`, `portplanner-member`):
   - Dashboard-svaret saknar badges från avstängda moduler.
   - Audit av ⇒ nya rader skrivs fortfarande i `audit_log`, men `GET /api/audit` → 403 `MODULE_DISABLED`.
 - **Frontend (Vitest, kräver att testuppsättning skapas):** nav döljer länkar; route-guard omdirigerar.
-- **Roller (integrationstester med `@WithMockUser(roles = ...)`):**
-  - `reports.access={ADMIN: read}`: ADMIN `GET` → 200, ADMIN ändrande anrop → 403 `MODULE_ROLE_FORBIDDEN`, MEMBER → 403 `MODULE_ROLE_FORBIDDEN`. SUPERADMIN utan post i `access` → 403 `MODULE_ROLE_FORBIDDEN`.
-  - `GET /api/modules` som MEMBER har `accessible=false` för `audit`, `reports`, `ai-mail`, `import-export`, och `true` för `member-portal`.
-  - Modul avstängd + tillåten roll ⇒ `MODULE_DISABLED` (inte rollfelet).
-  - Start misslyckas med okänt rollnamn eller okänd nivå i `access`.
+- **Roller (integrationstester med konton som har `SimpleGrantedAuthority("ROLE_admin:rw")` osv.):**
+  - `reports.access=[admin:r]`: konto med `admin:rw` `GET` → 200, ändrande anrop → 403 `MODULE_ROLE_FORBIDDEN` (taket). Konto med bara `member:rw` → 403 `MODULE_ROLE_FORBIDDEN`. `superadmin` utan post i `access` → 403 `MODULE_ROLE_FORBIDDEN`.
+  - `audit.access=[admin:r, audit_master:r]`: konto med `audit_master:rw` → `GET` 200, ändring 403. Roll utan match → 403.
+  - Flera roller: `admin:r` + `member:rw` mot `reports.access=[admin:rw, member:r]` ger `read`.
+  - `GET /api/modules` för konto med bara `member:rw` har `accessible=false` för `audit`, `reports`, `ai-mail`, `import-export`, och `true` för `member-portal`.
+  - Modul avstängd + matchande roll ⇒ `MODULE_DISABLED` (inte rollfelet).
+  - Start misslyckas med ogiltig post i `access`, ogiltig nivå, ogiltigt rollnamn eller `base.access` utan `superadmin:rw`. Start lyckas med en ny okänd roll.
+  - `GET /api/roles` innehåller roller från alla moduler, även avstängda.
 - **Manuellt:** starta med profilerna `bas-only` och `alla` och klicka igenom admin- och medlems-SPA:erna. Kontrollera Swagger-UI.
 - **Regression:** med alla nuvarande moduler `enabled: true` ska systemet bete sig exakt som idag.
 
@@ -196,6 +201,6 @@ Båda SPA:erna (`portplanner-frontend`, `portplanner-member`):
 
 - **Databasschema:** modulernas tabeller finns alltid (även avstängda). Data kan bli liggande om en modul stängs av. Det är önskat (ingen dataförlust), men ska dokumenteras.
 - **Betalning/licens:** beslutat att moduler styrs enbart via config. Yaml hindrar inte en kund från att slå på en modul själv, vilket accepteras. Kan kompletteras med signerad licensnyckel senare om behovet uppstår.
-- **Nivåer per kund:** standardnivåer per modul måste beslutas med produktägaren. Användare har en roll var; om flera roller per användare införs måste nivån beräknas som den högsta av rollernas nivåer.
+- **Standardposter per kund:** standardposterna per modul måste beslutas med produktägaren. Ett konto har flera rolltilldelningar; nivån beräknas som högsta av tak-nivåerna över matchande poster (beslutat).
 - **Körtidsväxling** utan omstart (admin-UI eller databas) är utanför v1.
-- **Auktorisering:** modulgating ersätter inte rollkontroller. Nuvarande brist (inga `@PreAuthorize`, MEMBER kan anropa admin-API) bör åtgärdas parallellt.
+- **Auktorisering:** modulgating ersätter inte rollkontroller. Nuvarande brist (inga `@PreAuthorize`, `member` kan anropa admin-API) bör åtgärdas parallellt.

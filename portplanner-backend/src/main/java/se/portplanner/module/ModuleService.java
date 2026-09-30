@@ -7,27 +7,28 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.stereotype.Service;
 import se.portplanner.dto.ModuleResponse;
-import se.portplanner.model.Role;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
 @Service
 public class ModuleService {
 
     private static final Logger log = LoggerFactory.getLogger(ModuleService.class);
 
-    /** Rollen som motsvarar SUPERADMIN i specen tills IAM-rollerna har migrerats. */
-    static final Role SUPERADMIN_EQUIVALENT = Role.HARBOUR_MASTER;
+    public static final String SUPERADMIN = "superadmin";
 
     private final ModulesProperties props;
     private final StorageProperties storage;
 
     /** Beräknas en gång vid start (NFR-2). */
     private final Map<PortModule, Boolean> enabled = new EnumMap<>(PortModule.class);
-    private final Map<PortModule, Map<Role, AccessLevel>> access = new EnumMap<>(PortModule.class);
+    private final Map<PortModule, List<RoleGrant>> access = new EnumMap<>(PortModule.class);
 
     public ModuleService(ModulesProperties props, StorageProperties storage) {
         this.props = props;
@@ -43,11 +44,7 @@ public class ModuleService {
         for (PortModule m : PortModule.values()) {
             var cfg = props.getModules().get(m.id());
             enabled.put(m, m == PortModule.BASE || (cfg != null && cfg.isEnabled()));
-            var levels = new EnumMap<Role, AccessLevel>(Role.class);
-            for (Role r : Role.values()) levels.put(r, AccessLevel.NONE);
-            var source = cfg != null && cfg.getAccess() != null ? cfg.getAccess() : m.defaultAccess();
-            levels.putAll(source);
-            access.put(m, levels);
+            access.put(m, cfg != null && cfg.getAccess() != null ? List.copyOf(cfg.getAccess()) : m.defaultAccess());
         }
         validate();
         logSummary();
@@ -58,8 +55,8 @@ public class ModuleService {
         if (base != null && !base.isEnabled()) {
             throw new IllegalStateException("portplanner.modules.base.enabled måste vara true: modulen 'base' är obligatorisk");
         }
-        if (access.get(PortModule.BASE).get(SUPERADMIN_EQUIVALENT) != AccessLevel.WRITE) {
-            throw new IllegalStateException("portplanner.modules.base.access måste ge " + SUPERADMIN_EQUIVALENT + " nivån write");
+        if (!access.get(PortModule.BASE).contains(new RoleGrant(SUPERADMIN, RoleGrant.Level.RW))) {
+            throw new IllegalStateException("portplanner.modules.base.access måste innehålla " + SUPERADMIN + ":rw");
         }
         for (PortModule m : PortModule.values()) {
             if (!enabled.get(m)) continue;
@@ -69,10 +66,11 @@ public class ModuleService {
                     throw new IllegalStateException("Modulen '" + m.id() + "' är aktiverad men beror på '" + depId
                             + "' som är avstängd. Aktivera portplanner.modules." + depId + ".enabled eller stäng av '" + m.id() + "'.");
                 }
-                for (Role r : Role.values()) {
-                    if (level(m, r) != AccessLevel.NONE && level(dep, r) == AccessLevel.NONE) {
-                        log.warn("Rollen {} har åtkomst till modulen '{}' men saknar åtkomst till '{}' som modulen beror på",
-                                r, m.id(), depId);
+                var depRoles = access.get(dep).stream().map(RoleGrant::role).collect(java.util.stream.Collectors.toSet());
+                for (RoleGrant g : access.get(m)) {
+                    if (!depRoles.contains(g.role())) {
+                        log.warn("Rollen {} finns i access för modulen '{}' men saknas i access för '{}' som modulen beror på",
+                                g.role(), m.id(), depId);
                     }
                 }
             }
@@ -82,31 +80,47 @@ public class ModuleService {
     private void logSummary() {
         for (PortModule m : PortModule.values()) {
             log.info("Modul {}: {}{}", m.id(), enabled.get(m) ? "PÅ" : "av",
-                    enabled.get(m) ? " " + access.get(m) : "");
+                    enabled.get(m) ? " access=" + access.get(m) : "");
         }
+        log.info("Rollkatalog: {}", roleCatalog());
     }
 
     public boolean isEnabled(String id) {
         return enabled.get(PortModule.of(id));
     }
 
-    /** Konfigurerad nivå för rollen, oavsett om modulen är aktiverad. */
-    private AccessLevel level(PortModule m, Role role) {
-        return access.get(m).get(role);
-    }
-
-    /** Effektiv nivå: NONE om modulen är avstängd. */
-    public AccessLevel accessLevel(String id, Role role) {
+    /**
+     * Beräknad nivå för en uppsättning rolltilldelningar. Varje post i modulens access är ett tak: nivån är
+     * den lägsta av kontots och postens nivå, och vid flera träffar gäller den högsta. Avstängd modul ger NONE.
+     */
+    public AccessLevel accessLevel(String id, Collection<RoleGrant> grants) {
         var m = PortModule.of(id);
-        return enabled.get(m) && role != null ? level(m, role) : AccessLevel.NONE;
+        if (!enabled.get(m)) return AccessLevel.NONE;
+        RoleGrant.Level best = null;
+        for (RoleGrant entry : access.get(m)) {
+            for (RoleGrant g : grants) {
+                if (g.role().equals(entry.role())) {
+                    var level = RoleGrant.Level.min(g.level(), entry.level());
+                    best = best == null ? level : RoleGrant.Level.max(best, level);
+                }
+            }
+        }
+        return best == null ? AccessLevel.NONE : best.toAccessLevel();
     }
 
     public AccessLevel accessLevel(String id, Authentication auth) {
-        return accessLevel(id, roleOf(auth));
+        return accessLevel(id, grantsOf(auth));
     }
 
     public boolean isAccessible(String id, Authentication auth) {
         return accessLevel(id, auth).atLeast(AccessLevel.READ);
+    }
+
+    /** Alla rollnamn som förekommer i någon moduls access (även avstängda moduler). */
+    public Set<String> roleCatalog() {
+        var roles = new TreeSet<String>();
+        access.values().forEach(list -> list.forEach(g -> roles.add(g.role())));
+        return roles;
     }
 
     /** Kastar {@link ModuleAccessException} (403) om modulen är avstängd eller nivån inte räcker. */
@@ -140,17 +154,12 @@ public class ModuleService {
         };
     }
 
-    /** En roll per konto; första kända rollen används. */
-    static Role roleOf(Authentication auth) {
-        if (auth == null || !auth.isAuthenticated()) return null;
-        for (GrantedAuthority a : auth.getAuthorities()) {
-            var name = a.getAuthority();
-            if (!name.startsWith("ROLE_")) continue;
-            try {
-                return Role.valueOf(name.substring(5));
-            } catch (IllegalArgumentException ignored) {
-            }
-        }
-        return null;
+    /** Kontots rolltilldelningar ur authorities på formen {@code ROLE_roll:nivå}. */
+    public static List<RoleGrant> grantsOf(Authentication auth) {
+        if (auth == null || !auth.isAuthenticated()) return List.of();
+        return auth.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .flatMap(a -> RoleGrant.fromAuthority(a).stream())
+                .toList();
     }
 }

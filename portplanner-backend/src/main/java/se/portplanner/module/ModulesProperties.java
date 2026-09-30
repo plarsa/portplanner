@@ -1,9 +1,9 @@
 package se.portplanner.module;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import se.portplanner.model.Role;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -20,12 +20,12 @@ public class ModulesProperties {
 
     public static class ModuleConfig {
         private boolean enabled;
-        /** Null = använd modulens standardnivåer. */
-        private Map<Role, AccessLevel> access;
+        /** Poster {@code roll:nivå} som fungerar som tak. Null = använd modulens standardposter. */
+        private List<RoleGrant> access;
 
         public boolean isEnabled() { return enabled; }
         public void setEnabled(boolean enabled) { this.enabled = enabled; }
-        public Map<Role, AccessLevel> getAccess() { return access; }
-        public void setAccess(Map<Role, AccessLevel> access) { this.access = access; }
+        public List<RoleGrant> getAccess() { return access; }
+        public void setAccess(List<RoleGrant> access) { this.access = access; }
     }
 }

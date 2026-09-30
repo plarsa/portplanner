@@ -43,25 +43,32 @@ logging:
     se.portplanner: DEBUG
 
 portplanner:
+  iam:
+    # Systemets superadmin lever bara här, aldrig i databasen. Minst en aktiverad krävs för att appen ska starta.
+    # password: bcrypt-hash (rekommenderas, {bcrypt}-prefix valfritt). Klartext accepteras men ger varning.
+    superadmins:
+      - username: ${SUPERADMIN_USERNAME:}
+        password: ${SUPERADMIN_PASSWORD:}
+        enabled: true
   modules:
     base:
       enabled: true            # måste vara true, appen vägrar starta annars
-      access: { HARBOUR_MASTER: write, ADMIN: write, MEMBER: write }   # MEMBER: egna data
+      access: [superadmin:rw, admin:rw, member:rw]   # member: egna data
     storage:                   # Uppläggningsplatser
       enabled: true
-      access: { HARBOUR_MASTER: write, ADMIN: write, MEMBER: write }
+      access: [superadmin:rw, admin:rw, member:rw]
       default-season-start: 09-15
       max-boats-per-packing-group: 6
     member-portal:
       enabled: true
-      access: { HARBOUR_MASTER: write, ADMIN: write, MEMBER: write }
+      access: [superadmin:rw, admin:rw, member:rw]
     audit:
       enabled: true
-      access: { HARBOUR_MASTER: read, ADMIN: read }
+      access: [superadmin:r, admin:r]
     reports:
       enabled: false
     ai-mail:
       enabled: false
     import-export:
       enabled: true
-      access: { HARBOUR_MASTER: write, ADMIN: write }
+      access: [superadmin:rw, admin:rw]

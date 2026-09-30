@@ -11,7 +11,7 @@ import se.portplanner.repository.AuditLogRepository;
 import se.portplanner.service.AuditService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static se.portplanner.module.TestUsers.asUser;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -35,7 +35,7 @@ class AuditAlwaysLoggedTest {
 
     @Test
     void auditViewIsClosedWhenModuleIsDisabled() throws Exception {
-        mvc.perform(get("/api/audit").with(user("u").roles("ADMIN")))
+        mvc.perform(get("/api/audit").with(asUser("admin:rw")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("MODULE_DISABLED"));
     }

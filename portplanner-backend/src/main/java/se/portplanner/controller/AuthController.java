@@ -54,8 +54,10 @@ public class AuthController {
     }
 
     private String extractRole(Authentication auth) {
+        // Övergång: gamla rollauthorities (utan ':') används tills roll-listor når SPA:erna.
         return auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
+                .filter(a -> !a.contains(":"))
                 .findFirst()
                 .orElse("")
                 .replace("ROLE_", "");

@@ -1,6 +1,6 @@
 # Funktionsspecifikation: modulsystem
 
-Roller och åtkomstnivåer definieras i `iam_spec.md`. Status: utkast. Planen för genomförandet finns i `module.md`. Denna fil beskriver **vad** systemet ska göra, inte hur det byggs.
+Roller, rolltilldelningar och åtkomstnivåer definieras i `iam_spec.md`. Status: utkast. Planen för genomförandet finns i `module.md`. Denna fil beskriver **vad** systemet ska göra, inte hur det byggs.
 
 Krav har id (`MOD-…`) så att de kan refereras i tester och ärenden. Nyckelorden **ska**, **bör** och **kan** anger obligatoriskt, rekommenderat respektive valfritt.
 
@@ -10,9 +10,9 @@ Krav har id (`MOD-…`) så att de kan refereras i tester och ärenden. Nyckelor
 |---|---|
 | Modul | En avgränsad uppsättning funktioner som kan aktiveras separat |
 | Aktiverad (`enabled`) | Modulen ingår i installationen enligt konfigurationen |
-| Tillgänglig (`accessible`) | Modulen är aktiverad **och** den inloggade användarens roll har åtkomstnivå `read` eller `write` |
-| Roll | `SUPERADMIN`, `ADMIN` eller `MEMBER` (se `iam_spec.md`) |
-| Åtkomstnivå | `none`, `read` eller `write`, satt per modul och roll i konfigurationen |
+| Tillgänglig (`accessible`) | Modulen är aktiverad **och** den inloggade användarens beräknade nivå är `read` eller `write` |
+| Roll | Ett namn (`admin`, `member`, `audit_master`, ...) som definieras implicit av att det står i en moduls `access`. Ett konto har en lista av rolltilldelningar `roll:nivå`, t.ex. `admin:rw` (se `iam_spec.md`) |
+| Åtkomstnivå | Modulens `access` är en lista av `roll:nivå` där nivå är `r` eller `rw` och fungerar som tak. Kontots beräknade nivå i modulen är `none`, `read` (`r`) eller `write` (`rw`), se avsnitt 3 |
 | Installation | En körande instans av systemet för en kund, med egen konfiguration |
 
 ## 2. Moduler och deras funktioner
@@ -90,19 +90,31 @@ Loggningen är en grundfunktion som **alltid** är på och inte kan stängas av.
 
 `billing`, `notifications`, `guest-harbour`, `waitlist-rules`, `maintenance`, `metering`, `documents`, `integrations`. Se `module.md`. Varje ska specificeras i eget avsnitt innan utveckling börjar.
 
-## 3. Standardnivåer per modul och roll
+## 3. Åtkomst per modul och roll
 
-Förslag, ska bekräftas av produktägaren. `SUPERADMIN` tilldelas nivå per modul som övriga roller. En roll som saknas i konfigurationen har `none`.
+Varje modul har en lista `access` av poster `roll:nivå`, där nivå är `r` (läsa) eller `rw` (läsa och ändra). Ett konto har en lista av rolltilldelningar av samma form (se `iam_spec.md` avsnitt 4).
 
-| Modul | SUPERADMIN | ADMIN | MEMBER |
-|---|---|---|---|
-| `base` | write | write | write (endast egna data via medlemsportal) |
-| `storage` | write | write | write (STO-6, endast egna data) |
-| `member-portal` | write | none | write (egna data) |
-| `audit` | read | read | none |
-| `reports` | write | read | none |
-| `ai-mail` | write | write | none |
-| `import-export` | write | write | none |
+**Beräkning.** För varje post i modulens `access` som kontot har en tilldelning för är nivån den lägsta av kontots och postens nivå. Om flera poster matchar gäller den högsta. Ingen matchning ger `none`. Konfigurationen är alltså ett tak.
+
+| `audit.access` | Kontots roller | Nivå |
+|---|---|---|
+| `[superadmin:r, admin:r, audit_master:r]` | `admin:r` | `read` |
+| samma | `admin:rw` | `read` |
+| samma | `audit_master:rw` | `read` |
+| samma | `member:rw` | `none` |
+| `[admin:rw]` | `admin:rw`, `member:r` | `write` |
+
+Standardposter per modul (förslag, ska bekräftas av produktägaren). De används när `access` saknas i konfigurationen. `superadmin` är en vanlig post här och styrs som övriga roller.
+
+| Modul | Standard `access` |
+|---|---|
+| `base` | `[superadmin:rw, admin:rw, member:rw]` (`member`: endast egna data via medlemsportalen) |
+| `storage` | `[superadmin:rw, admin:rw, member:rw]` (STO-6, `member`: endast egna data) |
+| `member-portal` | `[superadmin:rw, member:rw]` (egna data) |
+| `audit` | `[superadmin:r, admin:r]` |
+| `reports` | `[superadmin:rw, admin:r]` |
+| `ai-mail` | `[superadmin:rw, admin:rw]` |
+| `import-export` | `[superadmin:rw, admin:rw]` |
 
 ## 4. Krav på konfiguration
 
@@ -113,9 +125,9 @@ Förslag, ska bekräftas av produktägaren. `SUPERADMIN` tilldelas nivå per mod
 | MOD-3 | En modul som saknas i konfigurationen **ska** räknas som avstängd, förutom `base`. |
 | MOD-4 | `base` **ska** alltid vara aktiv. Om `base.enabled` är `false` **ska** systemet vägra starta med ett tydligt felmeddelande. |
 | MOD-5 | Varje modul **kan** ha egna inställningar under sitt id. Modulspecifika inställningar valideras vid start. |
-| MOD-6 | Varje modul **kan** ha `access` som anger åtkomstnivå (`none`, `read`, `write`) per roll. Om `access` saknas används modulens standardnivåer. |
-| MOD-7 | En roll som saknas i `access` **ska** ha `none`. Det gäller även `SUPERADMIN`. `base.access` **ska** ge `SUPERADMIN` nivån `write`, annars stoppar start. Okänd roll eller okänd nivå **ska** stoppa start. |
-| MOD-8 | `access` **ska** bara kunna begränsa åtkomst inom det modulen stödjer. Den ger aldrig en roll fler rättigheter. Nivåerna kan bara ändras via konfiguration, aldrig av en `ADMIN` i gränssnittet. |
+| MOD-6 | Varje modul **kan** ha `access` som en lista av `roll:nivå` (nivå `r` eller `rw`). Om `access` saknas används modulens standardposter (avsnitt 3). Roller som nämns i någon moduls `access` blir tillgängliga att tilldela konton (rollkatalogen i `iam_spec.md`, ROL-2). |
+| MOD-7 | Ett konto vars roller inte matchar någon post i `access` **ska** ha `none`. Det gäller även `superadmin`. `base.access` **ska** innehålla `superadmin:rw`, annars stoppar start. Ogiltigt format, ogiltig nivå (annat än `r` eller `rw`) eller ogiltigt rollnamn **ska** stoppa start. En ny roll i `access` är inte ett fel. |
+| MOD-8 | `access` **ska** bara kunna begränsa åtkomst inom det modulen stödjer. Den ger aldrig ett konto fler rättigheter än kontots egen tilldelning (taket i avsnitt 3). Modulernas `access` kan bara ändras via konfiguration, aldrig av en `admin` i gränssnittet. |
 | MOD-9 | Inställningar **ska** kunna överstyras per kund med profilfil eller miljövariabler. |
 | MOD-10 | Hemligheter (API-nycklar, inloggningsuppgifter) **ska** läsas från miljövariabler och **får inte** checkas in. |
 | MOD-11 | Ändring av moduler kräver omstart. Körtidsändring stöds inte. |
@@ -129,14 +141,14 @@ Förslag, ska bekräftas av produktägaren. `SUPERADMIN` tilldelas nivå per mod
 | DEP-2 | Om en modul är aktiv och en modul den beror på är avstängd **ska** systemet vägra starta och ange vilken. |
 | DEP-3 | Koppling mellan moduler som inte är ett hårt beroende (t.ex. `storage` och `member-portal`) **ska** vara frivillig: funktioner som kräver båda visas bara när båda är tillgängliga. |
 | DEP-4 | Kod i `base` **får inte** ha direkt beroende till valfria moduler. Samverkan sker via händelser eller valfri injektion. |
-| DEP-5 | Systemet **bör** logga en varning om en modul är tillgänglig för en roll som saknar åtkomst till en modul den beror på. |
+| DEP-5 | Systemet **bör** logga en varning om en modul har en roll i `access` som saknas i `access` för en modul den beror på. |
 
 ## 6. Krav på beteende när en modul inte är tillgänglig
 
 | Id | Krav |
 |---|---|
 | BEH-1 | Modulens API-endpoints **ska** svara 403 med `{"error":"MODULE_DISABLED","module":"<id>"}` när modulen är avstängd. |
-| BEH-2 | Modulens API-endpoints **ska** svara 403 med `{"error":"MODULE_ROLE_FORBIDDEN","module":"<id>"}` när modulen är aktiv men användarens nivå är `none`, eller `read` vid försök att ändra data. Är modulen avstängd gäller BEH-1. |
+| BEH-2 | Modulens API-endpoints **ska** svara 403 med `{"error":"MODULE_ROLE_FORBIDDEN","module":"<id>"}` när modulen är aktiv men användarens beräknade nivå är `none`, eller `read` vid försök att ändra data. Är modulen avstängd gäller BEH-1. |
 | BEH-3 | En obehörig anropare **ska** inte få veta något om modulens data eller inställningar. |
 | BEH-4 | Modulens menyval, sidor och dashboard-delar **ska** döljas för användare där modulen inte är tillgänglig. |
 | BEH-5 | Om en användare öppnar en modulsida direkt via adress **ska** hen skickas till startsidan med ett förklarande meddelande. |
@@ -154,10 +166,10 @@ Förslag, ska bekräftas av produktägaren. `SUPERADMIN` tilldelas nivå per mod
 | API-1 | Kräver inloggning, alla roller. |
 | API-2 | Svaret är personligt och speglar den inloggades roll och åtkomstnivå. |
 | API-3 | Svaret innehåller alla kända moduler med `id`, `name`, `enabled`, `accessible` och `access` (den inloggades nivå: `none`, `read`, `write`). |
-| API-4 | `accessible` är `true` bara när `enabled` är `true` och rollens nivå är minst `read`. |
+| API-4 | `accessible` är `true` bara när `enabled` är `true` och kontots beräknade nivå är minst `read`. |
 | API-5 | `settings` innehåller bara en vitlistad delmängd av modulens inställningar som frontend behöver. Aldrig hemligheter. |
 | API-6 | `settings` utelämnas för moduler som inte är tillgängliga. |
-| API-7 | Andra rollers nivåer skickas inte med. |
+| API-7 | Modulernas `access`-listor och andra kontons roller skickas inte med. |
 
 Exempel:
 
@@ -204,8 +216,8 @@ Exempel:
 ## 10. Godkännandekriterier (exempel)
 
 1. Med `storage.enabled=false` svarar `GET /api/winter-seasons` med 403 `MODULE_DISABLED`, och menyn saknar uppläggningsplatser i båda applikationerna.
-2. Med `reports.access={ADMIN: read}` kan en `ADMIN` läsa rapporter men får 403 `MODULE_ROLE_FORBIDDEN` vid försök att ändra, och `GET /api/modules` visar `access: "read"` för hen. En `MEMBER` visas `accessible=false`.
-3. Systemet startar inte med `base.enabled=false`, med okänd roll eller nivå i `access`, eller med `storage` aktiv men `base` avstängd.
+2. Med `reports.access=[admin:r]` kan ett konto med `admin:rw` läsa rapporter men får 403 `MODULE_ROLE_FORBIDDEN` vid försök att ändra, och `GET /api/modules` visar `access: "read"` för kontot. Ett konto med bara `member:rw` visas `accessible=false`.
+3. Systemet startar inte med `base.enabled=false`, med ogiltig nivå eller ogiltigt rollnamn i `access`, utan `superadmin:rw` i `base.access`, eller med `storage` aktiv men `base` avstängd.
 4. Efter att `storage` stängts av och slagits på igen finns tidigare bokningar kvar.
 5. En medlem ser aldrig inställningar eller nycklar för `ai-mail` i `GET /api/modules`.
 6. Stängs `audit` av skrivs nya rader i händelseloggen fortfarande, men `GET /api/audit` svarar 403 `MODULE_DISABLED` och menyvalet saknas. När modulen slås på syns raderna som skrevs under tiden.
@@ -213,6 +225,6 @@ Exempel:
 ## 11. Öppna punkter
 
 - Standardnivåer per modul (avsnitt 3) är inte godkända.
-- Ska `/api/me/**` vara öppet för `ADMIN` och `SUPERADMIN` (om kopplade till en person), eller bara för `MEMBER`?
+- Ska `/api/me/**` vara öppet för konton med andra roller än `member` (om kopplade till en person), eller bara för `member`?
 - Funktionslistorna för `reports`, `ai-mail` och de framtida modulerna är förslag och behöver detaljeras.
-- Ska en användare kunna ha flera roller? Om ja måste nivån beräknas som den högsta av rollernas nivåer.
+- Beslutat: ett konto har flera rolltilldelningar och nivån beräknas som i avsnitt 3 (tak per post, högsta över matchande poster).

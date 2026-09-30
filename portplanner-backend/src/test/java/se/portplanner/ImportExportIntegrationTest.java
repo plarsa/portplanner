@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import se.portplanner.service.DockService;
@@ -31,16 +32,16 @@ class ImportExportIntegrationTest {
     @Autowired DockRepository dockRepository;
     @Autowired DockService dockService;
 
-    private String token;
+    private MockHttpSession session;
 
     @BeforeEach
     void login() throws Exception {
-        String body = mvc.perform(post("/api/auth/login")
+        var result = mvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"username\":\"admin\",\"password\":\"admin123\"}"))
                 .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        token = objectMapper.readTree(body).get("token").asText();
+                .andReturn();
+        session = (MockHttpSession) result.getRequest().getSession(false);
     }
 
     @AfterEach
@@ -60,7 +61,7 @@ class ImportExportIntegrationTest {
 
         // 1. Import bryggor.json – should create 2 docks and 61 slips
         mvc.perform(post("/api/import/docks")
-                .header("Authorization", "Bearer " + token)
+                .session(session)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
@@ -69,24 +70,24 @@ class ImportExportIntegrationTest {
                 .andExpect(jsonPath("$.warnings").isEmpty());
 
         // 2. Verify both docks are visible in the docks list
-        mvc.perform(get("/api/docks").header("Authorization", "Bearer " + token))
+        mvc.perform(get("/api/docks").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[?(@.name=='badhusb')]").exists())
                 .andExpect(jsonPath("$[?(@.name=='ytterbyvik')]").exists());
 
         // 3. Fetch all dock IDs and delete each one
         String docksJson = mvc.perform(get("/api/docks")
-                .header("Authorization", "Bearer " + token))
+                .session(session))
                 .andReturn().getResponse().getContentAsString();
 
         for (JsonNode dock : objectMapper.readTree(docksJson)) {
             mvc.perform(delete("/api/docks/" + dock.get("id").asLong())
-                    .header("Authorization", "Bearer " + token))
+                    .session(session))
                     .andExpect(status().isNoContent());
         }
 
         // 4. Verify no docks remain
-        mvc.perform(get("/api/docks").header("Authorization", "Bearer " + token))
+        mvc.perform(get("/api/docks").session(session))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(0));
     }
@@ -100,7 +101,7 @@ class ImportExportIntegrationTest {
 
         // First import
         mvc.perform(post("/api/import/docks")
-                .header("Authorization", "Bearer " + token)
+                .session(session)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
@@ -108,7 +109,7 @@ class ImportExportIntegrationTest {
 
         // Second import – both docks already exist, no slips added
         mvc.perform(post("/api/import/docks")
-                .header("Authorization", "Bearer " + token)
+                .session(session)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
