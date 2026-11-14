@@ -19,6 +19,7 @@ const routes = [
   { path: '/import-export', meta: { module: 'import-export' }, component: () => import('../views/ImportExportView.vue') },
   { path: '/audit', meta: { module: 'audit' }, component: () => import('../views/AuditView.vue') },
   { path: '/winter', meta: { module: 'storage' }, component: () => import('../views/WinterSeasonsView.vue') },
+  { path: '/rentals', meta: { module: 'rentals' }, component: () => import('../views/RentalObjectsView.vue') },
   { path: '/winter/yard/:seasonId', meta: { module: 'storage' }, component: () => import('../views/StorageYardView.vue') },
 ]
 

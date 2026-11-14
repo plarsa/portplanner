@@ -12,6 +12,7 @@
       <router-link v-if="modules.isAccessible('import-export')" to="/import-export">Import / Export</router-link>
       <router-link v-if="modules.isAccessible('audit')" to="/audit">Händelselogg</router-link>
       <router-link v-if="modules.isAccessible('storage')" to="/winter">Vinterupptagning</router-link>
+      <router-link v-if="modules.isAccessible('rentals')" to="/rentals">Uthyrning</router-link>
       <div class="spacer" />
       <div class="user-info">
         <span>{{ auth.username }}</span>
