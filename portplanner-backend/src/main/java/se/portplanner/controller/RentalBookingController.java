@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import se.portplanner.dto.RentalAdminBookingRequest;
 import se.portplanner.dto.RentalBookingResponse;
+import se.portplanner.dto.RentalReturnRequest;
 import se.portplanner.module.RequiresModule;
 import se.portplanner.service.RentalBookingService;
 
@@ -52,6 +53,13 @@ public class RentalBookingController {
     @Operation(summary = "Reject a pending booking")
     public RentalBookingResponse reject(@PathVariable Long id) {
         return service.reject(id);
+    }
+
+    @PostMapping("/{id}/return")
+    @Operation(summary = "Mark a booking returned on behalf of a member")
+    public RentalBookingResponse markReturned(@PathVariable Long id,
+                                              @RequestBody(required = false) RentalReturnRequest req) {
+        return service.markReturned(id, null, req);
     }
 
     @DeleteMapping("/{id}")

@@ -124,6 +124,14 @@ public class MeController {
     }
 
     @RequiresModule("rentals")
+    @PostMapping("/rentals/bookings/{id}/return")
+    @Operation(summary = "Return a rental object and optionally report a fault")
+    public RentalBookingResponse returnMyRentalBooking(@PathVariable Long id,
+                                                       @RequestBody(required = false) RentalReturnRequest req) {
+        return meService.returnMyRentalBooking(id, req);
+    }
+
+    @RequiresModule("rentals")
     @DeleteMapping("/rentals/bookings/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @Operation(summary = "Cancel one of my rental bookings")

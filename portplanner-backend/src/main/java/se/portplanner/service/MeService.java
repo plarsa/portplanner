@@ -78,6 +78,11 @@ public class MeService {
         rentalBookingService.cancel(bookingId, myPerson().getId());
     }
 
+    @Transactional
+    public RentalBookingResponse returnMyRentalBooking(Long bookingId, RentalReturnRequest req) {
+        return rentalBookingService.markReturned(bookingId, myPerson().getId(), req);
+    }
+
     private Person myPerson() {
         var person = currentUser().getPerson();
         if (person == null) throw new IllegalStateException("Your account is not linked to a person");

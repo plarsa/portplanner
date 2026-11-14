@@ -6,13 +6,19 @@ import org.springframework.transaction.annotation.Transactional;
 import se.portplanner.dto.RentalAdminBookingRequest;
 import se.portplanner.dto.RentalBookingResponse;
 import se.portplanner.dto.RentalBusyIntervalResponse;
+import se.portplanner.dto.RentalFaultReportResponse;
+import se.portplanner.dto.RentalReturnRequest;
 import se.portplanner.exception.ConflictException;
 import se.portplanner.exception.ResourceNotFoundException;
 import se.portplanner.model.RentalBooking;
 import se.portplanner.model.RentalBookingStatus;
+import se.portplanner.model.RentalFaultReport;
 import se.portplanner.repository.PersonRepository;
 import se.portplanner.repository.RentalBookingRepository;
+import se.portplanner.repository.RentalFaultReportRepository;
 import se.portplanner.repository.RentalObjectRepository;
+
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -27,15 +33,17 @@ public class RentalBookingService {
     private final PersonRepository persons;
     private final RentalRuleValidator rules;
     private final AuditService auditService;
+    private final RentalFaultReportRepository faults;
 
     public RentalBookingService(RentalObjectRepository objects, RentalBookingRepository bookings,
                                 PersonRepository persons, RentalRuleValidator rules,
-                                AuditService auditService) {
+                                AuditService auditService, RentalFaultReportRepository faults) {
         this.objects = objects;
         this.bookings = bookings;
         this.persons = persons;
         this.rules = rules;
         this.auditService = auditService;
+        this.faults = faults;
     }
 
     /** REN-4: the times only, never who holds them. */
@@ -150,6 +158,73 @@ public class RentalBookingService {
         bookings.save(booking);
         auditService.log("CANCELLED", "RENTAL_BOOKING", bookingId,
                 "Rental booking cancelled: " + booking.getObject().getName() + " " + booking.getStartAt());
+    }
+
+    /**
+     * REN-8 and REN-13: the borrower, or an administrator on their behalf, hands the object back and
+     * may note a fault. Unlike cancelling, this is allowed after the start time — that is the point of
+     * it, and the deliberate exception to REN-7.
+     */
+    public RentalBookingResponse markReturned(Long bookingId, Long personId, RentalReturnRequest req) {
+        var booking = ownedOrThrow(bookingId, personId);
+        if (booking.getStatus() != RentalBookingStatus.CONFIRMED) {
+            throw new ConflictException("Only a confirmed booking can be returned; this one is "
+                    + booking.getStatus().name().toLowerCase());
+        }
+        booking.setStatus(RentalBookingStatus.RETURNED);
+        booking.setReturnedAt(LocalDateTime.now());
+        var saved = bookings.save(booking);
+
+        var description = req == null || req.faultDescription() == null ? "" : req.faultDescription().trim();
+        if (!description.isEmpty()) {
+            var report = new RentalFaultReport();
+            report.setBooking(saved);
+            report.setDescription(description);
+            faults.save(report);
+            auditService.log("FAULT_REPORTED", "RENTAL_BOOKING", bookingId,
+                    "Fault reported on " + saved.getObject().getName() + ": " + description);
+        }
+        auditService.log("RETURNED", "RENTAL_BOOKING", bookingId,
+                "Rental returned: " + saved.getObject().getName());
+        return RentalBookingResponse.from(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public List<RentalFaultReportResponse> openFaults() {
+        return faults.findByResolvedAtIsNullOrderByReportedAtDesc().stream()
+                .map(RentalFaultReportResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RentalFaultReportResponse> resolvedFaults() {
+        return faults.findByResolvedAtIsNotNullOrderByReportedAtDesc().stream()
+                .map(RentalFaultReportResponse::from).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<RentalFaultReportResponse> faultsForObject(Long objectId) {
+        return faults.findByBookingObjectIdOrderByReportedAtDesc(objectId).stream()
+                .map(RentalFaultReportResponse::from).toList();
+    }
+
+    public void resolveFault(Long faultId) {
+        var report = faults.findById(faultId)
+                .orElseThrow(() -> new ResourceNotFoundException("Fault report " + faultId + " was not found"));
+        if (report.getResolvedAt() != null) {
+            throw new ConflictException("The fault report is already handled");
+        }
+        report.setResolvedAt(LocalDateTime.now());
+        report.setResolvedBy(currentUsername());
+        faults.save(report);
+        auditService.log("FAULT_RESOLVED", "RENTAL_BOOKING", report.getBooking().getId(),
+                "Fault report handled on " + report.getBooking().getObject().getName());
+    }
+
+    /** The acting user, resolved the same way AuditService resolves it. */
+    private String currentUsername() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        return (auth != null && auth.isAuthenticated() && !"anonymousUser".equals(auth.getName()))
+                ? auth.getName() : "system";
     }
 
     RentalBooking ownedOrThrow(Long bookingId, Long personId) {
