@@ -20,7 +20,8 @@
           <div v-else class="thumb empty-thumb">Ingen bild</div>
           <div class="card-body">
             <h3>{{ o.name }}</h3>
-            <p class="desc">{{ o.description || 'Ingen beskrivning' }}</p>
+            <div v-if="o.description" class="desc markdown-body" v-html="renderMarkdown(o.description)"></div>
+            <p v-else class="desc empty-desc">Ingen beskrivning</p>
             <ul class="rules">
               <li>{{ o.bookable ? 'Öppen för bokning' : 'Stängd för bokning' }}</li>
               <li>Längst {{ o.maxDurationHours }} timmar</li>
@@ -108,7 +109,8 @@
           <input v-model="form.name" placeholder="t.ex. Upptagningstrailer" required />
         </label>
         <label class="full">Beskrivning
-          <input v-model="form.description" placeholder="t.ex. Kräver dragkrok" />
+          <MarkdownEditor v-model="form.description"
+                          placeholder="## Rubrik&#10;Text om objektet. Kräver dragkrok." />
         </label>
         <label>Längsta bokning (timmar) *
           <input v-model.number="form.maxDurationHours" type="number" min="1" required />
@@ -160,6 +162,8 @@
 import { ref, onMounted, computed } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import BaseModal from '../components/BaseModal.vue'
+import MarkdownEditor from '../components/MarkdownEditor.vue'
+import { renderMarkdown } from '../lib/markdown'
 import {
   getObjects, createObject, updateObject, deleteObject, uploadImage, deleteImage,
   getBookings, createBooking, approveBooking, rejectBooking, returnBooking, cancelBooking,
@@ -389,6 +393,15 @@ h2 { font-size: 1.5rem; }
 .card-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
 .card-body h3 { font-size: 1.05rem; margin: 0; }
 .desc { color: #666; font-size: 0.85rem; margin: 0; }
+.empty-desc { font-style: italic; color: #aaa; }
+/* The description is injected with v-html, so its elements need :deep to be reached. */
+.markdown-body :deep(h4) { font-size: 0.92rem; margin: 0.5rem 0 0.2rem; color: #1a3a5c; }
+.markdown-body :deep(h5) { font-size: 0.85rem; margin: 0.45rem 0 0.2rem; color: #1a3a5c; }
+.markdown-body :deep(p) { margin: 0.25rem 0; }
+.markdown-body :deep(ul) { margin: 0.25rem 0; padding-left: 1.1rem; }
+.markdown-body :deep(li) { margin: 0.1rem 0; }
+.markdown-body :deep(> :first-child) { margin-top: 0; }
+.markdown-body :deep(> :last-child) { margin-bottom: 0; }
 .rules { list-style: none; padding: 0; margin: 0; font-size: 0.8rem; color: #555; }
 .rules li { padding: 0.1rem 0; }
 .card-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: auto; }

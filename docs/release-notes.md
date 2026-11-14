@@ -3,6 +3,7 @@
 ## Unreleased
 
 - An administrator can create an account for a person and issue it a new password, from the person's panel.
+- Rentals: an object's description is written with headings and formatting, and is shown formatted to members with the object's image on top.
 
 - Landing page on the base URL with links to the member portal and the admin app.
 - The member portal moved from `/` to `/member/`.

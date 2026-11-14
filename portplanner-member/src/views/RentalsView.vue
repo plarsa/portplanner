@@ -26,7 +26,7 @@
         <img v-if="o.hasImage" :src="`/api/me/rentals/objects/${o.id}/image`" alt="" class="thumb" />
         <div class="obj-body">
           <div class="obj-name">{{ o.name }}</div>
-          <p class="desc">{{ o.description || '' }}</p>
+          <div v-if="o.description" class="desc markdown-body" v-html="renderMarkdown(o.description)"></div>
           <ul class="rules">
             <li>Längst {{ o.maxDurationHours }} timmar per bokning</li>
             <li>Kan bokas upp till {{ o.maxDaysAhead }} dagar fram</li>
@@ -70,6 +70,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import BookingCalendar from '../components/BookingCalendar.vue'
+import { renderMarkdown } from '../lib/markdown'
 import {
   getObjects, getAvailability, getMyBookings, createBooking, cancelBooking, returnBooking,
 } from '../api/rentals'
@@ -187,13 +188,19 @@ h2 { margin: 0 0 1.5rem; }
 .card-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
 
 .obj-card { background: white; border-radius: 10px; margin-bottom: 0.6rem; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
-  overflow: hidden; display: flex; gap: 1rem; }
+  overflow: hidden; display: flex; flex-direction: column; }
 .obj-card.on { outline: 2px solid #1a3a5c; }
-.thumb { width: 120px; height: 120px; object-fit: cover; flex-shrink: 0; background: #eef2f7; }
-.obj-body { padding: 0.9rem 1rem 0.9rem 0; display: flex; flex-direction: column; gap: 0.35rem; flex: 1; }
-.obj-card .obj-body { padding-left: 1rem; }
-.obj-card .thumb + .obj-body { padding-left: 0; }
+.thumb { width: 100%; height: 170px; object-fit: cover; flex-shrink: 0; background: #eef2f7; display: block; }
+.obj-body { padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.35rem; flex: 1; }
 .desc { font-size: 0.85rem; color: #666; margin: 0; }
+/* The description is injected with v-html, so its elements need :deep to be reached. */
+.markdown-body :deep(h4) { font-size: 0.92rem; margin: 0.5rem 0 0.2rem; color: #1a3a5c; }
+.markdown-body :deep(h5) { font-size: 0.85rem; margin: 0.45rem 0 0.2rem; color: #1a3a5c; }
+.markdown-body :deep(p) { margin: 0.25rem 0; }
+.markdown-body :deep(ul) { margin: 0.25rem 0; padding-left: 1.1rem; }
+.markdown-body :deep(li) { margin: 0.1rem 0; }
+.markdown-body :deep(> :first-child) { margin-top: 0; }
+.markdown-body :deep(> :last-child) { margin-bottom: 0; }
 .rules { list-style: none; padding: 0; margin: 0; font-size: 0.78rem; color: #777; }
 .rules li { padding: 0.05rem 0; }
 .obj-body button { align-self: flex-start; margin-top: auto; }
