@@ -18,14 +18,23 @@
     <main class="main-content">
       <router-view />
     </main>
+    <footer class="app-footer">Portplanner {{ version }}</footer>
   </div>
 </template>
 
 <script setup>
+import { onMounted, ref } from 'vue'
 import { useAuthStore } from './stores/auth'
 import { useModulesStore } from './stores/modules'
+import { getVersion } from './api/version'
+
 const auth = useAuthStore()
 const modules = useModulesStore()
+const version = ref('')
+
+onMounted(() => {
+  getVersion().then(v => { version.value = v }).catch(() => {})
+})
 </script>
 
 <style>
@@ -63,4 +72,12 @@ a { color: inherit; }
 .nav-user button:hover { background: rgba(255,255,255,0.25); }
 
 .main-content { flex: 1; padding: 2rem 1.5rem; max-width: 960px; margin: 0 auto; width: 100%; }
+
+.app-footer {
+  padding: 0.6rem 1rem;
+  text-align: center;
+  font-size: 0.75rem;
+  color: #7d8a9c;
+  background: #e8eef6;
+}
 </style>

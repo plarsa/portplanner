@@ -39,6 +39,13 @@
       .choice:hover { background: #24507d; }
       .choice .label { display: block; font-size: 1.15rem; font-weight: 700; }
       .choice .hint { display: block; margin-top: 0.35rem; font-size: 0.85rem; color: rgba(255,255,255,0.75); }
+      footer {
+        padding: 0.6rem 1rem;
+        text-align: center;
+        font-size: 0.75rem;
+        color: #7d8a9c;
+        background: #e8eef6;
+      }
     </style>
   </head>
   <body>
@@ -56,5 +63,12 @@
         </a>
       </div>
     </main>
+    <footer>Portplanner <span id="version"></span></footer>
+    <script>
+      fetch('/api/version')
+        .then(r => r.json())
+        .then(d => { document.getElementById('version').textContent = d.version })
+        .catch(() => {})
+    </script>
   </body>
 </html>

@@ -33,7 +33,7 @@ const modules = useModulesStore()
 </script>
 
 <style scoped>
-.layout { display: flex; min-height: 100vh; }
+.layout { display: flex; flex: 1; }
 .sidebar {
   width: 220px; background: #1a3a5c; color: white;
   display: flex; flex-direction: column; padding: 1.5rem 1rem;
