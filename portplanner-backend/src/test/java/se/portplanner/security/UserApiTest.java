@@ -72,6 +72,89 @@ class UserApiTest {
         return persons.save(p);
     }
 
+    /** The created account's id and its one-time password, which several reset tests need. */
+    private String[] createAccountWithPassword(String email, String roles) throws Exception {
+        var res = post("/api/users", body(email, roles, null), asUserNamed("boss", "superadmin:rw"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        var tree = json.readTree(res);
+        return new String[] { tree.get("user").get("id").asText(), tree.get("temporaryPassword").asText() };
+    }
+
+    private ResultActions login(String email, String password) throws Exception {
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"username\":\"" + email + "\",\"password\":\"" + password + "\"}"));
+    }
+
+    private ResultActions reset(String id, org.springframework.test.web.servlet.request.RequestPostProcessor who)
+            throws Exception {
+        return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .post("/api/users/" + id + "/reset-password").with(who));
+    }
+
+    @Test
+    void resetReturnsANewPasswordThatWorksAndRetiresTheOld() throws Exception {
+        var account = createAccountWithPassword("reset@hamn.se", "\"admin:rw\"");
+        var first = account[1];
+
+        var res = reset(account[0], asUserNamed("boss", "superadmin:rw"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.temporaryPassword").isString())
+                .andReturn().getResponse().getContentAsString();
+        var second = json.readTree(res).get("temporaryPassword").asText();
+
+        assertNotEquals(first, second, "a reset must issue a different password");
+        assertFalse(res.contains("passwordHash"));
+        login("reset@hamn.se", second).andExpect(status().isOk());
+        login("reset@hamn.se", first).andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void resetSetsMustChangePassword() throws Exception {
+        var account = createAccountWithPassword("flag@hamn.se", "\"admin:rw\"");
+        reset(account[0], asUserNamed("boss", "superadmin:rw"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.mustChangePassword").value(true));
+    }
+
+    @Test
+    void resetLeavesADisabledAccountDisabled() throws Exception {
+        var account = createAccountWithPassword("off@hamn.se", "\"admin:rw\"");
+        mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .post("/api/users/" + account[0] + "/disable").with(asUserNamed("boss", "superadmin:rw")))
+                .andExpect(status().isOk());
+
+        reset(account[0], asUserNamed("boss", "superadmin:rw"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.status").value("DISABLED"));
+    }
+
+    @Test
+    void resetEndsTheAccountsSessions() throws Exception {
+        var account = createAccountWithPassword("sess@hamn.se", "\"admin:rw\"");
+        var cookie = login("sess@hamn.se", account[1]).andExpect(status().isOk())
+                .andReturn().getResponse().getCookie("SESSION");
+        assertNotNull(cookie);
+        mvc.perform(get("/api/auth/me").cookie(cookie)).andExpect(status().isOk());
+
+        reset(account[0], asUserNamed("boss", "superadmin:rw")).andExpect(status().isOk());
+
+        assertTrue(sessions.findByPrincipalName("sess@hamn.se").isEmpty(),
+                "a new password must end the account's sessions");
+        mvc.perform(get("/api/auth/me").cookie(cookie)).andExpect(status().is4xxClientError());
+    }
+
+    @Test
+    void resetOnAnUnknownIdGives404() throws Exception {
+        reset("0", asUserNamed("boss", "superadmin:rw")).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void aMemberCannotResetAPassword() throws Exception {
+        var account = createAccountWithPassword("victim@hamn.se", "\"admin:rw\"");
+        reset(account[0], asUserNamed("m", "member:rw")).andExpect(status().isForbidden());
+    }
+
     @Test
     void createReturnsOneTimePasswordAndSetsUsernameFromEmail() throws Exception {
         long before = auditLog.count();

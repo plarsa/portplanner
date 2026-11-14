@@ -147,6 +147,27 @@ public class UserService {
         return UserResponse.from(user, knownRoles());
     }
 
+    /**
+     * Issues a new generated password and returns it once, the way account creation does. The
+     * status is left alone: a reset is not an invitation, and a disabled account stays disabled
+     * until it is re-enabled. Existing sessions end, since a reset is also what an administrator
+     * reaches for when a password may be in the wrong hands.
+     */
+    public UserCreatedResponse resetPassword(Actor actor, Long id) {
+        var user = getOrThrow(id);
+        policy.assertCanManage(actor);
+
+        String temporary = passwords.generate();
+        user.setPasswordHash(encoder.encode(temporary));
+        user.setMustChangePassword(true);
+        user = users.save(user);
+
+        sessions.invalidate(user.getUsername());
+        audit.log("USER_PASSWORD_RESET", "USER", user.getId(),
+                "New password issued for " + user.getUsername());
+        return new UserCreatedResponse(UserResponse.from(user, knownRoles()), temporary);
+    }
+
     public UserResponse disable(Actor actor, Long id) {
         var user = getOrThrow(id);
         policy.assertCanChangeStatus(actor, user, UserStatus.DISABLED);

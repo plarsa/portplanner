@@ -59,6 +59,12 @@ public class UserController {
         return users.update(Actor.from(auth), id, req);
     }
 
+    @PostMapping("/users/{id}/reset-password")
+    @Operation(summary = "Issue a new one-time password. It is returned once")
+    public UserCreatedResponse resetPassword(@PathVariable Long id, Authentication auth) {
+        return users.resetPassword(Actor.from(auth), id);
+    }
+
     @PostMapping("/users/{id}/disable")
     @Operation(summary = "Disable an account and end its sessions")
     public UserResponse disable(@PathVariable Long id, Authentication auth) {
