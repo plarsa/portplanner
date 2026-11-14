@@ -3,6 +3,7 @@ package se.portplanner.service;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import se.portplanner.dto.RentalAdminBookingRequest;
 import se.portplanner.dto.RentalBookingResponse;
 import se.portplanner.dto.RentalBusyIntervalResponse;
 import se.portplanner.exception.ConflictException;
@@ -60,9 +61,39 @@ public class RentalBookingService {
 
     /** REN-12: an administrator's booking skips approval but takes the same lock and checks. */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public RentalBookingResponse bookForPerson(Long objectId, Long personId,
-                                               LocalDateTime start, LocalDateTime end) {
-        return create(objectId, personId, start, end, true);
+    public RentalBookingResponse bookForPerson(RentalAdminBookingRequest req) {
+        return create(req.objectId(), req.personId(), req.startAt(), req.endAt(), true);
+    }
+
+    /** REN-10: everything booked on an object in the interval, in whatever state. */
+    @Transactional(readOnly = true)
+    public List<RentalBookingResponse> findByObject(Long objectId, LocalDateTime from, LocalDateTime to) {
+        return bookings.findByObjectIdAndStartAtLessThanAndEndAtGreaterThanOrderByStartAtAsc(objectId, to, from)
+                .stream().map(RentalBookingResponse::from).toList();
+    }
+
+    /** REN-6: the decision on a booking that has been holding its time since it was made. */
+    public RentalBookingResponse approve(Long id) {
+        return decide(id, RentalBookingStatus.CONFIRMED, "APPROVED", "approved");
+    }
+
+    public RentalBookingResponse reject(Long id) {
+        return decide(id, RentalBookingStatus.REJECTED, "REJECTED", "rejected");
+    }
+
+    private RentalBookingResponse decide(Long id, RentalBookingStatus outcome,
+                                         String event, String word) {
+        var booking = bookings.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Rental booking " + id + " was not found"));
+        if (booking.getStatus() != RentalBookingStatus.PENDING) {
+            throw new ConflictException("Only a pending booking can be " + word + "; this one is "
+                    + booking.getStatus().name().toLowerCase());
+        }
+        booking.setStatus(outcome);
+        var saved = bookings.save(booking);
+        auditService.log(event, "RENTAL_BOOKING", id,
+                "Rental booking " + word + ": " + booking.getObject().getName() + " " + booking.getStartAt());
+        return RentalBookingResponse.from(saved);
     }
 
     private RentalBookingResponse create(Long objectId, Long personId, LocalDateTime start,

@@ -18,6 +18,10 @@ public interface RentalBookingRepository extends JpaRepository<RentalBooking, Lo
     List<RentalBooking> findByObjectIdAndStatusInAndStartAtLessThanAndEndAtGreaterThan(
             Long objectId, Collection<RentalBookingStatus> statuses, LocalDateTime before, LocalDateTime after);
 
+    /** Every booking touching the interval, whatever its state: the administrator's view. */
+    List<RentalBooking> findByObjectIdAndStartAtLessThanAndEndAtGreaterThanOrderByStartAtAsc(
+            Long objectId, LocalDateTime before, LocalDateTime after);
+
     List<RentalBooking> findByPersonIdOrderByStartAtDesc(Long personId);
 
     boolean existsByPersonId(Long personId);
