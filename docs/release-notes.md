@@ -10,3 +10,4 @@
 - Fixed the SPA URLs with a trailing slash (`/admin/`, `/member/`) returning an error.
 - A 404 is no longer reported as 403.
 - The service now starts without a configured superadmin, using a generated password that is logged once.
+- Fixed the SPA stylesheets and scripts being served as HTML, which made the browser reject them.
