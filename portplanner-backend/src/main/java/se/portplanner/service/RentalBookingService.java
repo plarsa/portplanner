@@ -1,7 +1,6 @@
 package se.portplanner.service;
 
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import se.portplanner.dto.RentalAdminBookingRequest;
 import se.portplanner.dto.RentalBookingResponse;
@@ -59,16 +58,18 @@ public class RentalBookingService {
     }
 
     /**
-     * A new booking for a member. REQUIRES_NEW so that a caller already inside a transaction still
-     * gets its own, which is what makes the row lock below serialise competing requests.
+     * A new booking for a member. It joins the caller's transaction on purpose: the row lock taken
+     * in {@link #create} is held until that transaction commits, which is what serialises competing
+     * requests. Asking for a separate transaction would suspend the caller's while keeping its
+     * connection, so every booking would hold two and a burst the size of the pool would deadlock.
      */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public RentalBookingResponse book(Long objectId, Long personId, LocalDateTime start, LocalDateTime end) {
         return create(objectId, personId, start, end, false);
     }
 
     /** REN-12: an administrator's booking skips approval but takes the same lock and checks. */
-    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    @Transactional
     public RentalBookingResponse bookForPerson(RentalAdminBookingRequest req) {
         return create(req.objectId(), req.personId(), req.startAt(), req.endAt(), true);
     }
@@ -148,7 +149,10 @@ public class RentalBookingService {
      */
     public void cancel(Long bookingId, Long personId) {
         var booking = ownedOrThrow(bookingId, personId);
-        if (!RentalBookingStatus.holding().contains(booking.getStatus())) {
+        // Not holding(): that includes RETURNED, and cancelling a returned booking would wipe the
+        // record of the return while leaving returnedAt and any fault report behind.
+        if (booking.getStatus() != RentalBookingStatus.PENDING
+                && booking.getStatus() != RentalBookingStatus.CONFIRMED) {
             throw new ConflictException("The booking is already " + booking.getStatus().name().toLowerCase());
         }
         if (personId != null && !booking.getStartAt().isAfter(LocalDateTime.now())) {
@@ -170,6 +174,9 @@ public class RentalBookingService {
         if (booking.getStatus() != RentalBookingStatus.CONFIRMED) {
             throw new ConflictException("Only a confirmed booking can be returned; this one is "
                     + booking.getStatus().name().toLowerCase());
+        }
+        if (booking.getStartAt().isAfter(LocalDateTime.now())) {
+            throw new ConflictException("The booking has not started yet, so it cannot be returned");
         }
         booking.setStatus(RentalBookingStatus.RETURNED);
         booking.setReturnedAt(LocalDateTime.now());

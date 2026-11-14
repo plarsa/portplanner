@@ -12,6 +12,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import se.portplanner.model.AppUser;
 import se.portplanner.model.Person;
+import se.portplanner.model.RentalBooking;
+import se.portplanner.model.RentalBookingStatus;
 import se.portplanner.module.RoleGrant;
 import se.portplanner.repository.AppUserRepository;
 import se.portplanner.repository.PersonRepository;
@@ -104,9 +106,23 @@ class RentalReturnApiTest {
         return ((Number) JsonPath.read(body, "$.id")).longValue();
     }
 
+    /**
+     * A booking that is already under way. The rule validator refuses a start in the past, so a
+     * booking that can be returned cannot be created through the API and is seeded directly.
+     */
+    private long startedBooking(Long personId) {
+        var b = new RentalBooking();
+        b.setObject(objects.findById(objectId).orElseThrow());
+        b.setPerson(persons.findById(personId).orElseThrow());
+        b.setStartAt(LocalDateTime.now().minusHours(2));
+        b.setEndAt(LocalDateTime.now().plusHours(2));
+        b.setStatus(RentalBookingStatus.CONFIRMED);
+        return bookings.save(b).getId();
+    }
+
     @Test
     void aMemberReturnsWithAFaultReport() throws Exception {
-        long id = book(anna(), start, start.plusHours(4));
+        long id = startedBooking(annaPersonId);
         mvc.perform(post("/api/me/rentals/bookings/" + id + "/return").with(anna())
                         .contentType(APPLICATION_JSON)
                         .content("{\"faultDescription\":\"Storseglet är trasigt\"}"))
@@ -123,7 +139,7 @@ class RentalReturnApiTest {
 
     @Test
     void returningWithoutAFaultReportIsAllowed() throws Exception {
-        long id = book(anna(), start, start.plusHours(4));
+        long id = startedBooking(annaPersonId);
         mvc.perform(post("/api/me/rentals/bookings/" + id + "/return").with(anna())
                         .contentType(APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk())
@@ -134,7 +150,7 @@ class RentalReturnApiTest {
 
     @Test
     void anAdminReturnsOnBehalfOfAMember() throws Exception {
-        long id = book(anna(), start, start.plusHours(4));
+        long id = startedBooking(annaPersonId);
         mvc.perform(post("/api/rentals/bookings/" + id + "/return").with(asUser("admin:rw"))
                         .contentType(APPLICATION_JSON).content("{\"faultDescription\":\"Repet saknas\"}"))
                 .andExpect(status().isOk())
@@ -145,7 +161,7 @@ class RentalReturnApiTest {
 
     @Test
     void aMemberCannotReturnAnotherMembersBooking() throws Exception {
-        long id = book(anna(), start, start.plusHours(4));
+        long id = startedBooking(annaPersonId);
         mvc.perform(post("/api/me/rentals/bookings/" + id + "/return").with(bo())
                         .contentType(APPLICATION_JSON).content("{}"))
                 .andExpect(status().isNotFound());
@@ -153,7 +169,7 @@ class RentalReturnApiTest {
 
     @Test
     void aFaultReportDoesNotBlockLaterBookings() throws Exception {
-        long id = book(anna(), start, start.plusHours(4));
+        long id = startedBooking(annaPersonId);
         mvc.perform(post("/api/me/rentals/bookings/" + id + "/return").with(anna())
                         .contentType(APPLICATION_JSON).content("{\"faultDescription\":\"Skadad fender\"}"))
                 .andExpect(status().isOk());
@@ -163,7 +179,7 @@ class RentalReturnApiTest {
 
     @Test
     void resolvingAFaultReportRemovesItFromTheOpenList() throws Exception {
-        long id = book(anna(), start, start.plusHours(4));
+        long id = startedBooking(annaPersonId);
         mvc.perform(post("/api/me/rentals/bookings/" + id + "/return").with(anna())
                         .contentType(APPLICATION_JSON).content("{\"faultDescription\":\"Trasig vinsch\"}"))
                 .andExpect(status().isOk());
@@ -180,8 +196,16 @@ class RentalReturnApiTest {
     }
 
     @Test
-    void returningTwiceIsRejected() throws Exception {
+    void returningBeforeTheBookingStartsIsRejected() throws Exception {
         long id = book(anna(), start, start.plusHours(4));
+        mvc.perform(post("/api/me/rentals/bookings/" + id + "/return").with(anna())
+                        .contentType(APPLICATION_JSON).content("{}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void returningTwiceIsRejected() throws Exception {
+        long id = startedBooking(annaPersonId);
         mvc.perform(post("/api/me/rentals/bookings/" + id + "/return").with(anna())
                         .contentType(APPLICATION_JSON).content("{}"))
                 .andExpect(status().isOk());
@@ -192,7 +216,7 @@ class RentalReturnApiTest {
 
     @Test
     void faultReportsCanBeFilteredByObject() throws Exception {
-        long id = book(anna(), start, start.plusHours(4));
+        long id = startedBooking(annaPersonId);
         mvc.perform(post("/api/me/rentals/bookings/" + id + "/return").with(anna())
                         .contentType(APPLICATION_JSON).content("{\"faultDescription\":\"Lös bom\"}"))
                 .andExpect(status().isOk());

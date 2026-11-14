@@ -177,7 +177,9 @@ class RentalBookingApiTest {
                         .param("to", start.plusDays(1).format(ISO))
                         .with(asUser("admin:rw")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].personId").value(annaPersonId))
+                .andExpect(jsonPath("$[0].personName").value("Anna Ek"));
     }
 
     @Test

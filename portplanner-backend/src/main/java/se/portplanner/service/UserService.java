@@ -180,7 +180,7 @@ public class UserService {
         try {
             return roles.stream().map(RoleGrant::valueOf).toList();
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Ogiltig rolltilldelning: " + e.getMessage());
+            throw new IllegalArgumentException("Invalid role grant: " + e.getMessage());
         }
     }
 

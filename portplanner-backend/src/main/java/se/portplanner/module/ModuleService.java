@@ -82,7 +82,7 @@ public class ModuleService {
             log.info("Module {}: {}{}", m.id(), enabled.get(m) ? "on" : "off",
                     enabled.get(m) ? " access=" + access.get(m) : "");
         }
-        log.info("Rollkatalog: {}", roleCatalog());
+        log.info("Role catalogue: {}", roleCatalog());
     }
 
     public boolean isEnabled(String id) {

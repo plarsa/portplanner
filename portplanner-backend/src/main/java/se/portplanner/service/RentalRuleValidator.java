@@ -28,10 +28,12 @@ public class RentalRuleValidator {
         if (!end.isAfter(start)) {
             throw new ConflictException("The booking must end after it starts");
         }
-        var hours = Duration.between(start, end).toHours();
-        if (hours > object.getMaxDurationHours()) {
-            throw new ConflictException("The booking is " + hours + " hours long, and the object allows at most "
-                    + object.getMaxDurationHours());
+        // Compared as instants: Duration.toHours() truncates, so 08:00-16:59 would read as 8
+        // hours and slip past a maximum of 8.
+        if (end.isAfter(start.plusHours(object.getMaxDurationHours()))) {
+            var minutes = Duration.between(start, end).toMinutes();
+            throw new ConflictException("The booking is " + minutes / 60 + "h " + minutes % 60
+                    + "m long, and the object allows at most " + object.getMaxDurationHours() + " hours");
         }
         if (start.isBefore(now)) {
             throw new ConflictException("The booking cannot start in the past");

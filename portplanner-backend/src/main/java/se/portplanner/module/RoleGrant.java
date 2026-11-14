@@ -45,7 +45,7 @@ public record RoleGrant(
 
     /** Reads {@code role:r} or {@code role:rw}. Spring uses it when binding the configuration as well. */
     public static RoleGrant valueOf(String text) {
-        if (text == null) throw new IllegalArgumentException("Tom rolltilldelning");
+        if (text == null) throw new IllegalArgumentException("Empty role grant");
         int i = text.lastIndexOf(':');
         if (i <= 0 || i == text.length() - 1) {
             throw new IllegalArgumentException("Invalid entry '" + text + "', expected role:level (for example admin:rw)");

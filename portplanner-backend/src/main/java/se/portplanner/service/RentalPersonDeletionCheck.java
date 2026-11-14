@@ -17,7 +17,10 @@ public class RentalPersonDeletionCheck implements PersonDeletionCheck {
     @Override
     public void check(Long personId) {
         if (bookings.existsByPersonId(personId)) {
-            throw new ConflictException("The person has rental bookings. Cancel them first");
+            // Deliberately status-blind: rental_bookings.person_id is NOT NULL, so a cancelled
+            // booking still pins the person. Cancelling more would not help, so do not ask for it.
+            throw new ConflictException(
+                    "The person has rental history and cannot be deleted");
         }
     }
 }

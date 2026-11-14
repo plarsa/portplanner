@@ -27,8 +27,8 @@
           v-for="h in HOURS"
           :key="h"
           class="hour"
-          :class="{ taken: hourTaken(h), inRange: inRange(h), edge: h === startHour || h === endHour }"
-          :disabled="hourTaken(h)"
+          :class="{ taken: hourUnavailable(h), inRange: inRange(h), edge: h === startHour || h === endHour }"
+          :disabled="hourUnavailable(h)"
           @click="pickHour(h)">
           {{ String(h).padStart(2, '0') }}
         </button>
@@ -68,11 +68,14 @@ function startOfDay(d) {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate())
 }
 
-const lastSelectable = computed(() => {
-  const d = new Date(today)
+// The exact instant the backend stops accepting a start, mirrored from RentalRuleValidator.
+const latestStart = computed(() => {
+  const d = new Date()
   d.setDate(d.getDate() + props.maxDaysAhead)
   return d
 })
+/** The last day that still holds at least one acceptable start hour. */
+const lastSelectable = computed(() => startOfDay(latestStart.value))
 
 function iso(d) {
   const pad = (n) => String(n).padStart(2, '0')
@@ -126,14 +129,31 @@ function pickDay(day) {
   rangeError.value = ''
 }
 
-/** An hour cell is taken when the hour it opens is covered by a busy interval. */
-function hourTaken(hour) {
+/**
+ * Whether an hour cannot open a booking: it is covered by a busy interval, it is not in the
+ * future, or it is past the object's booking horizon. Hour 24 only ever ends a booking, so it
+ * is judged by the range check in pickHour instead.
+ */
+function hourUnavailable(hour) {
   if (!selectedDate.value || hour === 24) return false
-  const from = new Date(`${selectedDate.value}T${String(hour).padStart(2, '0')}:00:00`)
+  const from = hourStart(hour)
+  if (from <= new Date()) return true
+  if (from > latestStart.value) return true
   const to = new Date(from)
   to.setHours(to.getHours() + 1)
-  if (to <= new Date()) return true
   return props.busy.some(b => new Date(b.startAt) < to && new Date(b.endAt) > from)
+}
+
+function hourStart(hour) {
+  return new Date(`${selectedDate.value}T${String(hour).padStart(2, '0')}:00:00`)
+}
+
+/** Finding 3: an end hour may not be dragged across an hour that is already taken. */
+function rangeIsClear(from, to) {
+  for (let h = from; h < to; h++) {
+    if (hourUnavailable(h)) return false
+  }
+  return true
 }
 
 function inRange(hour) {
@@ -154,6 +174,10 @@ function pickHour(hour) {
   }
   if (hour - startHour.value > props.maxDurationHours) {
     rangeError.value = `Längst ${props.maxDurationHours} timmar.`
+    return
+  }
+  if (!rangeIsClear(startHour.value, hour)) {
+    rangeError.value = 'Någon timme i intervallet är redan bokad.'
     return
   }
   endHour.value = hour

@@ -70,6 +70,13 @@ class RentalRuleValidatorTest {
     }
 
     @Test
+    void aBookingAlmostTwiceTheMaxDurationIsRejected() {
+        // 08:00-16:59 is 8h59m. Truncating to whole hours would read it as 8 and let it through.
+        assertThrows(ConflictException.class,
+                () -> validator.check(object(), at(2, 8), at(2, 16).plusMinutes(59), NOW));
+    }
+
+    @Test
     void aBookingExactlyAtMaxDurationPasses() {
         assertDoesNotThrow(() -> validator.check(object(), at(2, 8), at(2, 16), NOW));
     }

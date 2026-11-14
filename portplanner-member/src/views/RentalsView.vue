@@ -95,7 +95,8 @@ function formatTime(t) {
 
 const canCancel = (b) =>
   ['PENDING', 'CONFIRMED'].includes(b.status) && new Date(b.startAt) > new Date()
-const canReturn = (b) => b.status === 'CONFIRMED'
+// The backend refuses a return before the start time, so do not offer the button yet.
+const canReturn = (b) => b.status === 'CONFIRMED' && new Date(b.startAt) <= new Date()
 
 function isoLocal(d) {
   const pad = (n) => String(n).padStart(2, '0')

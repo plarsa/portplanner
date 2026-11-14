@@ -51,10 +51,11 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr><th>Från</th><th>Till</th><th>Status</th><th>Återlämnad</th><th></th></tr>
+              <tr><th>Medlem</th><th>Från</th><th>Till</th><th>Status</th><th>Återlämnad</th><th></th></tr>
             </thead>
             <tbody>
               <tr v-for="b in bookings" :key="b.id">
+                <td>{{ b.personName }}</td>
                 <td>{{ formatTime(b.startAt) }}</td>
                 <td>{{ formatTime(b.endAt) }}</td>
                 <td><span class="status" :class="b.status.toLowerCase()">{{ statusText(b.status) }}</span></td>
@@ -62,13 +63,13 @@
                 <td class="actions">
                   <button v-if="b.status === 'PENDING'" @click="act(approveBooking, b.id)">Godkänn</button>
                   <button v-if="b.status === 'PENDING'" class="danger" @click="act(rejectBooking, b.id)">Avslå</button>
-                  <button v-if="b.status === 'CONFIRMED'" @click="openReturn(b)">Återlämna</button>
+                  <button v-if="canReturn(b)" @click="openReturn(b)">Återlämna</button>
                   <button v-if="['PENDING','CONFIRMED'].includes(b.status)" class="danger"
                           @click="act(cancelBooking, b.id)">Avboka</button>
                 </td>
               </tr>
               <tr v-if="!bookings.length">
-                <td colspan="5" class="empty">Inga bokningar i perioden</td>
+                <td colspan="6" class="empty">Inga bokningar i perioden</td>
               </tr>
             </tbody>
           </table>
@@ -202,6 +203,9 @@ const STATUS_TEXT = {
   CANCELLED: 'Avbokad', RETURNED: 'Återlämnad',
 }
 const statusText = (s) => STATUS_TEXT[s] || s
+
+// The backend refuses a return before the start time.
+const canReturn = (b) => b.status === 'CONFIRMED' && new Date(b.startAt) <= new Date()
 
 async function load() {
   const { data } = await getObjects()

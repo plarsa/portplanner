@@ -25,6 +25,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static se.portplanner.module.TestUsers.asUser;
 
@@ -97,6 +98,19 @@ class RentalDeletionApiTest {
     void deletingAPersonWithoutRentalBookingsStillWorks() throws Exception {
         mvc.perform(delete("/api/persons/" + personId).with(asUser("admin:rw")))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void theRefusalDoesNotAskForCancellationThatIsAlreadyDone() throws Exception {
+        bookForPerson();
+        var bookingId = bookings.findAll().getFirst().getId();
+        mvc.perform(delete("/api/rentals/bookings/" + bookingId).with(asUser("admin:rw")))
+                .andExpect(status().isNoContent());
+        // The booking is cancelled now, but the row remains and the person still cannot be
+        // deleted. The message must say that rather than ask for another cancellation.
+        mvc.perform(delete("/api/persons/" + personId).with(asUser("admin:rw")))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("rental history")));
     }
 
     @Test
