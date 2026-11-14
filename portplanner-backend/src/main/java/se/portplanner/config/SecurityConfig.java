@@ -50,6 +50,10 @@ public class SecurityConfig {
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/admin", "/admin/**").permitAll()
                 .requestMatchers("/member", "/member/**").permitAll()
+                // REN-14: rentals needs member:rw for booking, so the module level alone would
+                // also open the admin API to members. This is the module's own role gate and is
+                // deliberately not widened to the other modules here.
+                .requestMatchers("/api/rentals/**").hasRole("ADMIN")
                 .requestMatchers("/api/me/**").hasAnyRole("MEMBER", "ADMIN", "HARBOUR_MASTER")
                 .anyRequest().authenticated()
             )
