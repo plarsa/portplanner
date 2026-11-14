@@ -43,6 +43,10 @@ logging:
     se.portplanner: DEBUG
 
 portplanner:
+  file-store:
+    type: local
+    local:
+      path: ${DATA_DIR:./data}/files
   iam:
     # The system superadmins live here only, never in the database. Without an enabled account
     # the service starts on a generated password that is logged once, so configure one here.
