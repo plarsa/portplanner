@@ -11,3 +11,5 @@
 - A 404 is no longer reported as 403.
 - The service now starts without a configured superadmin, using a generated password that is logged once.
 - Fixed the SPA stylesheets and scripts being served as HTML, which made the browser reject them.
+- Rentals: members book the club's trailer and day-sailing boats in a calendar and report faults on return.
+- Uploaded files are stored through a pluggable file store, with the local filesystem as the first implementation.
