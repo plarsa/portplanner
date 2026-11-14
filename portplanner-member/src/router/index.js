@@ -12,6 +12,7 @@ const routes = [
   { path: '/queue', meta: { module: 'member-portal' }, component: () => import('../views/MyQueueView.vue') },
   { path: '/profile', meta: { module: 'member-portal' }, component: () => import('../views/ProfileView.vue') },
   { path: '/haul-out', meta: { module: 'storage' }, component: () => import('../views/HaulOutView.vue') },
+  { path: '/rentals', meta: { module: 'rentals' }, component: () => import('../views/RentalsView.vue') },
 ]
 
 const router = createRouter({

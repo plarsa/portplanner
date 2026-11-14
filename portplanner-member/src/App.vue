@@ -8,6 +8,7 @@
         <router-link v-if="modules.isAccessible('member-portal')" to="/boats">Mina båtar</router-link>
         <router-link v-if="modules.isAccessible('member-portal')" to="/queue">Kö</router-link>
         <router-link v-if="modules.isAccessible('storage')" to="/haul-out">Vinterupptagning</router-link>
+        <router-link v-if="modules.isAccessible('rentals')" to="/rentals">Hyra</router-link>
         <router-link v-if="modules.isAccessible('member-portal')" to="/profile">Profil</router-link>
       </div>
       <div class="nav-user">
