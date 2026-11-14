@@ -6,6 +6,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.server.ResponseStatusException;
 import se.portplanner.module.ModuleService;
 
+/**
+ * Forwards deep links into the two single-page applications so that the browser
+ * history routes keep working on a page reload. The landing page at "/" is a plain
+ * static resource and is served by Spring's welcome-page handling.
+ */
 @Controller
 public class SpaController {
 
@@ -20,11 +25,11 @@ public class SpaController {
         return "forward:/admin/index.html";
     }
 
-    @RequestMapping(value = { "/", "/{path:(?!admin)[^\\.]*}", "/{path:(?!admin)[^\\.]*}/**" })
+    @RequestMapping(value = { "/member", "/member/{path:[^\\.]*}", "/member/{path:[^\\.]*}/**" })
     public String member() {
         if (!modules.isEnabled("member-portal")) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Medlemsportalen är inte aktiverad");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "The member portal is not enabled");
         }
-        return "forward:/index.html";
+        return "forward:/member/index.html";
     }
 }

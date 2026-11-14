@@ -34,7 +34,7 @@ router.beforeEach(async (to) => {
     if (!auth.isLoggedIn) return '/login'
   }
   if (!to.meta.public && auth.role === 'MEMBER') {
-    window.location.href = '/'
+    window.location.href = '/member/'
     return false
   }
   if (!to.meta.public) {

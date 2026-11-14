@@ -191,13 +191,13 @@
                             </resources>
                         </configuration>
                     </execution>
-                    <!-- Member SPA → static/ -->
+                    <!-- Member SPA → static/member/ -->
                     <execution>
                         <id>copy-member-frontend</id>
                         <phase>generate-resources</phase>
                         <goals><goal>copy-resources</goal></goals>
                         <configuration>
-                            <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                            <outputDirectory>${project.build.outputDirectory}/static/member</outputDirectory>
                             <overwrite>true</overwrite>
                             <resources>
                                 <resource>

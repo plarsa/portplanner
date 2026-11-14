@@ -44,8 +44,11 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll()
                 .requestMatchers("/h2-console/**").permitAll()
-                .requestMatchers("/", "/index.html", "/assets/**", "/*.js", "/*.css", "/*.ico", "/*.png").permitAll()
-                .requestMatchers("/admin", "/admin/**").hasAnyRole("ADMIN", "HARBOUR_MASTER")
+                // Landing page and both SPA shells are public; each app signs the user
+                // in through /api/auth and every /api endpoint is authorized on its own.
+                .requestMatchers("/", "/index.html", "/*.ico", "/*.png", "/*.webmanifest").permitAll()
+                .requestMatchers("/admin", "/admin/**").permitAll()
+                .requestMatchers("/member", "/member/**").permitAll()
                 .requestMatchers("/api/me/**").hasAnyRole("MEMBER", "ADMIN", "HARBOUR_MASTER")
                 .anyRequest().authenticated()
             )
