@@ -50,6 +50,20 @@
             <dt v-if="detail.person.notes">Noteringar</dt>
             <dd v-if="detail.person.notes" class="notes-text">{{ detail.person.notes }}</dd>
           </dl>
+          <div class="account-section">
+            <div class="boats-title">Konto</div>
+            <div v-if="accountFor(detail.person)" class="account-line">
+              <span class="account-user">{{ accountFor(detail.person).username }}</span>
+              <span class="account-roles">{{ accountFor(detail.person).roles.join(', ') }}</span>
+              <span :class="['account-status', accountFor(detail.person).status.toLowerCase()]">
+                {{ statusText(accountFor(detail.person).status) }}
+              </span>
+            </div>
+            <div v-else class="boats-empty">Inget konto</div>
+            <div v-if="accountFor(detail.person)?.lastLoginAt" class="account-login">
+              Senaste inloggning {{ formatDateTime(accountFor(detail.person).lastLoginAt) }}
+            </div>
+          </div>
           <div class="boats-section">
             <div class="boats-title">Båtar</div>
             <div v-if="detailLoading" class="boats-loading">Laddar…</div>
@@ -72,7 +86,45 @@
         </div>
         <div class="detail-footer">
           <button class="btn-danger" @click="removeFromDetail">Ta bort</button>
+          <button v-if="accountFor(detail.person)" @click="resetFor(detail.person)">Nytt lösenord</button>
+          <button v-else @click="openCreateAccount(detail.person)">Skapa konto</button>
           <button class="btn-primary" @click="openEdit(detail.person); detail = null">Redigera</button>
+        </div>
+      </div>
+    </div>
+
+    <BaseModal v-if="accountModal" title="Skapa konto" saveLabel="Skapa"
+               @close="accountModal = false" @save="createAccount">
+      <div class="form-grid">
+        <label class="full">E-post
+          <input :value="accountForm.email" readonly />
+        </label>
+        <label class="full">Roll *
+          <select v-model="accountForm.role" required>
+            <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint">Kontot får ett lösenord som visas en gång.</p>
+      <p v-if="accountErr" class="error">{{ accountErr }}</p>
+    </BaseModal>
+
+    <div v-if="password" class="detail-overlay" @click.self="password = null">
+      <div class="pw-card">
+        <div class="detail-header">
+          <h3>Lösenord för {{ password.username }}</h3>
+          <button class="close-btn" @click="password = null">✕</button>
+        </div>
+        <div class="pw-body">
+          <code class="pw-value">{{ password.value }}</code>
+          <p class="pw-note">Visas bara nu och kan inte hämtas igen. Skriv ner det.</p>
+          <p class="pw-note">Kontots aktiva sessioner har avslutats.</p>
+          <p v-if="password.isSelf" class="pw-warning">
+            Det här är ditt eget konto, så du blir utloggad. Logga in med det nya lösenordet.
+          </p>
+        </div>
+        <div class="detail-footer">
+          <button class="btn-primary" @click="password = null">Klar</button>
         </div>
       </div>
     </div>
@@ -100,6 +152,8 @@ import BaseModal from '../components/BaseModal.vue'
 import { getPersons, createPerson, updatePerson, deletePerson } from '../api/persons'
 import { getBoats } from '../api/boats'
 import { getAssignments } from '../api/assignments'
+import { getUsers, getAssignableRoles, createUser, resetPassword } from '../api/users'
+import { useAuthStore } from '../stores/auth'
 
 const persons = ref([])
 const search = ref('')
@@ -108,6 +162,84 @@ const editing = ref(null)
 const detail = ref(null)
 const detailLoading = ref(false)
 const err = ref('')
+const auth = useAuthStore()
+/** personId -> account, so the panel knows about the account without a second request. */
+const accountByPerson = ref({})
+const roles = ref([])
+const accountModal = ref(false)
+const accountForm = ref({ personId: null, email: '', role: 'member:rw' })
+const accountErr = ref('')
+const password = ref(null)
+
+const accountFor = (p) => accountByPerson.value[p.id] ?? null
+
+const STATUS_TEXT = { INVITED: 'Inbjudet', ACTIVE: 'Aktivt', DISABLED: 'Avstängt' }
+const statusText = (s) => STATUS_TEXT[s] ?? s
+
+function formatDateTime(t) {
+  return t ? new Date(t).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' }) : ''
+}
+
+function showPassword(account, temporaryPassword) {
+  password.value = {
+    username: account.username,
+    value: temporaryPassword,
+    isSelf: account.username === auth.username,
+  }
+}
+
+function openCreateAccount(p) {
+  accountErr.value = ''
+  accountForm.value = { personId: p.id, email: p.email, role: 'member:rw' }
+  accountModal.value = true
+}
+
+async function createAccount() {
+  accountErr.value = ''
+  try {
+    const { data } = await createUser({
+      email: accountForm.value.email,
+      roles: [accountForm.value.role],
+      personId: accountForm.value.personId,
+    })
+    accountModal.value = false
+    await loadAccounts()
+    showPassword(data.user, data.temporaryPassword)
+  } catch (e) {
+    accountErr.value = e.response?.data?.error || 'Kunde inte skapa kontot'
+  }
+}
+
+async function resetFor(p) {
+  const account = accountFor(p)
+  if (!account) return
+  if (!confirm(`Ge ${account.username} ett nytt lösenord? Det gamla slutar gälla direkt.`)) return
+  try {
+    const { data } = await resetPassword(account.id)
+    await loadAccounts()
+    showPassword(data.user, data.temporaryPassword)
+  } catch (e) {
+    alert(e.response?.data?.error || 'Kunde inte byta lösenord')
+  }
+}
+
+async function loadAccounts() {
+  // A role that may read persons but not accounts gets 403 here. The person list must still
+  // work for them, so a failure leaves the map empty and the panel simply shows no account.
+  let data
+  try {
+    data = (await getUsers()).data
+  } catch {
+    accountByPerson.value = {}
+    return
+  }
+  const map = {}
+  // The configured superadmin has no id and no person, so it never lands here.
+  for (const u of data) {
+    if (u.personId != null && u.id != null) map[u.personId] = u
+  }
+  accountByPerson.value = map
+}
 
 const emptyForm = () => ({ firstName: '', lastName: '', email: '', phone: '', address: '', postalCode: '', propertyDesignation: '', notes: '' })
 const form = ref(emptyForm())
@@ -115,6 +247,7 @@ const form = ref(emptyForm())
 async function load() {
   const { data } = await getPersons(search.value)
   persons.value = data
+  await loadAccounts()
 }
 
 function formatDate(d) {
@@ -161,7 +294,13 @@ async function removeFromDetail() {
   catch (e) { alert(e.response?.data?.error || 'Kunde inte ta bort personen') }
 }
 
-onMounted(load)
+onMounted(async () => {
+  await load()
+  // The roles the create-account modal offers; harmless to fetch once up front.
+  try {
+    roles.value = (await getAssignableRoles()).data
+  } catch { roles.value = ['member:rw'] }
+})
 </script>
 
 <style scoped>
@@ -221,6 +360,27 @@ dd { font-size: 0.9rem; color: #222; margin: 0; }
   .page-header { flex-direction: column; align-items: stretch; }
   .header-right { flex-direction: column; align-items: stretch; }
 }
+.account-section { margin-top: 1.25rem; }
+.account-line { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.88rem; }
+.account-user { font-weight: 600; }
+.account-roles { color: #666; font-size: 0.82rem; }
+.account-status { border-radius: 4px; padding: 0.1rem 0.45rem; font-size: 0.75rem; font-weight: 700; }
+.account-status.active { background: #e8f6ec; color: #1d7a3a; }
+.account-status.invited { background: #fff4e0; color: #9a6400; }
+.account-status.disabled { background: #f0f0f0; color: #888; }
+.account-login { color: #888; font-size: 0.78rem; margin-top: 0.3rem; }
+
+.pw-card { background: white; border-radius: 10px; width: 100%; max-width: 420px;
+  display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
+.pw-body { padding: 1.25rem 1.5rem; }
+.pw-value { display: block; font-size: 1.15rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: #f4f7fb; border-radius: 6px; padding: 0.75rem; text-align: center; letter-spacing: 0.04em;
+  user-select: all; }
+.pw-note { font-size: 0.82rem; color: #666; margin: 0.6rem 0 0; }
+.pw-warning { font-size: 0.82rem; color: #9a6400; background: #fff4e0; border-radius: 6px;
+  padding: 0.5rem 0.6rem; margin: 0.6rem 0 0; }
+.hint { color: #666; font-size: 0.8rem; margin-top: 0.5rem; }
+
 @media (max-width: 400px) {
   .detail-grid { grid-template-columns: 1fr; }
   dt { margin-top: 0.4rem; }
