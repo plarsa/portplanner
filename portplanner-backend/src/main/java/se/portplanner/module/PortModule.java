@@ -14,7 +14,8 @@ public enum PortModule {
     AUDIT("audit", "Audit log", List.of("base"), grants("superadmin:r", "admin:r")),
     REPORTS("reports", "Rapporter", List.of("base"), grants("superadmin:rw", "admin:r")),
     AI_MAIL("ai-mail", "AI-mailhantering", List.of("base"), grants("superadmin:rw", "admin:rw")),
-    IMPORT_EXPORT("import-export", "Import/export", List.of("base"), grants("superadmin:rw", "admin:rw"));
+    IMPORT_EXPORT("import-export", "Import/export", List.of("base"), grants("superadmin:rw", "admin:rw")),
+    RENTALS("rentals", "Uthyrning", List.of("base"), grants("superadmin:rw", "admin:rw", "member:rw"));
 
     private final String id;
     private final String displayName;

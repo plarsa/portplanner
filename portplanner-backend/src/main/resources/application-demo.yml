@@ -29,3 +29,6 @@ portplanner:
     import-export:
       enabled: true
       access: [superadmin:rw, admin:rw]
+    rentals:
+      enabled: true
+      access: [superadmin:rw, admin:rw, member:rw]

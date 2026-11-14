@@ -78,3 +78,5 @@ portplanner:
     import-export:
       enabled: true
       access: [superadmin:rw, admin:rw]
+    rentals:
+      enabled: false
