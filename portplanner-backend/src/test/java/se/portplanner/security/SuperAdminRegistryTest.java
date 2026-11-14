@@ -7,6 +7,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -29,10 +30,23 @@ class SuperAdminRegistryTest {
     }
 
     @Test
-    void startFailsWithoutEnabledSuperadmin() {
-        assertThrows(IllegalStateException.class, () -> registry());
-        assertThrows(IllegalStateException.class, () -> registry(sa("", "", true)));
-        assertThrows(IllegalStateException.class, () -> registry(sa("boss@hamn.se", "pw", false)));
+    void withoutEnabledSuperadminAGeneratedOneIsUsed() {
+        for (var r : List.of(registry(), registry(sa("", "", true)), registry(sa("boss@hamn.se", "pw", false)))) {
+            var generated = r.find("superadmin").orElseThrow();
+            assertTrue(generated.enabled());
+            assertTrue(generated.passwordHash().startsWith("$2"), "the generated password must be hashed");
+        }
+    }
+
+    @Test
+    void aGeneratedSuperadminIsNotUsedWhenOneIsConfigured() {
+        assertTrue(registry(sa("boss@hamn.se", "pw", true)).find("superadmin").isEmpty());
+    }
+
+    @Test
+    void theGeneratedPasswordDiffersBetweenRuns() {
+        assertNotEquals(registry().find("superadmin").orElseThrow().passwordHash(),
+                registry().find("superadmin").orElseThrow().passwordHash());
     }
 
     @Test

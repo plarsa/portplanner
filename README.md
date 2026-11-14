@@ -38,6 +38,22 @@ This builds both frontends, runs Flyway migrations against the local H2 database
 (`data/portplanner`), and starts the app on `http://localhost:8080`. API docs are at
 `/swagger-ui/index.html`.
 
+| Path | What it serves |
+|---|---|
+| `/` | Landing page with a link to each app |
+| `/member/` | Member SPA |
+| `/admin/` | Admin SPA |
+| `/api/` | REST API |
+
+Without a configured superadmin the service starts on a generated password that it logs
+once at startup. To keep an account across restarts, set `SUPERADMIN_USERNAME` and
+`SUPERADMIN_PASSWORD`, or use the demo profile, which enables every module and ships a
+known demo account:
+
+```bash
+mvn spring-boot:run -Dspring-boot.run.profiles=demo
+```
+
 To work on a frontend with hot reload instead of the bundled build:
 
 ```bash
@@ -45,6 +61,9 @@ cd portplanner-frontend   # or portplanner-member
 npm install
 npm run dev
 ```
+
+The admin dev server is on `http://localhost:5173/admin/` and the member one on
+`http://localhost:5174/member/`; both proxy `/api` to port 8080.
 
 ## Deployment
 

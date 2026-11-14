@@ -20,12 +20,12 @@ public class SpaController {
         this.modules = modules;
     }
 
-    @RequestMapping(value = { "/admin", "/admin/{path:[^\\.]*}", "/admin/{path:[^\\.]*}/**" })
+    @RequestMapping(value = { "/admin", "/admin/", "/admin/{path:[^\\.]*}", "/admin/{path:[^\\.]*}/**" })
     public String admin() {
         return "forward:/admin/index.html";
     }
 
-    @RequestMapping(value = { "/member", "/member/{path:[^\\.]*}", "/member/{path:[^\\.]*}/**" })
+    @RequestMapping(value = { "/member", "/member/", "/member/{path:[^\\.]*}", "/member/{path:[^\\.]*}/**" })
     public String member() {
         if (!modules.isEnabled("member-portal")) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "The member portal is not enabled");

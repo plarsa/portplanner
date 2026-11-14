@@ -16,11 +16,17 @@ import java.util.Optional;
  * The configured superadmin accounts (ROL-11). They live only in the application configuration, never in
  * the database. The password is a bcrypt hash, with or without the {@code {bcrypt}} prefix. Cleartext is
  * accepted but logs a warning.
+ *
+ * <p>When no enabled superadmin is configured the service still starts: it falls back to a
+ * {@value #GENERATED_USERNAME} account whose password is generated for that run and logged once.
  */
 @Component
 public class SuperAdminRegistry {
 
     private static final Logger log = LoggerFactory.getLogger(SuperAdminRegistry.class);
+
+    /** The account used when the configuration names no enabled superadmin. */
+    static final String GENERATED_USERNAME = "superadmin";
 
     public record Account(String username, String passwordHash, boolean enabled) {}
 
@@ -49,12 +55,26 @@ public class SuperAdminRegistry {
             anyEnabled |= sa.isEnabled();
         }
         if (!anyEnabled) {
-            throw new IllegalStateException(
-                    "No enabled superadmin is configured. Set portplanner.iam.superadmins "
-                            + "(for example through the SUPERADMIN_USERNAME and SUPERADMIN_PASSWORD environment variables) with enabled=true.");
+            generateAccount(encoder);
         }
         log.info("Configured superadmin accounts: {}", accounts.values().stream()
                 .map(a -> a.username() + (a.enabled() ? "" : " (disabled)")).toList());
+    }
+
+    /**
+     * Keeps the service startable without configuration. The password is new on every start, so it is
+     * useless once the log line scrolls past; a real deployment configures its own account instead.
+     */
+    private void generateAccount(BCryptPasswordEncoder encoder) {
+        var password = new PasswordGenerator().generate();
+        accounts.put(key(GENERATED_USERNAME), new Account(GENERATED_USERNAME, encoder.encode(password), true));
+        log.warn("""
+                No enabled superadmin is configured. Using a generated password for this run only:
+                  username: {}
+                  password: {}
+                Set portplanner.iam.superadmins (for example through the SUPERADMIN_USERNAME and \
+                SUPERADMIN_PASSWORD environment variables) to keep an account across restarts.""",
+                GENERATED_USERNAME, password);
     }
 
     private String toHash(String password, BCryptPasswordEncoder encoder) {

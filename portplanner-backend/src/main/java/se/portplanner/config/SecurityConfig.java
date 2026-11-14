@@ -47,6 +47,7 @@ public class SecurityConfig {
                 // Landing page and both SPA shells are public; each app signs the user
                 // in through /api/auth and every /api endpoint is authorized on its own.
                 .requestMatchers("/", "/index.html", "/*.ico", "/*.png", "/*.webmanifest").permitAll()
+                .requestMatchers("/error").permitAll()
                 .requestMatchers("/admin", "/admin/**").permitAll()
                 .requestMatchers("/member", "/member/**").permitAll()
                 .requestMatchers("/api/me/**").hasAnyRole("MEMBER", "ADMIN", "HARBOUR_MASTER")

@@ -44,9 +44,10 @@ logging:
 
 portplanner:
   iam:
-    # The system superadmins live here only, never in the database. At least one enabled
-    # account is required for the app to start. password: a bcrypt hash is recommended, the
-    # {bcrypt} prefix is optional. Cleartext is accepted but logs a warning.
+    # The system superadmins live here only, never in the database. Without an enabled account
+    # the service starts on a generated password that is logged once, so configure one here.
+    # password: a bcrypt hash is recommended, the {bcrypt} prefix is optional. Cleartext is
+    # accepted but logs a warning.
     superadmins:
       - username: ${SUPERADMIN_USERNAME:}
         password: ${SUPERADMIN_PASSWORD:}
