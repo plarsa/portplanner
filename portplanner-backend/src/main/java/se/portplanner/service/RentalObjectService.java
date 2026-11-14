@@ -11,6 +11,8 @@ import se.portplanner.file.StoredFile;
 import se.portplanner.file.StoredFileContent;
 import se.portplanner.file.StoredFileRepository;
 import se.portplanner.model.RentalObject;
+import se.portplanner.exception.ConflictException;
+import se.portplanner.repository.RentalBookingRepository;
 import se.portplanner.repository.RentalObjectRepository;
 
 import java.io.IOException;
@@ -30,13 +32,16 @@ public class RentalObjectService {
     private final AuditService auditService;
     private final FileStore fileStore;
     private final StoredFileRepository storedFiles;
+    private final RentalBookingRepository bookings;
 
     public RentalObjectService(RentalObjectRepository repo, AuditService auditService,
-                               FileStore fileStore, StoredFileRepository storedFiles) {
+                               FileStore fileStore, StoredFileRepository storedFiles,
+                               RentalBookingRepository bookings) {
         this.repo = repo;
         this.auditService = auditService;
         this.fileStore = fileStore;
         this.storedFiles = storedFiles;
+        this.bookings = bookings;
     }
 
     @Transactional(readOnly = true)
@@ -70,8 +75,19 @@ public class RentalObjectService {
         return RentalObjectResponse.from(saved);
     }
 
+    /** Bookings are history, so an object that has any is kept rather than deleted. */
     public void delete(Long id) {
         var o = getOrThrow(id);
+        if (bookings.existsByObjectId(id)) {
+            throw new ConflictException(
+                    "The object has bookings and cannot be deleted. Set it to not bookable instead");
+        }
+        var image = o.getImage();
+        if (image != null) {
+            o.setImage(null);
+            repo.save(o);
+            discard(image);
+        }
         repo.delete(o);
         auditService.log("DELETED", "RENTAL_OBJECT", id, "Rental object deleted: " + o.getName());
     }

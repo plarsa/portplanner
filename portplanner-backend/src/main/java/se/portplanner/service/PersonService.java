@@ -20,12 +20,15 @@ public class PersonService {
     private final PersonRepository personRepository;
     private final AuditService auditService;
     private final AppUserRepository userRepository;
+    /** Empty unless a module contributes a check, which is what keeps base independent of them. */
+    private final List<PersonDeletionCheck> deletionChecks;
 
     public PersonService(PersonRepository personRepository, AuditService auditService,
-                         AppUserRepository userRepository) {
+                         AppUserRepository userRepository, List<PersonDeletionCheck> deletionChecks) {
         this.personRepository = personRepository;
         this.auditService = auditService;
         this.userRepository = userRepository;
+        this.deletionChecks = deletionChecks;
     }
 
     @Transactional(readOnly = true)
@@ -65,6 +68,7 @@ public class PersonService {
         if (userRepository.existsByPersonId(id)) {
             throw new ConflictException("The person has an account. Remove the link or disable the account first");
         }
+        deletionChecks.forEach(check -> check.check(id));
         String name = person.getFirstName() + " " + person.getLastName();
         personRepository.delete(person);
         auditService.log("DELETED", "PERSON", id, "Person borttagen: " + name);

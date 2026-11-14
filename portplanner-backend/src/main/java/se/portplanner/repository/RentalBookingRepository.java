@@ -25,4 +25,6 @@ public interface RentalBookingRepository extends JpaRepository<RentalBooking, Lo
     List<RentalBooking> findByPersonIdOrderByStartAtDesc(Long personId);
 
     boolean existsByPersonId(Long personId);
+
+    boolean existsByObjectId(Long objectId);
 }
