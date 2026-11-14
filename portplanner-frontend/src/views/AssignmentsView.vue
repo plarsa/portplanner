@@ -55,7 +55,7 @@
       </div>
     </template>
 
-    <!-- Båtar tab: oplacerade båtar -->
+    <!-- Boats tab: boats without a slip -->
     <div v-if="activeTab === 'boats'">
       <div v-if="!unassignedBoats.length" class="empty-state">Alla registrerade båtar har en plats.</div>
       <div v-else class="tab-table-wrap">
@@ -101,7 +101,7 @@
       </div>
     </div>
 
-    <!-- Info-popup för tilldelade/underhåll-platser -->
+    <!-- Info popup for assigned and maintenance slips -->
     <div v-if="popup" class="popup-overlay" @click.self="popup = null">
       <div class="popup-card">
         <div class="popup-header">
@@ -132,7 +132,7 @@
       </div>
     </div>
 
-    <!-- Tilldela-modal (plats → båt) -->
+    <!-- Assign modal (slip → boat) -->
     <div v-if="assignModal" class="overlay" @click.self="assignModal = false">
       <div class="assign-card">
         <div class="assign-header">
@@ -169,7 +169,7 @@
       </div>
     </div>
 
-    <!-- Tilldela-modal (båt → plats) -->
+    <!-- Assign modal (boat → slip) -->
     <div v-if="boatModal" class="overlay" @click.self="boatModal = false">
       <div class="assign-card">
         <div class="assign-header">

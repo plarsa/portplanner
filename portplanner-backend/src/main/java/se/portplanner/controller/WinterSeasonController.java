@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequiresModule("storage")
 @RequestMapping("/api/winter-seasons")
-@Tag(name = "Vinterupptagning – säsonger")
+@Tag(name = "Winter haul-out – seasons")
 public class WinterSeasonController {
 
     private final WinterSeasonService service;

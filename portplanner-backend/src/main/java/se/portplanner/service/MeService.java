@@ -42,27 +42,27 @@ public class MeService {
 
     public MeResponse getMe() {
         var user = currentUser();
-        if (user.getPerson() == null) throw new IllegalStateException("Ditt konto är inte kopplat till en person");
+        if (user.getPerson() == null) throw new IllegalStateException("Your account is not linked to a person");
         return MeResponse.from(user.getPerson());
     }
 
     public List<BoatResponse> getMyBoats() {
         var person = currentUser().getPerson();
-        if (person == null) throw new IllegalStateException("Ditt konto är inte kopplat till en person");
+        if (person == null) throw new IllegalStateException("Your account is not linked to a person");
         return boatRepository.findByOwnerId(person.getId()).stream()
                 .map(BoatResponse::from).toList();
     }
 
     public List<AssignmentResponse> getMyAssignments() {
         var person = currentUser().getPerson();
-        if (person == null) throw new IllegalStateException("Ditt konto är inte kopplat till en person");
+        if (person == null) throw new IllegalStateException("Your account is not linked to a person");
         return assignmentRepository.findByBoatOwnerIdAndStatus(person.getId(), AssignmentStatus.ACTIVE)
                 .stream().map(AssignmentResponse::from).toList();
     }
 
     public List<QueueEntryResponse> getMyQueue() {
         var person = currentUser().getPerson();
-        if (person == null) throw new IllegalStateException("Ditt konto är inte kopplat till en person");
+        if (person == null) throw new IllegalStateException("Your account is not linked to a person");
         return queueRepository.findByPersonId(person.getId()).stream()
                 .filter(e -> e.getStatus() == QueueEntryStatus.WAITING || e.getStatus() == QueueEntryStatus.OFFERED)
                 .map(QueueEntryResponse::from).toList();
@@ -71,7 +71,7 @@ public class MeService {
     @Transactional
     public MeResponse updateProfile(PersonRequest req) {
         var person = currentUser().getPerson();
-        if (person == null) throw new IllegalStateException("Ditt konto är inte kopplat till en person");
+        if (person == null) throw new IllegalStateException("Your account is not linked to a person");
         person.setPhone(req.phone());
         person.setAddress(req.address());
         person.setPostalCode(req.postalCode());
@@ -93,7 +93,7 @@ public class MeService {
 
     public List<HaulOutBookingResponse> getMyHaulOutBookings() {
         var person = currentUser().getPerson();
-        if (person == null) throw new IllegalStateException("Ditt konto är inte kopplat till en person");
+        if (person == null) throw new IllegalStateException("Your account is not linked to a person");
         return haulOutBookingRepository.findAll().stream()
                 .filter(b -> b.getPerson().getId().equals(person.getId()))
                 .filter(b -> b.getStatus() != HaulOutBookingStatus.CANCELLED)
@@ -103,15 +103,15 @@ public class MeService {
     @Transactional
     public HaulOutBookingResponse createMyHaulOutBooking(Long slotId, Long boatId) {
         var person = currentUser().getPerson();
-        if (person == null) throw new IllegalStateException("Ditt konto är inte kopplat till en person");
+        if (person == null) throw new IllegalStateException("Your account is not linked to a person");
         var slot = haulOutSlotRepository.findById(slotId)
                 .orElseThrow(() -> new ResourceNotFoundException("Tid " + slotId + " hittades inte"));
         int booked = haulOutBookingRepository.countBySlotIdAndStatusNot(slot.getId(), HaulOutBookingStatus.CANCELLED);
-        if (booked >= slot.getCapacity()) throw new IllegalStateException("Denna tid är fullbokad");
+        if (booked >= slot.getCapacity()) throw new IllegalStateException("This slot is fully booked");
         var boat = boatRepository.findById(boatId)
-                .orElseThrow(() -> new ResourceNotFoundException("Båt " + boatId + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Boat " + boatId + " was not found"));
         if (!boat.getOwner().getId().equals(person.getId()))
-            throw new IllegalStateException("Båten tillhör inte ditt konto");
+            throw new IllegalStateException("The boat does not belong to your account");
         var booking = new HaulOutBooking();
         booking.setSlot(slot);
         booking.setBoat(boat);
@@ -122,6 +122,6 @@ public class MeService {
     private AppUser currentUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Användare hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("User was not found"));
     }
 }

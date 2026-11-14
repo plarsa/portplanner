@@ -91,7 +91,7 @@ class ModuleServiceTest {
 
     @Test
     void startFailsWhenDependencyIsDisabled() {
-        // Alla moduler beror på base; base kan inte vara av, så testa via base=false ovan.
+        // Every module depends on base, and base cannot be off, so this is covered by base=false above.
         assertThrows(IllegalStateException.class, () -> service(Map.of("base", module(false), "storage", module(true))));
     }
 }

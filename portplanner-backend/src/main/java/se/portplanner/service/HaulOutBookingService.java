@@ -60,10 +60,10 @@ public class HaulOutBookingService {
                 .orElseThrow(() -> new ResourceNotFoundException("Upptagningstid " + req.slotId() + " hittades inte"));
         int booked = bookingRepo.countBySlotIdAndStatusNot(slot.getId(), HaulOutBookingStatus.CANCELLED);
         if (booked >= slot.getCapacity()) {
-            throw new IllegalStateException("Denna tid är fullbokad");
+            throw new IllegalStateException("This slot is fully booked");
         }
         var boat = boatRepo.findById(req.boatId())
-                .orElseThrow(() -> new ResourceNotFoundException("Båt " + req.boatId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Boat " + req.boatId() + " was not found"));
         var person = personRepo.findById(req.personId())
                 .orElseThrow(() -> new ResourceNotFoundException("Person " + req.personId() + " hittades inte"));
 
@@ -73,14 +73,14 @@ public class HaulOutBookingService {
         booking.setPerson(person);
         var saved = bookingRepo.save(booking);
         auditService.log("CREATED", "HAUL_OUT_BOOKING", saved.getId(),
-                "Anmälan skapad: " + boat.getModel() + " till " + slot.getSlotDate());
+                "Booking created: " + boat.getModel() + " for " + slot.getSlotDate());
         return HaulOutBookingResponse.from(saved);
     }
 
     public HaulOutBookingResponse confirm(Long id) {
         var booking = getOrThrow(id);
         booking.setStatus(HaulOutBookingStatus.CONFIRMED);
-        auditService.log("CONFIRMED", "HAUL_OUT_BOOKING", id, "Anmälan bekräftad: " + booking.getBoat().getModel());
+        auditService.log("CONFIRMED", "HAUL_OUT_BOOKING", id, "Booking confirmed: " + booking.getBoat().getModel());
         return HaulOutBookingResponse.from(bookingRepo.save(booking));
     }
 
@@ -88,11 +88,11 @@ public class HaulOutBookingService {
         var booking = getOrThrow(id);
         booking.setStatus(HaulOutBookingStatus.CANCELLED);
         bookingRepo.save(booking);
-        auditService.log("CANCELLED", "HAUL_OUT_BOOKING", id, "Anmälan avbokad: " + booking.getBoat().getModel());
+        auditService.log("CANCELLED", "HAUL_OUT_BOOKING", id, "Booking cancelled: " + booking.getBoat().getModel());
     }
 
     private HaulOutBooking getOrThrow(Long id) {
         return bookingRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Anmälan " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Booking " + id + " was not found"));
     }
 }

@@ -53,17 +53,17 @@ public class AssignmentService {
 
     public AssignmentResponse create(AssignmentRequest req) {
         var boat = boatRepository.findById(req.boatId())
-                .orElseThrow(() -> new ResourceNotFoundException("Båt " + req.boatId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Boat " + req.boatId() + " was not found"));
         var slip = slipRepository.findById(req.slipId())
-                .orElseThrow(() -> new ResourceNotFoundException("Båtplats " + req.slipId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Slip " + req.slipId() + " was not found"));
 
         validateBoatFitsSlip(boat, slip);
 
         if (slip.getStatus() != SlipStatus.AVAILABLE) {
-            throw new IllegalArgumentException("Platsen är inte ledig (status: " + slip.getStatus() + ")");
+            throw new IllegalArgumentException("The slip is not available (status: " + slip.getStatus() + ")");
         }
         if (assignmentRepository.findByBoatIdAndStatus(req.boatId(), AssignmentStatus.ACTIVE).isPresent()) {
-            throw new IllegalArgumentException("Båten har redan en aktiv tilldelning");
+            throw new IllegalArgumentException("The boat already has an active assignment");
         }
 
         slip.setStatus(SlipStatus.OCCUPIED);
@@ -86,7 +86,7 @@ public class AssignmentService {
         var assignment = assignmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Tilldelning " + id + " hittades inte"));
         if (assignment.getStatus() != AssignmentStatus.ACTIVE) {
-            throw new IllegalArgumentException("Tilldelningen är redan avslutad");
+            throw new IllegalArgumentException("The assignment has already ended");
         }
 
         assignment.setStatus(AssignmentStatus.ENDED);
@@ -98,7 +98,7 @@ public class AssignmentService {
 
         var saved = assignmentRepository.save(assignment);
         auditService.log("UNASSIGNED", "ASSIGNMENT", id,
-                "Tilldelning avslutad: " + saved.getBoat().getModel() + " lämnar plats " +
+                "Assignment ended: " + saved.getBoat().getModel() + " leaves slip " +
                 slip.getSlipNumber() + " (" + slip.getDock().getName() + ")");
         return AssignmentResponse.from(saved);
     }
@@ -106,16 +106,16 @@ public class AssignmentService {
     public void validateBoatFitsSlip(Boat boat, Slip slip) {
         if (boat.getLengthM().compareTo(slip.getMaxLengthM()) > 0) {
             throw new IllegalArgumentException(
-                    "Båten är för lång (%.1fm) för platsen (max %.1fm)".formatted(boat.getLengthM(), slip.getMaxLengthM()));
+                    "The boat is too long (%.1fm) for the slip (max %.1fm)".formatted(boat.getLengthM(), slip.getMaxLengthM()));
         }
         if (boat.getWidthM().compareTo(slip.getMaxWidthM()) > 0) {
             throw new IllegalArgumentException(
-                    "Båten är för bred (%.1fm) för platsen (max %.1fm)".formatted(boat.getWidthM(), slip.getMaxWidthM()));
+                    "The boat is too wide (%.1fm) for the slip (max %.1fm)".formatted(boat.getWidthM(), slip.getMaxWidthM()));
         }
         if (boat.getDraftM() != null && slip.getMaxDraftM() != null
                 && boat.getDraftM().compareTo(slip.getMaxDraftM()) > 0) {
             throw new IllegalArgumentException(
-                    "Båtens djupgång (%.1fm) överstiger platsens max (%.1fm)".formatted(boat.getDraftM(), slip.getMaxDraftM()));
+                    "The boat's draft (%.1fm) exceeds the slip maximum (%.1fm)".formatted(boat.getDraftM(), slip.getMaxDraftM()));
         }
     }
 }

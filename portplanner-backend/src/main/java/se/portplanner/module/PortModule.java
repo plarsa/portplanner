@@ -6,12 +6,12 @@ import java.util.List;
 import java.util.Optional;
 
 
-/** Register över kända moduler. Standardposterna används när {@code access} saknas i konfigurationen. */
+/** The registry of known modules. The default entries apply when {@code access} is absent from the configuration. */
 public enum PortModule {
     BASE("base", "Bas", List.of(), grants("superadmin:rw", "admin:rw", "member:rw")),
-    STORAGE("storage", "Uppläggningsplatser", List.of("base"), grants("superadmin:rw", "admin:rw", "member:rw")),
+    STORAGE("storage", "Winter storage", List.of("base"), grants("superadmin:rw", "admin:rw", "member:rw")),
     MEMBER_PORTAL("member-portal", "Medlemssidor", List.of("base"), grants("superadmin:rw", "member:rw")),
-    AUDIT("audit", "Händelseloggning", List.of("base"), grants("superadmin:r", "admin:r")),
+    AUDIT("audit", "Audit log", List.of("base"), grants("superadmin:r", "admin:r")),
     REPORTS("reports", "Rapporter", List.of("base"), grants("superadmin:rw", "admin:r")),
     AI_MAIL("ai-mail", "AI-mailhantering", List.of("base"), grants("superadmin:rw", "admin:rw")),
     IMPORT_EXPORT("import-export", "Import/export", List.of("base"), grants("superadmin:rw", "admin:rw"));
@@ -42,6 +42,6 @@ public enum PortModule {
     }
 
     public static PortModule of(String id) {
-        return find(id).orElseThrow(() -> new IllegalArgumentException("Okänd modul: " + id));
+        return find(id).orElseThrow(() -> new IllegalArgumentException("Unknown module: " + id));
     }
 }

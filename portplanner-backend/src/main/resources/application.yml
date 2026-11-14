@@ -44,17 +44,18 @@ logging:
 
 portplanner:
   iam:
-    # Systemets superadmin lever bara här, aldrig i databasen. Minst en aktiverad krävs för att appen ska starta.
-    # password: bcrypt-hash (rekommenderas, {bcrypt}-prefix valfritt). Klartext accepteras men ger varning.
+    # The system superadmins live here only, never in the database. At least one enabled
+    # account is required for the app to start. password: a bcrypt hash is recommended, the
+    # {bcrypt} prefix is optional. Cleartext is accepted but logs a warning.
     superadmins:
       - username: ${SUPERADMIN_USERNAME:}
         password: ${SUPERADMIN_PASSWORD:}
         enabled: true
   modules:
     base:
-      enabled: true            # måste vara true, appen vägrar starta annars
-      access: [superadmin:rw, admin:rw, member:rw]   # member: egna data
-    storage:                   # Uppläggningsplatser
+      enabled: true            # must be true, the app refuses to start otherwise
+      access: [superadmin:rw, admin:rw, member:rw]   # member: own data only
+    storage:                   # Winter storage
       enabled: true
       access: [superadmin:rw, admin:rw, member:rw]
       default-season-start: 09-15

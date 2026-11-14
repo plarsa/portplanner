@@ -26,7 +26,7 @@ public class ModuleService {
     private final ModulesProperties props;
     private final StorageProperties storage;
 
-    /** Beräknas en gång vid start (NFR-2). */
+    /** Computed once at startup (NFR-2). */
     private final Map<PortModule, Boolean> enabled = new EnumMap<>(PortModule.class);
     private final Map<PortModule, List<RoleGrant>> access = new EnumMap<>(PortModule.class);
 
@@ -39,7 +39,7 @@ public class ModuleService {
     void init() {
         props.getModules().keySet().stream()
                 .filter(id -> PortModule.find(id).isEmpty())
-                .forEach(id -> log.warn("Okänd modul i konfigurationen ignoreras: portplanner.modules.{}", id));
+                .forEach(id -> log.warn("Ignoring unknown module in the configuration: portplanner.modules.{}", id));
 
         for (PortModule m : PortModule.values()) {
             var cfg = props.getModules().get(m.id());
@@ -53,23 +53,23 @@ public class ModuleService {
     private void validate() {
         var base = props.getModules().get(PortModule.BASE.id());
         if (base != null && !base.isEnabled()) {
-            throw new IllegalStateException("portplanner.modules.base.enabled måste vara true: modulen 'base' är obligatorisk");
+            throw new IllegalStateException("portplanner.modules.base.enabled must be true: the 'base' module is mandatory");
         }
         if (!access.get(PortModule.BASE).contains(new RoleGrant(SUPERADMIN, RoleGrant.Level.RW))) {
-            throw new IllegalStateException("portplanner.modules.base.access måste innehålla " + SUPERADMIN + ":rw");
+            throw new IllegalStateException("portplanner.modules.base.access must contain " + SUPERADMIN + ":rw");
         }
         for (PortModule m : PortModule.values()) {
             if (!enabled.get(m)) continue;
             for (String depId : m.dependsOn()) {
                 var dep = PortModule.of(depId);
                 if (!enabled.get(dep)) {
-                    throw new IllegalStateException("Modulen '" + m.id() + "' är aktiverad men beror på '" + depId
-                            + "' som är avstängd. Aktivera portplanner.modules." + depId + ".enabled eller stäng av '" + m.id() + "'.");
+                    throw new IllegalStateException("Module '" + m.id() + "' is enabled but depends on '" + depId
+                            + "' which is off. Enable portplanner.modules." + depId + ".enabled or turn off '" + m.id() + "'.");
                 }
                 var depRoles = access.get(dep).stream().map(RoleGrant::role).collect(java.util.stream.Collectors.toSet());
                 for (RoleGrant g : access.get(m)) {
                     if (!depRoles.contains(g.role())) {
-                        log.warn("Rollen {} finns i access för modulen '{}' men saknas i access för '{}' som modulen beror på",
+                        log.warn("Role {} is in the access list of module '{}' but missing from '{}', which it depends on",
                                 g.role(), m.id(), depId);
                     }
                 }
@@ -79,7 +79,7 @@ public class ModuleService {
 
     private void logSummary() {
         for (PortModule m : PortModule.values()) {
-            log.info("Modul {}: {}{}", m.id(), enabled.get(m) ? "PÅ" : "av",
+            log.info("Module {}: {}{}", m.id(), enabled.get(m) ? "on" : "off",
                     enabled.get(m) ? " access=" + access.get(m) : "");
         }
         log.info("Rollkatalog: {}", roleCatalog());
@@ -90,8 +90,9 @@ public class ModuleService {
     }
 
     /**
-     * Beräknad nivå för en uppsättning rolltilldelningar. Varje post i modulens access är ett tak: nivån är
-     * den lägsta av kontots och postens nivå, och vid flera träffar gäller den högsta. Avstängd modul ger NONE.
+     * The resulting level for a set of role grants. Every entry in the module's access list is a ceiling: the
+     * level is the lower of the account's and the entry's, and the highest wins when several match. A module
+     * that is off gives NONE.
      */
     public AccessLevel accessLevel(String id, Collection<RoleGrant> grants) {
         var m = PortModule.of(id);
@@ -116,14 +117,14 @@ public class ModuleService {
         return accessLevel(id, auth).atLeast(AccessLevel.READ);
     }
 
-    /** Alla rollnamn som förekommer i någon moduls access (även avstängda moduler). */
+    /** Every role name that appears in any module's access list, including modules that are off. */
     public Set<String> roleCatalog() {
         var roles = new TreeSet<String>();
         access.values().forEach(list -> list.forEach(g -> roles.add(g.role())));
         return roles;
     }
 
-    /** Kastar {@link ModuleAccessException} (403) om modulen är avstängd eller nivån inte räcker. */
+    /** Throws {@link ModuleAccessException} (403) when the module is off or the level is not enough. */
     public void requireAccess(String id, AccessLevel required, Authentication auth) {
         if (!isEnabled(id)) throw new ModuleAccessException(ModuleAccessException.DISABLED, id);
         if (!accessLevel(id, auth).atLeast(required)) {
@@ -146,7 +147,7 @@ public class ModuleService {
                 accessible ? publicSettings(m) : null);
     }
 
-    /** Vitlista: bara det frontend behöver, aldrig hemligheter. */
+    /** An allow list: only what the frontend needs, never secrets. */
     private Map<String, Object> publicSettings(PortModule m) {
         return switch (m) {
             case STORAGE -> Map.of("defaultSeasonStart", storage.getDefaultSeasonStart());
@@ -154,7 +155,7 @@ public class ModuleService {
         };
     }
 
-    /** Kontots rolltilldelningar ur authorities på formen {@code ROLE_roll:nivå}. */
+    /** The account's role grants, read from authorities of the form {@code ROLE_role:level}. */
     public static List<RoleGrant> grantsOf(Authentication auth) {
         if (auth == null || !auth.isAuthenticated()) return List.of();
         return auth.getAuthorities().stream()

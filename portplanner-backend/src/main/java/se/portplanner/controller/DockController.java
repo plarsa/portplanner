@@ -14,7 +14,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/docks")
-@Tag(name = "Bryggor")
+@Tag(name = "Docks")
 public class DockController {
 
     private final DockService dockService;
@@ -24,39 +24,39 @@ public class DockController {
     }
 
     @GetMapping
-    @Operation(summary = "Hämta alla bryggor")
+    @Operation(summary = "List all docks")
     public List<DockResponse> findAll() {
         return dockService.findAll();
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "Hämta brygga per id")
+    @Operation(summary = "Get a dock by id")
     public DockResponse findById(@PathVariable Long id) {
         return dockService.findById(id);
     }
 
     @GetMapping("/{id}/slips")
-    @Operation(summary = "Hämta alla platser för en brygga")
+    @Operation(summary = "List all slips on a dock")
     public List<SlipResponse> findSlips(@PathVariable Long id) {
         return dockService.findSlips(id);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Skapa brygga")
+    @Operation(summary = "Create a dock")
     public DockResponse create(@Valid @RequestBody DockRequest req) {
         return dockService.create(req);
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Uppdatera brygga")
+    @Operation(summary = "Update a dock")
     public DockResponse update(@PathVariable Long id, @Valid @RequestBody DockRequest req) {
         return dockService.update(id, req);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Ta bort brygga")
+    @Operation(summary = "Delete a dock")
     public void delete(@PathVariable Long id) {
         dockService.delete(id);
     }

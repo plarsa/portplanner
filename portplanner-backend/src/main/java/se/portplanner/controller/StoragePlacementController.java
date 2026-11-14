@@ -12,7 +12,7 @@ import java.util.List;
 @RestController
 @RequiresModule("storage")
 @RequestMapping("/api/storage-placements")
-@Tag(name = "Vinterupptagning – placeringar")
+@Tag(name = "Winter haul-out – placements")
 public class StoragePlacementController {
 
     private final StoragePlacementService service;

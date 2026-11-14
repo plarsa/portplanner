@@ -13,8 +13,9 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * Konfigurerade superadmin-konton (ROL-11). De finns bara i applikationskonfigurationen, aldrig i databasen.
- * Lösenordet anges som bcrypt-hash (med eller utan {@code {bcrypt}}-prefix). Klartext accepteras men ger varning.
+ * The configured superadmin accounts (ROL-11). They live only in the application configuration, never in
+ * the database. The password is a bcrypt hash, with or without the {@code {bcrypt}} prefix. Cleartext is
+ * accepted but logs a warning.
  */
 @Component
 public class SuperAdminRegistry {
@@ -38,28 +39,28 @@ public class SuperAdminRegistry {
             if (sa.isBlank()) continue;
             if (sa.getUsername() == null || sa.getUsername().isBlank() || sa.getPassword() == null || sa.getPassword().isBlank()) {
                 throw new IllegalStateException(
-                        "portplanner.iam.superadmins: varje post kräver både username och password");
+                        "portplanner.iam.superadmins: every entry needs both username and password");
             }
             var key = key(sa.getUsername());
             if (accounts.containsKey(key)) {
-                throw new IllegalStateException("portplanner.iam.superadmins: användarnamnet '" + sa.getUsername() + "' förekommer flera gånger");
+                throw new IllegalStateException("portplanner.iam.superadmins: the username '" + sa.getUsername() + "' occurs more than once");
             }
             accounts.put(key, new Account(sa.getUsername(), toHash(sa.getPassword(), encoder), sa.isEnabled()));
             anyEnabled |= sa.isEnabled();
         }
         if (!anyEnabled) {
             throw new IllegalStateException(
-                    "Ingen aktiverad superadmin är konfigurerad. Ange portplanner.iam.superadmins "
-                            + "(t.ex. via miljövariablerna SUPERADMIN_USERNAME och SUPERADMIN_PASSWORD) med enabled=true.");
+                    "No enabled superadmin is configured. Set portplanner.iam.superadmins "
+                            + "(for example through the SUPERADMIN_USERNAME and SUPERADMIN_PASSWORD environment variables) with enabled=true.");
         }
-        log.info("Konfigurerade superadmin-konton: {}", accounts.values().stream()
-                .map(a -> a.username() + (a.enabled() ? "" : " (avstängd)")).toList());
+        log.info("Configured superadmin accounts: {}", accounts.values().stream()
+                .map(a -> a.username() + (a.enabled() ? "" : " (disabled)")).toList());
     }
 
     private String toHash(String password, BCryptPasswordEncoder encoder) {
         if (password.startsWith("{bcrypt}")) return password.substring("{bcrypt}".length());
         if (password.startsWith("$2")) return password;
-        log.warn("En konfigurerad superadmin har lösenord i klartext. Använd en bcrypt-hash (portplanner.iam.superadmins[].password).");
+        log.warn("A configured superadmin has a cleartext password. Use a bcrypt hash (portplanner.iam.superadmins[].password).");
         return encoder.encode(password);
     }
 
@@ -67,7 +68,7 @@ public class SuperAdminRegistry {
         return username.trim().toLowerCase(Locale.ROOT);
     }
 
-    /** Träff även för avstängda konton, så att inloggning inte faller tillbaka på databaskonto med samma namn. */
+    /** Matches disabled accounts too, so that sign-in never falls back to a database account of the same name. */
     public Optional<Account> find(String username) {
         return username == null ? Optional.empty() : Optional.ofNullable(accounts.get(key(username)));
     }

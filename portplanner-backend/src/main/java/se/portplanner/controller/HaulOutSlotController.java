@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequiresModule("storage")
 @RequestMapping("/api/haul-out-slots")
-@Tag(name = "Vinterupptagning – tider")
+@Tag(name = "Winter haul-out – slots")
 public class HaulOutSlotController {
 
     private final HaulOutSlotService service;

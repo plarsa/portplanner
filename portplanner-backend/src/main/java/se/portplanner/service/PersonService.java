@@ -63,7 +63,7 @@ public class PersonService {
     public void delete(Long id) {
         var person = getOrThrow(id);
         if (userRepository.existsByPersonId(id)) {
-            throw new ConflictException("Personen har ett konto. Ta bort kopplingen eller inaktivera kontot först");
+            throw new ConflictException("The person has an account. Remove the link or disable the account first");
         }
         String name = person.getFirstName() + " " + person.getLastName();
         personRepository.delete(person);

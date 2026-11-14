@@ -6,7 +6,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.Arrays;
 
-/** Testkonton med rolltilldelningar på formen {@code roll:nivå}. */
+/** Test accounts with role grants in the form {@code role:level}. */
 public final class TestUsers {
 
     private TestUsers() {}

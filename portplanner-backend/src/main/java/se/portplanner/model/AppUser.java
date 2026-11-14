@@ -13,8 +13,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Inloggningskonto i databasen. {@code username} är alltid e-postadressen och kan inte sättas separat.
- * Konfigurerade superadmin finns inte här (se SuperAdminRegistry).
+ * A sign-in account in the database. {@code username} always equals the email address and cannot be set
+ * on its own. Configured superadmins are not stored here; see SuperAdminRegistry.
  */
 @Entity
 @Table(name = "app_users")
@@ -26,7 +26,7 @@ public class AppUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Följer alltid e-postadressen. Null-email är bara möjligt för konton som skapats före IAM-ändringen. */
+    /** Always follows the email address. A null email is only possible for accounts created before the IAM change. */
     @Setter(AccessLevel.NONE)
     @Column(nullable = false, unique = true)
     private String username;
@@ -70,7 +70,7 @@ public class AppUser {
         if (email != null) this.username = email;
     }
 
-    /** Ersätter rolltilldelningarna. Samma roll högst en gång; den högsta nivån gäller (ROL-1). */
+    /** Replaces the role grants. Each role appears at most once and the highest level wins (ROL-1). */
     public void setRoles(Collection<RoleGrant> grants) {
         var highest = new HashMap<String, RoleGrant.Level>();
         grants.forEach(g -> highest.merge(g.role(), g.level(), RoleGrant.Level::max));

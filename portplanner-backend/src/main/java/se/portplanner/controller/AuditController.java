@@ -24,7 +24,7 @@ public class AuditController {
     }
 
     @GetMapping
-    @Operation(summary = "Hämta de senaste 200 händelserna, nyast först")
+    @Operation(summary = "List the 200 most recent events, newest first")
     public List<AuditLogResponse> findAll(
             @RequestParam(required = false) String entityType) {
         var logs = (entityType != null && !entityType.isBlank())

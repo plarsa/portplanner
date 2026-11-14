@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/assignments")
-@Tag(name = "Tilldelningar")
+@Tag(name = "Assignments")
 public class AssignmentController {
 
     private final AssignmentService assignmentService;
@@ -23,26 +23,26 @@ public class AssignmentController {
     }
 
     @GetMapping
-    @Operation(summary = "Hämta aktiva tilldelningar")
+    @Operation(summary = "List active assignments")
     public List<AssignmentResponse> findActive() {
         return assignmentService.findActive();
     }
 
     @GetMapping("/boat/{boatId}")
-    @Operation(summary = "Hämta tilldelningshistorik för en båt")
+    @Operation(summary = "Get the assignment history of a boat")
     public List<AssignmentResponse> findByBoat(@PathVariable Long boatId) {
         return assignmentService.findByBoat(boatId);
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Tilldela båt till plats (validerar mått)")
+    @Operation(summary = "Assign a boat to a slip (validates the dimensions)")
     public AssignmentResponse create(@Valid @RequestBody AssignmentRequest req) {
         return assignmentService.create(req);
     }
 
     @PutMapping("/{id}/end")
-    @Operation(summary = "Avsluta tilldelning och frigör platsen")
+    @Operation(summary = "End an assignment and release the slip")
     public AssignmentResponse end(@PathVariable Long id) {
         return assignmentService.end(id);
     }

@@ -22,7 +22,7 @@ public class DashboardController {
     }
 
     @GetMapping("/badges")
-    @Operation(summary = "Hämta alla tillgängliga dashboard-badges med aktuella värden")
+    @Operation(summary = "List all available dashboard badges with their current values")
     public List<BadgeResponse> getBadges() {
         return dashboardService.getAllBadges();
     }

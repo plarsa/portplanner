@@ -5,7 +5,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Inställningar under {@code portplanner.iam}. */
+/** The settings under {@code portplanner.iam}. */
 @ConfigurationProperties("portplanner.iam")
 public class IamProperties {
 

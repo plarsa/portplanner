@@ -12,7 +12,7 @@ import java.util.List;
 @RestController
 @RequiresModule("member-portal")
 @RequestMapping("/api/me")
-@Tag(name = "Medlemsportal")
+@Tag(name = "Member portal")
 public class MeController {
 
     private final MeService meService;
@@ -22,52 +22,52 @@ public class MeController {
     }
 
     @GetMapping
-    @Operation(summary = "Hämta inloggad medlems personuppgifter")
+    @Operation(summary = "Get the signed-in member's personal details")
     public MeResponse getMe() {
         return meService.getMe();
     }
 
     @PutMapping
-    @Operation(summary = "Uppdatera kontaktuppgifter (telefon, adress)")
+    @Operation(summary = "Update contact details (phone, address)")
     public MeResponse updateProfile(@RequestBody PersonRequest req) {
         return meService.updateProfile(req);
     }
 
     @GetMapping("/boats")
-    @Operation(summary = "Hämta mina båtar")
+    @Operation(summary = "List my boats")
     public List<BoatResponse> getMyBoats() {
         return meService.getMyBoats();
     }
 
     @GetMapping("/assignments")
-    @Operation(summary = "Hämta min aktiva bryggplats")
+    @Operation(summary = "Get my active slip")
     public List<AssignmentResponse> getMyAssignments() {
         return meService.getMyAssignments();
     }
 
     @GetMapping("/queue")
-    @Operation(summary = "Hämta min köstatus (inkl. ev. erbjudande)")
+    @Operation(summary = "Get my queue status, including any offer")
     public List<QueueEntryResponse> getMyQueue() {
         return meService.getMyQueue();
     }
 
     @RequiresModule("storage")
     @GetMapping("/haul-out-slots/available")
-    @Operation(summary = "Lediga upptagningstider")
+    @Operation(summary = "Available haul-out slots")
     public List<HaulOutSlotResponse> getAvailableHaulOutSlots() {
         return meService.getAvailableHaulOutSlots();
     }
 
     @RequiresModule("storage")
     @GetMapping("/haul-out-bookings")
-    @Operation(summary = "Mina vinterupptagningsanmälningar")
+    @Operation(summary = "My haul-out bookings")
     public List<HaulOutBookingResponse> getMyHaulOutBookings() {
         return meService.getMyHaulOutBookings();
     }
 
     @RequiresModule("storage")
     @PostMapping("/haul-out-bookings")
-    @Operation(summary = "Anmäl båt till vinterupptagning")
+    @Operation(summary = "Book a boat for haul-out")
     public HaulOutBookingResponse createMyHaulOutBooking(@RequestParam Long slotId,
                                                           @RequestParam Long boatId) {
         return meService.createMyHaulOutBooking(slotId, boatId);

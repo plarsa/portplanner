@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 
-/** Slumpar engångslösenord med tecken som inte går att förväxla. */
+/** Generates one-time passwords from characters that cannot be confused with each other. */
 @Component
 public class PasswordGenerator {
 

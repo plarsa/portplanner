@@ -34,7 +34,7 @@ public class StoragePackingGroupService {
 
     public StoragePackingGroupResponse create(StoragePackingGroupRequest req) {
         var yard = yardRepo.findById(req.yardId())
-                .orElseThrow(() -> new ResourceNotFoundException("Gårdsplan " + req.yardId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Storage yard " + req.yardId() + " was not found"));
         var group = new StoragePackingGroup();
         group.setYard(yard);
         group.setName(req.name());

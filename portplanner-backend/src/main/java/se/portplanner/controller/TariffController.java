@@ -13,7 +13,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/tariffs")
-@Tag(name = "Taxor")
+@Tag(name = "Tariffs")
 public class TariffController {
 
     private final TariffService tariffService;
@@ -23,33 +23,33 @@ public class TariffController {
     }
 
     @GetMapping
-    @Operation(summary = "Hämta alla taxor")
+    @Operation(summary = "List all tariffs")
     public List<TariffResponse> findAll() {
         return tariffService.findAll();
     }
 
     @GetMapping("/active")
-    @Operation(summary = "Hämta gällande taxor (aktiva idag)")
+    @Operation(summary = "List the tariffs in force today")
     public List<TariffResponse> findActive() {
         return tariffService.findActiveToday();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Skapa taxa")
+    @Operation(summary = "Create a tariff")
     public TariffResponse create(@Valid @RequestBody TariffRequest req) {
         return tariffService.create(req);
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Uppdatera taxa")
+    @Operation(summary = "Update a tariff")
     public TariffResponse update(@PathVariable Long id, @Valid @RequestBody TariffRequest req) {
         return tariffService.update(id, req);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Ta bort taxa")
+    @Operation(summary = "Delete a tariff")
     public void delete(@PathVariable Long id) {
         tariffService.delete(id);
     }

@@ -9,8 +9,8 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * En roll med nivå, skriven {@code roll:nivå} (t.ex. {@code admin:rw}). Används både för kontots
- * tilldelningar och för posterna i en moduls {@code access}-lista.
+ * A role with a level, written {@code role:level} (for example {@code admin:rw}). Used both for an
+ * account's grants and for the entries in a module's {@code access} list.
  */
 @Embeddable
 public record RoleGrant(
@@ -38,28 +38,28 @@ public record RoleGrant(
 
     public RoleGrant {
         if (role == null || !ROLE_NAME.matcher(role).matches()) {
-            throw new IllegalArgumentException("Ogiltigt rollnamn: '" + role + "' (tillåtet: [a-z][a-z0-9_]*)");
+            throw new IllegalArgumentException("Invalid role name: '" + role + "' (allowed: [a-z][a-z0-9_]*)");
         }
-        if (level == null) throw new IllegalArgumentException("Nivå saknas för roll " + role);
+        if (level == null) throw new IllegalArgumentException("Level is missing for role " + role);
     }
 
-    /** Läser {@code roll:r} eller {@code roll:rw}. Används även av Spring vid bindning av konfiguration. */
+    /** Reads {@code role:r} or {@code role:rw}. Spring uses it when binding the configuration as well. */
     public static RoleGrant valueOf(String text) {
         if (text == null) throw new IllegalArgumentException("Tom rolltilldelning");
         int i = text.lastIndexOf(':');
         if (i <= 0 || i == text.length() - 1) {
-            throw new IllegalArgumentException("Ogiltig post '" + text + "', förväntade roll:nivå (t.ex. admin:rw)");
+            throw new IllegalArgumentException("Invalid entry '" + text + "', expected role:level (for example admin:rw)");
         }
         var level = switch (text.substring(i + 1).trim().toLowerCase()) {
             case "r" -> Level.R;
             case "rw" -> Level.RW;
             default -> throw new IllegalArgumentException(
-                    "Ogiltig nivå i '" + text + "', tillåtna nivåer är r och rw");
+                    "Invalid level in '" + text + "', the allowed levels are r and rw");
         };
         return new RoleGrant(text.substring(0, i).trim(), level);
     }
 
-    /** Tolkar en Spring Security-authority {@code ROLE_roll:nivå}; andra authorities ger tomt. */
+    /** Parses a Spring Security authority {@code ROLE_role:level}; any other authority gives empty. */
     public static Optional<RoleGrant> fromAuthority(String authority) {
         if (authority == null || !authority.startsWith(AUTHORITY_PREFIX)) return Optional.empty();
         try {

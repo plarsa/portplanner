@@ -7,8 +7,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Gemensamma inställningar för alla moduler under {@code portplanner.modules.<id>}.
- * Modulspecifika inställningar binds i egna klasser (t.ex. {@link StorageProperties}).
+ * The settings shared by every module under {@code portplanner.modules.<id>}.
+ * Module-specific settings are bound in their own classes, such as {@link StorageProperties}.
  */
 @ConfigurationProperties("portplanner")
 public class ModulesProperties {
@@ -20,7 +20,7 @@ public class ModulesProperties {
 
     public static class ModuleConfig {
         private boolean enabled;
-        /** Poster {@code roll:nivå} som fungerar som tak. Null = använd modulens standardposter. */
+        /** {@code role:level} entries that act as ceilings. Null means use the module's default entries. */
         private List<RoleGrant> access;
 
         public boolean isEnabled() { return enabled; }

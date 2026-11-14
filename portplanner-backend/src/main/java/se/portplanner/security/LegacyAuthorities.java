@@ -9,8 +9,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Övergång: de gamla enkla rollnamnen (ADMIN, HARBOUR_MASTER, MEMBER) används ännu av SecurityConfig och
- * SPA:erna. De härleds här från rolltilldelningarna och tas bort i fas 7 och 8 i iam_plan.md.
+ * Transitional: the old single role names (ADMIN, HARBOUR_MASTER, MEMBER) are still used by SecurityConfig
+ * and the SPAs. They are derived here from the role grants and go away in phases 7 and 8 of iam_plan.md.
  */
 final class LegacyAuthorities {
 
@@ -29,7 +29,7 @@ final class LegacyAuthorities {
         return list;
     }
 
-    /** Det gamla rollnamnet som SPA:erna förväntar sig, t.ex. {@code ADMIN}. */
+    /** The old role name the SPAs expect, for example {@code ADMIN}. */
     static String roleName(Authentication auth) {
         return auth.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)

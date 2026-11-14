@@ -47,7 +47,7 @@ public class HaulOutSlotService {
 
     public HaulOutSlotResponse create(HaulOutSlotRequest req) {
         var season = seasonRepo.findById(req.seasonId())
-                .orElseThrow(() -> new ResourceNotFoundException("Vintersäsong " + req.seasonId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Winter season " + req.seasonId() + " was not found"));
         var slot = new HaulOutSlot();
         slot.setSeason(season);
         slot.setSlotDate(req.slotDate());

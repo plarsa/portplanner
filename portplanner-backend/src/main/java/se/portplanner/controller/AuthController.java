@@ -18,7 +18,7 @@ import se.portplanner.security.AccountService;
 
 @RestController
 @RequestMapping("/api/auth")
-@Tag(name = "Autentisering")
+@Tag(name = "Authentication")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
@@ -30,7 +30,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    @Operation(summary = "Logga in och skapa session")
+    @Operation(summary = "Sign in and create a session")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request,
                                                HttpServletRequest httpRequest) {
         Authentication auth = authenticationManager.authenticate(
@@ -47,7 +47,7 @@ public class AuthController {
     }
 
     @GetMapping("/me")
-    @Operation(summary = "Kontrollera aktiv session och hämta inloggad användare")
+    @Operation(summary = "Check the active session and get the signed-in user")
     public ResponseEntity<LoginResponse> me(Authentication auth) {
         if (auth == null || !auth.isAuthenticated()) {
             return ResponseEntity.status(401).build();

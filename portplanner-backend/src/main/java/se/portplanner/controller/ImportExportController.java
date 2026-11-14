@@ -22,55 +22,55 @@ public class ImportExportController {
     }
 
     @GetMapping("/export/docks")
-    @Operation(summary = "Exportera alla bryggor och platser som JSON")
+    @Operation(summary = "Export all docks and slips as JSON")
     public List<DockImportDto> exportDocks() {
         return importExportService.exportDocks();
     }
 
     @PostMapping("/import/docks/preview")
-    @Operation(summary = "Förhandsgranska import utan att spara")
+    @Operation(summary = "Preview an import without saving")
     public ImportPreview preview(@RequestBody List<DockImportDto> docks) {
         return importExportService.preview(docks);
     }
 
     @PostMapping("/import/docks")
-    @Operation(summary = "Importera bryggor och platser från JSON")
+    @Operation(summary = "Import docks and slips from JSON")
     public ImportResult importDocks(@RequestBody List<DockImportDto> docks) {
         return importExportService.importDocks(docks);
     }
 
     @GetMapping("/export/persons")
-    @Operation(summary = "Exportera alla personer som JSON")
+    @Operation(summary = "Export all persons as JSON")
     public List<PersonImportDto> exportPersons() {
         return importExportService.exportPersons();
     }
 
     @PostMapping("/import/persons/preview")
-    @Operation(summary = "Förhandsgranska personimport utan att spara")
+    @Operation(summary = "Preview a person import without saving")
     public PersonImportPreview previewPersons(@RequestBody List<PersonImportDto> persons) {
         return importExportService.previewPersons(persons);
     }
 
     @PostMapping("/import/persons")
-    @Operation(summary = "Importera personer från JSON")
+    @Operation(summary = "Import persons from JSON")
     public PersonImportResult importPersons(@RequestBody List<PersonImportDto> persons) {
         return importExportService.importPersons(persons);
     }
 
     @GetMapping("/export/boats")
-    @Operation(summary = "Exportera alla båtar som JSON")
+    @Operation(summary = "Export all boats as JSON")
     public List<BoatImportDto> exportBoats() {
         return importExportService.exportBoats();
     }
 
     @PostMapping("/import/boats/preview")
-    @Operation(summary = "Förhandsgranska båtimport utan att spara")
+    @Operation(summary = "Preview a boat import without saving")
     public BoatImportPreview previewBoats(@RequestBody List<BoatImportDto> boats) {
         return importExportService.previewBoats(boats);
     }
 
     @PostMapping("/import/boats")
-    @Operation(summary = "Importera båtar från JSON")
+    @Operation(summary = "Import boats from JSON")
     public BoatImportResult importBoats(@RequestBody List<BoatImportDto> boats) {
         return importExportService.importBoats(boats);
     }

@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static se.portplanner.module.TestUsers.asUser;
 
-/** Profilen demo ska aktivera alla moduler och ge admin:rw skrivrätt i dem. */
+/** The demo profile must enable every module and give admin:rw write access in all of them. */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("demo")
@@ -38,7 +38,7 @@ class DemoProfileTest {
     @Test
     void demoSuperadminCanLogIn() throws Exception {
         mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"demo\",\"password\":\"demo-lösenord-2026\"}"))
+                .content("{\"username\":\"demo\",\"password\":\"demo-password-2026\"}"))
                 .andExpect(status().isOk());
     }
 

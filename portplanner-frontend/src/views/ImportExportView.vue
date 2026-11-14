@@ -2,7 +2,7 @@
   <AppLayout>
     <h2>Import / Export</h2>
 
-    <!-- ═══ BRYGGOR – EXPORT ════════════════════════════════════════════ -->
+    <!-- ═══ DOCKS – EXPORT ══════════════════════════════════════════════ -->
     <section class="card">
       <h3>Exportera bryggor &amp; platser</h3>
       <p class="desc">Laddar ner alla bryggor och båtplatser som en JSON-fil du kan spara lokalt.</p>
@@ -11,7 +11,7 @@
       </button>
     </section>
 
-    <!-- ═══ BRYGGOR – IMPORT ════════════════════════════════════════════ -->
+    <!-- ═══ DOCKS – IMPORT ══════════════════════════════════════════════ -->
     <section class="card">
       <h3>Importera bryggor &amp; platser</h3>
       <p class="desc">
@@ -70,7 +70,7 @@
       </div>
     </section>
 
-    <!-- ═══ BÅTAR – EXPORT ═══════════════════════════════════════════════ -->
+    <!-- ═══ BOATS – EXPORT ══════════════════════════════════════════════ -->
     <section class="card">
       <h3>Exportera båtar</h3>
       <p class="desc">Laddar ner alla båtar (modell, mått, ägare via e-post) som en JSON-fil.</p>
@@ -79,7 +79,7 @@
       </button>
     </section>
 
-    <!-- ═══ BÅTAR – IMPORT ════════════════════════════════════════════════ -->
+    <!-- ═══ BOATS – IMPORT ══════════════════════════════════════════════ -->
     <section class="card">
       <h3>Importera båtar</h3>
       <p class="desc">
@@ -144,7 +144,7 @@
       </div>
     </section>
 
-    <!-- ═══ PERSONER – EXPORT ════════════════════════════════════════════ -->
+    <!-- ═══ PERSONS – EXPORT ════════════════════════════════════════════ -->
     <section class="card">
       <h3>Exportera personer</h3>
       <p class="desc">Laddar ner alla personer (namn, e-post, telefon) som en JSON-fil.</p>
@@ -153,7 +153,7 @@
       </button>
     </section>
 
-    <!-- ═══ PERSONER – IMPORT ════════════════════════════════════════════ -->
+    <!-- ═══ PERSONS – IMPORT ════════════════════════════════════════════ -->
     <section class="card">
       <h3>Importera personer</h3>
       <p class="desc">

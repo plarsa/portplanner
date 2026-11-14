@@ -7,7 +7,7 @@ import se.portplanner.module.RoleGrant;
 import java.time.LocalDateTime;
 import java.util.List;
 
-/** Konto utan lösenordsuppgifter. {@code readOnly} gäller konfigurerad superadmin, som saknar databasrad. */
+/** An account without password details. {@code readOnly} marks a configured superadmin, which has no database row. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record UserResponse(
         Long id,

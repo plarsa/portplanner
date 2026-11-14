@@ -32,7 +32,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         if (configured.isPresent()) {
             var sa = configured.get();
             if (!sa.enabled()) throw notFound(username);
-            // Övergång: HARBOUR_MASTER-authority behålls tills SecurityConfig och SPA:erna använder roll-listor.
+            // Transitional: the HARBOUR_MASTER authority stays until SecurityConfig and the SPAs use role lists.
             return new User(sa.username(), sa.passwordHash(), List.of(
                     new SimpleGrantedAuthority("ROLE_superadmin:rw"),
                     new SimpleGrantedAuthority(LegacyAuthorities.SUPERADMIN)));
@@ -40,7 +40,7 @@ public class UserDetailsServiceImpl implements UserDetailsService {
         AppUser user = userRepository.findByUsername(username)
                 .or(() -> userRepository.findByEmailIgnoreCase(username))
                 .orElseThrow(() -> notFound(username));
-        // Samma neutrala fel som fel lösenord om kontot saknar metoden PASSWORD (LOG-12).
+        // The same neutral error as a wrong password when the account has no PASSWORD method (LOG-12).
         if (!user.getLoginMethods().contains(LoginMethod.PASSWORD)) throw notFound(username);
         boolean enabled = user.getStatus() != UserStatus.DISABLED;
         return new User(user.getUsername(), user.getPasswordHash(), enabled, true, true, true,

@@ -47,8 +47,8 @@ public class BoatService {
         mapFields(boat, req);
         var saved = boatRepository.save(boat);
         auditService.log("CREATED", "BOAT", saved.getId(),
-                "Båt skapad: " + saved.getModel() +
-                " (ägare: " + saved.getOwner().getFirstName() + " " + saved.getOwner().getLastName() + ")");
+                "Boat created: " + saved.getModel() +
+                " (owner: " + saved.getOwner().getFirstName() + " " + saved.getOwner().getLastName() + ")");
         return BoatResponse.from(saved);
     }
 
@@ -57,7 +57,7 @@ public class BoatService {
         mapFields(boat, req);
         var saved = boatRepository.save(boat);
         auditService.log("UPDATED", "BOAT", saved.getId(),
-                "Båt uppdaterad: " + saved.getModel());
+                "Boat updated: " + saved.getModel());
         return BoatResponse.from(saved);
     }
 
@@ -65,12 +65,12 @@ public class BoatService {
         var boat = getOrThrow(id);
         String model = boat.getModel();
         boatRepository.delete(boat);
-        auditService.log("DELETED", "BOAT", id, "Båt borttagen: " + model);
+        auditService.log("DELETED", "BOAT", id, "Boat deleted: " + model);
     }
 
     private Boat getOrThrow(Long id) {
         return boatRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Båt " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Boat " + id + " was not found"));
     }
 
     private void mapFields(Boat boat, BoatRequest req) {

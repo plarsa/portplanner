@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/queue")
-@Tag(name = "Kö")
+@Tag(name = "Queue")
 public class QueueController {
 
     private final QueueService queueService;
@@ -25,57 +25,57 @@ public class QueueController {
     }
 
     @GetMapping
-    @Operation(summary = "Hämta kölistan (FIFO, status WAITING)")
+    @Operation(summary = "List the queue (FIFO, status WAITING)")
     public List<QueueEntryResponse> findWaiting() {
         return queueService.findWaiting();
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Lägg till person+båt i kö")
+    @Operation(summary = "Add a person and boat to the queue")
     public QueueEntryResponse add(@Valid @RequestBody QueueEntryRequest req) {
         return queueService.add(req);
     }
 
     @GetMapping("/{id}/suggestions")
-    @Operation(summary = "Föreslå lediga platser som passar båtens mått")
+    @Operation(summary = "Suggest available slips that fit the boat's dimensions")
     public List<SlipResponse> suggestions(@PathVariable Long id) {
         return queueService.suggestions(id);
     }
 
     @PostMapping("/{id}/assign")
-    @Operation(summary = "Tilldela plats från kö (tar bort ur kön)")
+    @Operation(summary = "Assign a slip from the queue (removes the entry)")
     public AssignmentResponse assign(@PathVariable Long id, @RequestParam Long slipId) {
         return queueService.assignFromQueue(id, slipId);
     }
 
     @PutMapping("/{id}")
-    @Operation(summary = "Uppdatera kö-post (anteckning, båt, datum)")
+    @Operation(summary = "Update a queue entry (note, boat, date)")
     public QueueEntryResponse update(@PathVariable Long id, @Valid @RequestBody QueueEntryRequest req) {
         return queueService.update(id, req);
     }
 
     @PostMapping("/{id}/offer")
-    @Operation(summary = "Erbjud en specifik plats till kö-personen (admin)")
+    @Operation(summary = "Offer a specific slip to the queued person (admin)")
     public QueueEntryResponse offer(@PathVariable Long id, @RequestParam Long slipId) {
         return queueService.offer(id, slipId);
     }
 
     @PostMapping("/{id}/accept-offer")
-    @Operation(summary = "Medlem accepterar erbjuden plats")
+    @Operation(summary = "Member accepts an offered slip")
     public AssignmentResponse acceptOffer(@PathVariable Long id) {
         return queueService.acceptOffer(id);
     }
 
     @PostMapping("/{id}/decline-offer")
-    @Operation(summary = "Medlem avböjer erbjuden plats (behåller köplats)")
+    @Operation(summary = "Member declines an offered slip (keeps their queue position)")
     public QueueEntryResponse declineOffer(@PathVariable Long id) {
         return queueService.declineOffer(id);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @Operation(summary = "Avboka kö-post")
+    @Operation(summary = "Cancel a queue entry")
     public void cancel(@PathVariable Long id) {
         queueService.cancel(id);
     }

@@ -1,6 +1,6 @@
 package se.portplanner.module;
 
-/** Åtkomstnivå för en roll i en modul. Ordningen är väsentlig: NONE &lt; READ &lt; WRITE. */
+/** A role's access level in a module. The order matters: NONE &lt; READ &lt; WRITE. */
 public enum AccessLevel {
     NONE, READ, WRITE;
 

@@ -44,7 +44,7 @@ public class TariffService {
         mapFields(tariff, req);
         var saved = tariffRepository.save(tariff);
         auditService.log("CREATED", "TARIFF", saved.getId(),
-                "Tariff skapad: " + saved.getName() + " (" + saved.getCategory() + ") " + saved.getAnnualFeeKr() + " kr/år");
+                "Tariff created: " + saved.getName() + " (" + saved.getCategory() + ") " + saved.getAnnualFeeKr() + " SEK/year");
         return TariffResponse.from(saved);
     }
 

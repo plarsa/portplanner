@@ -81,7 +81,7 @@ class UserPolicyTest {
         var actor = actor("a@hamn.se", "admin:rw");
         assertEquals("SELF_MODIFICATION", code(() -> policy.assertCanModify(actor, me, roles("admin:rw", "audit_master:r"))));
         assertEquals("SELF_MODIFICATION", code(() -> policy.assertCanModify(actor, me, roles("admin:r"))));
-        // Oförändrade roller är tillåtet (t.ex. byte av person eller e-post).
+        // Leaving the roles unchanged is allowed, for instance when changing person or email.
         policy.assertCanModify(actor, me, roles("admin:rw"));
         policy.assertCanModify(actor, me, roles("admin:r", "admin:rw"));
     }

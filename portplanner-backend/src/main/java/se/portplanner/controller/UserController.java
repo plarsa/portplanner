@@ -15,7 +15,7 @@ import se.portplanner.service.UserService;
 
 import java.util.List;
 
-/** Kontohantering. Styrs av rollreglerna i UserPolicy, inte av modulnivåer (RÄT-7). */
+/** Account management. Governed by the role rules in UserPolicy, not by module levels (RAT-7). */
 @RestController
 @RequestMapping("/api")
 @Tag(name = "Users")
@@ -28,13 +28,13 @@ public class UserController {
     }
 
     @GetMapping("/roles")
-    @Operation(summary = "Roller som går att tilldela (härledda från modulernas access)")
+    @Operation(summary = "Roles that can be assigned (derived from the modules' access lists)")
     public List<String> roles(Authentication auth) {
         return users.assignableRoles(Actor.from(auth));
     }
 
     @GetMapping("/users")
-    @Operation(summary = "Lista konton, inklusive konfigurerad superadmin (skrivskyddad)")
+    @Operation(summary = "List accounts, including the configured superadmin (read-only)")
     public List<UserResponse> list(@RequestParam(required = false) String role,
                                    @RequestParam(required = false) String status,
                                    Authentication auth) {
@@ -42,31 +42,31 @@ public class UserController {
     }
 
     @GetMapping("/users/{id}")
-    @Operation(summary = "Hämta ett konto")
+    @Operation(summary = "Get an account")
     public UserResponse get(@PathVariable Long id, Authentication auth) {
         return users.get(Actor.from(auth), id);
     }
 
     @PostMapping("/users")
-    @Operation(summary = "Skapa konto. Engångslösenordet returneras en gång")
+    @Operation(summary = "Create an account. The one-time password is returned once")
     public ResponseEntity<UserCreatedResponse> create(@Valid @RequestBody UserRequest req, Authentication auth) {
         return ResponseEntity.status(HttpStatus.CREATED).body(users.create(Actor.from(auth), req));
     }
 
     @PutMapping("/users/{id}")
-    @Operation(summary = "Ersätt e-post, roller, inloggningsmetoder och personkoppling")
+    @Operation(summary = "Replace email, roles, login methods and person link")
     public UserResponse update(@PathVariable Long id, @Valid @RequestBody UserRequest req, Authentication auth) {
         return users.update(Actor.from(auth), id, req);
     }
 
     @PostMapping("/users/{id}/disable")
-    @Operation(summary = "Inaktivera konto och avsluta dess sessioner")
+    @Operation(summary = "Disable an account and end its sessions")
     public UserResponse disable(@PathVariable Long id, Authentication auth) {
         return users.disable(Actor.from(auth), id);
     }
 
     @PostMapping("/users/{id}/enable")
-    @Operation(summary = "Återaktivera konto")
+    @Operation(summary = "Re-enable an account")
     public UserResponse enable(@PathVariable Long id, Authentication auth) {
         return users.enable(Actor.from(auth), id);
     }

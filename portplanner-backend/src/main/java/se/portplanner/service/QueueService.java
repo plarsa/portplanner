@@ -53,7 +53,7 @@ public class QueueService {
         Boat boat = null;
         if (req.boatId() != null) {
             boat = boatRepository.findById(req.boatId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Båt " + req.boatId() + " hittades inte"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Boat " + req.boatId() + " was not found"));
         }
 
         var entry = new QueueEntry();
@@ -66,7 +66,7 @@ public class QueueService {
         var saved = queueRepository.save(entry);
         String boatPart = boat != null ? boat.getModel() + " – " : "";
         auditService.log("QUEUED", "QUEUE_ENTRY", saved.getId(),
-                "Köpost tillagd: " + boatPart +
+                "Queue entry added: " + boatPart +
                 person.getFirstName() + " " + person.getLastName());
         return QueueEntryResponse.from(saved);
     }
@@ -93,7 +93,7 @@ public class QueueService {
         Boat boat = null;
         if (req.boatId() != null) {
             boat = boatRepository.findById(req.boatId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Båt " + req.boatId() + " hittades inte"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Boat " + req.boatId() + " was not found"));
         }
         entry.setBoat(boat);
         entry.setNotes(req.notes());
@@ -102,14 +102,14 @@ public class QueueService {
         }
         var saved = queueRepository.save(entry);
         auditService.log("UPDATED", "QUEUE_ENTRY", id,
-                "Köpost uppdaterad: " + entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName());
+                "Queue entry updated: " + entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName());
         return QueueEntryResponse.from(saved);
     }
 
     public AssignmentResponse assignFromQueue(Long entryId, Long slipId) {
         var entry = getOrThrow(entryId);
         if (entry.getStatus() != QueueEntryStatus.WAITING) {
-            throw new IllegalArgumentException("Kö-posten är inte i vänteläge");
+            throw new IllegalArgumentException("The queue entry is not waiting");
         }
 
         var assignment = assignmentService.create(new AssignmentRequest(entry.getBoat().getId(), slipId));
@@ -119,7 +119,7 @@ public class QueueService {
 
         String boatPart = entry.getBoat() != null ? entry.getBoat().getModel() + " – " : "";
         auditService.log("QUEUE_ASSIGNED", "QUEUE_ENTRY", entryId,
-                "Från kö: " + boatPart +
+                "From queue: " + boatPart +
                 entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName() + " tilldelad plats");
         return assignment;
     }
@@ -127,7 +127,7 @@ public class QueueService {
     public QueueEntryResponse offer(Long entryId, Long slipId) {
         var entry = getOrThrow(entryId);
         if (entry.getStatus() != QueueEntryStatus.WAITING) {
-            throw new IllegalArgumentException("Kö-posten måste ha status WAITING för att erbjuda plats");
+            throw new IllegalArgumentException("A slip can only be offered to a queue entry with status WAITING");
         }
         var slip = slipRepository.findById(slipId)
                 .orElseThrow(() -> new ResourceNotFoundException("Plats " + slipId + " hittades inte"));
@@ -143,7 +143,7 @@ public class QueueService {
     public AssignmentResponse acceptOffer(Long entryId) {
         var entry = getOrThrow(entryId);
         if (entry.getStatus() != QueueEntryStatus.OFFERED || entry.getOfferedSlip() == null) {
-            throw new IllegalArgumentException("Ingen aktiv erbjudanden på denna kö-post");
+            throw new IllegalArgumentException("The queue entry has no active offer");
         }
         var assignment = assignmentService.create(new AssignmentRequest(entry.getBoat().getId(), entry.getOfferedSlip().getId()));
         entry.setStatus(QueueEntryStatus.ASSIGNED);
@@ -157,20 +157,20 @@ public class QueueService {
     public QueueEntryResponse declineOffer(Long entryId) {
         var entry = getOrThrow(entryId);
         if (entry.getStatus() != QueueEntryStatus.OFFERED) {
-            throw new IllegalArgumentException("Ingen aktiv erbjudanden på denna kö-post");
+            throw new IllegalArgumentException("The queue entry has no active offer");
         }
         entry.setStatus(QueueEntryStatus.WAITING);
         entry.setOfferedSlip(null);
         var saved = queueRepository.save(entry);
         auditService.log("OFFER_DECLINED", "QUEUE_ENTRY", entryId,
-                "Erbjudande avböjt: " + entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName());
+                "Offer declined: " + entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName());
         return QueueEntryResponse.from(saved);
     }
 
     public void cancel(Long id) {
         var entry = getOrThrow(id);
         String boatPart = entry.getBoat() != null ? entry.getBoat().getModel() + " – " : "";
-        String desc = "Köpost avbruten: " + boatPart +
+        String desc = "Queue entry cancelled: " + boatPart +
                 entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName();
         entry.setStatus(QueueEntryStatus.CANCELLED);
         queueRepository.save(entry);
@@ -179,6 +179,6 @@ public class QueueService {
 
     private QueueEntry getOrThrow(Long id) {
         return queueRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Kö-post " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Queue entry " + id + " was not found"));
     }
 }

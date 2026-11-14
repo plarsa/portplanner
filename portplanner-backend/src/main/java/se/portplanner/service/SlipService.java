@@ -45,7 +45,7 @@ public class SlipService {
         mapFields(slip, req);
         var saved = slipRepository.save(slip);
         auditService.log("CREATED", "SLIP", saved.getId(),
-                "Plats skapad: " + saved.getSlipNumber() + " på brygga " + saved.getDock().getName());
+                "Slip created: " + saved.getSlipNumber() + " on dock " + saved.getDock().getName());
         return SlipResponse.from(saved);
     }
 
@@ -54,13 +54,13 @@ public class SlipService {
         mapFields(slip, req);
         var saved = slipRepository.save(slip);
         auditService.log("UPDATED", "SLIP", saved.getId(),
-                "Plats uppdaterad: " + saved.getSlipNumber() + " på brygga " + saved.getDock().getName());
+                "Slip updated: " + saved.getSlipNumber() + " on dock " + saved.getDock().getName());
         return SlipResponse.from(saved);
     }
 
     public void delete(Long id) {
         Slip slip = getOrThrow(id);
-        String desc = "Plats borttagen: " + slip.getSlipNumber() + " på brygga " + slip.getDock().getName();
+        String desc = "Slip deleted: " + slip.getSlipNumber() + " on dock " + slip.getDock().getName();
         assignmentRepository.deleteBySlipId(id);
         slipRepository.delete(slip);
         auditService.log("DELETED", "SLIP", id, desc);
@@ -68,7 +68,7 @@ public class SlipService {
 
     private Slip getOrThrow(Long id) {
         return slipRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Båtplats " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Slip " + id + " was not found"));
     }
 
     private void mapFields(Slip slip, SlipRequest req) {

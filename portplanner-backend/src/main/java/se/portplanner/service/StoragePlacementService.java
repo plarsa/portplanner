@@ -72,13 +72,13 @@ public class StoragePlacementService {
                     .anyMatch(pp -> pp.getOrderInGroup() != null && pp.getOrderInGroup() < p.getOrderInGroup());
             if (outOfOrder) {
                 throw new IllegalStateException(
-                        "Ordningskonflikt: det finns båtar med lägre ordningsnummer som inte sjösatts i gruppen " +
+                        "Order conflict: the group still has boats with a lower order number that have not been launched: " +
                         p.getPackingGroup().getName());
             }
         }
         p.setStatus(StoragePlacementStatus.LAUNCHED);
         auditService.log("LAUNCHED", "STORAGE_PLACEMENT", id,
-                "Båt sjösatt: " + p.getBooking().getBoat().getModel());
+                "Boat launched: " + p.getBooking().getBoat().getModel());
         return StoragePlacementResponse.from(placementRepo.save(p));
     }
 

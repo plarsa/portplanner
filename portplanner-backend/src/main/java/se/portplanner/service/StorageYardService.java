@@ -49,14 +49,14 @@ public class StorageYardService {
 
     public StorageYardResponse create(StorageYardRequest req) {
         var season = seasonRepo.findById(req.seasonId())
-                .orElseThrow(() -> new ResourceNotFoundException("Vintersäsong " + req.seasonId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Winter season " + req.seasonId() + " was not found"));
         var yard = new StorageYard();
         yard.setSeason(season);
         yard.setName(req.name());
         yard.setBackgroundImageUrl(req.backgroundImageUrl());
         if (req.laneMarginM() != null) yard.setLaneMarginM(req.laneMarginM());
         var saved = yardRepo.save(yard);
-        auditService.log("CREATED", "STORAGE_YARD", saved.getId(), "Gårdsplan skapad: " + saved.getName());
+        auditService.log("CREATED", "STORAGE_YARD", saved.getId(), "Storage yard created: " + saved.getName());
         return StorageYardResponse.from(saved);
     }
 
@@ -86,14 +86,14 @@ public class StorageYardService {
                 yard.getBoundary().add(pt);
             }
         }
-        auditService.log("CALIBRATED", "STORAGE_YARD", id, "Kalibrering sparad för gårdsplan " + yard.getName());
+        auditService.log("CALIBRATED", "STORAGE_YARD", id, "Calibration saved for storage yard " + yard.getName());
         return StorageYardResponse.from(yardRepo.save(yard));
     }
 
     public void delete(Long id) {
         var yard = getOrThrow(id);
         yardRepo.delete(yard);
-        auditService.log("DELETED", "STORAGE_YARD", id, "Gårdsplan borttagen: " + yard.getName());
+        auditService.log("DELETED", "STORAGE_YARD", id, "Storage yard deleted: " + yard.getName());
     }
 
     /** Shelf-packing: sort confirmed bookings by length desc, fill rows from origin. */
@@ -155,7 +155,7 @@ public class StorageYardService {
 
         var saved = placementRepo.saveAll(results);
         auditService.log("SUGGESTED", "STORAGE_YARD", yardId,
-                "Placeringsförslag genererat: " + saved.size() + " båtar");
+                "Placement proposal generated: " + saved.size() + " boats");
         return saved.stream().map(StoragePlacementResponse::from).toList();
     }
 
@@ -173,7 +173,7 @@ public class StorageYardService {
                 if (rectsOverlap(a, b, margin)) {
                     issues.add(new ValidationIssue("COLLISION", a.getId(),
                             a.getBooking().getBoat().getModel(),
-                            "Överlappar med " + b.getBooking().getBoat().getModel()));
+                            "Overlaps with " + b.getBooking().getBoat().getModel()));
                 }
             }
         }
@@ -211,6 +211,6 @@ public class StorageYardService {
 
     private StorageYard getOrThrow(Long id) {
         return yardRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Gårdsplan " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Storage yard " + id + " was not found"));
     }
 }

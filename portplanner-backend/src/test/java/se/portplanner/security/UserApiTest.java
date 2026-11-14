@@ -86,8 +86,8 @@ class UserApiTest {
                 .andExpect(jsonPath("$.temporaryPassword").isString())
                 .andReturn().getResponse().getContentAsString();
         assertFalse(res.contains("passwordHash"));
-        assertEquals(before + 1, auditLog.count(), "audit skrivs även när modulen audit är avstängd");
-        // Engångslösenordet fungerar för inloggning.
+        assertEquals(before + 1, auditLog.count(), "audit is written even when the audit module is off");
+        // The one-time password works for signing in.
         var pw = json.readTree(res).get("temporaryPassword").asText();
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -225,9 +225,9 @@ class UserApiTest {
         var login = mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON).content(loginBody)).andExpect(status().isOk()).andReturn();
         var cookie = login.getResponse().getCookie("SESSION");
-        assertNotNull(cookie, "sessionscookie ska sättas vid inloggning");
+        assertNotNull(cookie, "a session cookie must be set when signing in");
         mvc.perform(get("/api/auth/me").cookie(cookie)).andExpect(status().isOk());
-        assertFalse(sessions.findByPrincipalName("d@hamn.se").isEmpty(), "sessionen ska vara indexerad på användarnamn");
+        assertFalse(sessions.findByPrincipalName("d@hamn.se").isEmpty(), "the session must be indexed by username");
 
         mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/users/" + id + "/disable")
                 .with(asUserNamed("boss", "superadmin:rw")))

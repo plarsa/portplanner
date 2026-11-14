@@ -42,7 +42,7 @@ class AccountLoginTest {
     private AppUser save(String email, UserStatus status, Set<LoginMethod> methods, String... grants) {
         var u = new AppUser();
         u.setEmail(email);
-        u.setPasswordHash(encoder.encode("hemligt-lösen"));
+        u.setPasswordHash(encoder.encode("secret-password"));
         u.setStatus(status);
         u.setLoginMethods(methods);
         u.setRoles(java.util.Arrays.stream(grants).map(RoleGrant::valueOf).toList());
@@ -72,7 +72,7 @@ class AccountLoginTest {
     @Test
     void accountWithGrantsLogsInAndMeShowsThem() throws Exception {
         save("anna@hamn.se", UserStatus.ACTIVE, Set.of(LoginMethod.PASSWORD), "admin:rw", "audit_master:r");
-        var result = login("anna@hamn.se", "hemligt-lösen")
+        var result = login("anna@hamn.se", "secret-password")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("anna@hamn.se"))
                 .andExpect(jsonPath("$.roles[0]").value("admin:rw"))
@@ -90,13 +90,13 @@ class AccountLoginTest {
     @Test
     void disabledAccountCannotLogIn() throws Exception {
         save("off@hamn.se", UserStatus.DISABLED, Set.of(LoginMethod.PASSWORD), "admin:rw");
-        login("off@hamn.se", "hemligt-lösen").andExpect(status().is4xxClientError());
+        login("off@hamn.se", "secret-password").andExpect(status().is4xxClientError());
     }
 
     @Test
     void accountWithoutPasswordMethodCannotUsePassword() throws Exception {
         save("nopw@hamn.se", UserStatus.ACTIVE, Set.of(), "admin:rw");
-        login("nopw@hamn.se", "hemligt-lösen").andExpect(status().is4xxClientError());
+        login("nopw@hamn.se", "secret-password").andExpect(status().is4xxClientError());
     }
 
     @Test

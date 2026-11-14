@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequiresModule("storage")
 @RequestMapping("/api/storage-yards")
-@Tag(name = "Vinterupptagning – gårdsplaner")
+@Tag(name = "Winter haul-out – storage yards")
 public class StorageYardController {
 
     private final StorageYardService yardService;

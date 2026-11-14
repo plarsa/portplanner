@@ -1,6 +1,6 @@
 package se.portplanner.model;
 
-/** Inloggningsmetoder. Fler (GOOGLE, BANKID) läggs till här när de byggs. */
+/** The login methods. More of them (GOOGLE, BANKID) are added here as they are built. */
 public enum LoginMethod {
     PASSWORD
 }

@@ -48,42 +48,42 @@ public class ImportService {
 
             String[] cols = line.split("\t", -1);
             if (cols.length < 3) {
-                warnings.add("Rad " + (i + 1) + ": för få kolumner, hoppar över");
+                warnings.add("Row " + (i + 1) + ": too few columns, skipping");
                 slipsSkipped++;
                 continue;
             }
 
-            String dockName  = cols[0].trim();
-            String slipNum   = cols.length > 1 ? cols[1].trim() : "";
-            String breddStr  = cols.length > 2 ? cols[2].trim() : "";
-            String langdStr  = cols.length > 3 ? cols[3].trim() : "";
-            String djupStr   = cols.length > 4 ? cols[4].trim() : "";
+            String dockName    = cols[0].trim();
+            String slipNum     = cols.length > 1 ? cols[1].trim() : "";
+            String widthStr    = cols.length > 2 ? cols[2].trim() : "";
+            String lengthStr   = cols.length > 3 ? cols[3].trim() : "";
+            String draftStr    = cols.length > 4 ? cols[4].trim() : "";
             String mooringType = cols.length > 5 ? cols[5].trim() : "";
-            String side      = cols.length > 6 ? cols[6].trim() : "";
+            String side        = cols.length > 6 ? cols[6].trim() : "";
 
             if (dockName.isBlank() || slipNum.isBlank()) {
-                warnings.add("Rad " + (i + 1) + ": brygga eller platsnummer saknas, hoppar över");
+                warnings.add("Row " + (i + 1) + ": dock or slip number is missing, skipping");
                 slipsSkipped++;
                 continue;
             }
 
-            BigDecimal bredd = parseDecimal(breddStr);
-            if (bredd == null) {
-                warnings.add("Rad " + (i + 1) + " (" + dockName + " " + slipNum + "): ogiltigt breddvärde '" + breddStr + "', hoppar över");
+            BigDecimal width = parseDecimal(widthStr);
+            if (width == null) {
+                warnings.add("Row " + (i + 1) + " (" + dockName + " " + slipNum + "): invalid width '" + widthStr + "', skipping");
                 slipsSkipped++;
                 continue;
             }
 
-            // Längd är ofta tom – sätt 99.0 som "ej angiven max"
-            BigDecimal langd = parseDecimal(langdStr);
-            if (langd == null && !langdStr.isBlank()) {
-                warnings.add("Rad " + (i + 1) + " (" + dockName + " " + slipNum + "): ogiltigt längdvärde '" + langdStr + "', sätter 99.0");
+            // Length is often blank; 99.0 stands for "no maximum given"
+            BigDecimal length = parseDecimal(lengthStr);
+            if (length == null && !lengthStr.isBlank()) {
+                warnings.add("Row " + (i + 1) + " (" + dockName + " " + slipNum + "): invalid length '" + lengthStr + "', using 99.0");
             }
-            if (langd == null) langd = new BigDecimal("99.0");
+            if (length == null) length = new BigDecimal("99.0");
 
-            BigDecimal djup = parseDjup(djupStr);
+            BigDecimal draft = parseDraft(draftStr);
 
-            // Hämta eller skapa brygga
+            // Find or create the dock
             Dock dock = dockCache.computeIfAbsent(dockName.toLowerCase(), key -> {
                 return dockRepository.findAll().stream()
                         .filter(d -> d.getName().equalsIgnoreCase(dockName))
@@ -99,14 +99,14 @@ public class ImportService {
                 docksCreated++;
             }
 
-            // Kolla om platsen redan finns
+            // Check whether the slip already exists
             final String slipNumFinal = slipNum;
             final Dock dockFinal = dock;
             boolean exists = slipRepository.findByDockId(dock.getId()).stream()
                     .anyMatch(s -> s.getSlipNumber().equals(slipNumFinal));
 
             if (exists) {
-                warnings.add("Plats " + dockName + " " + slipNum + " finns redan, hoppar över");
+                warnings.add("Slip " + dockName + " " + slipNum + " already exists, skipping");
                 slipsSkipped++;
                 continue;
             }
@@ -114,9 +114,9 @@ public class ImportService {
             var slip = new Slip();
             slip.setDock(dockFinal);
             slip.setSlipNumber(slipNum);
-            slip.setMaxWidthM(bredd);
-            slip.setMaxLengthM(langd);
-            slip.setMaxDraftM(djup);
+            slip.setMaxWidthM(width);
+            slip.setMaxLengthM(length);
+            slip.setMaxDraftM(draft);
             slip.setMooringType(mooringType.isBlank() ? null : mooringType);
             slip.setSide(side.isBlank() ? null : side);
             slip.setStatus(SlipStatus.AVAILABLE);
@@ -124,7 +124,7 @@ public class ImportService {
             slipsCreated++;
         }
 
-        // Räkna faktiskt skapade bryggor
+        // Count the docks that were actually created
         long newDocks = dockCache.values().stream()
                 .filter(d -> d.getId() != null)
                 .count();
@@ -141,15 +141,15 @@ public class ImportService {
         }
     }
 
-    private BigDecimal parseDjup(String s) {
+    private BigDecimal parseDraft(String s) {
         if (s == null || s.isBlank()) return null;
-        // "0.5-1" → ta högre värdet
+        // "0.5-1" → take the higher value
         if (s.contains("-")) {
             String[] parts = s.split("-");
             BigDecimal val = parseDecimal(parts[parts.length - 1]);
             if (val != null) return val;
         }
-        // "ca 1.7" → ta ut siffror
+        // "ca 1.7" → keep only the digits
         String cleaned = s.replaceAll("[^0-9.,]", "").replace(',', '.');
         if (cleaned.isBlank()) return null;
         return parseDecimal(cleaned);

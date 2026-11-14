@@ -131,15 +131,15 @@ public class UserService {
         user = users.save(user);
 
         if (emailChanged) {
-            audit.log("USER_EMAIL_CHANGED", "USER", user.getId(), "E-post ändrad: " + oldUsername + " -> " + user.getUsername());
+            audit.log("USER_EMAIL_CHANGED", "USER", user.getId(), "Email changed: " + oldUsername + " -> " + user.getUsername());
         }
         if (rolesChanged) {
             audit.log("USER_ROLES_CHANGED", "USER", user.getId(),
-                    "Roller för " + user.getUsername() + ": " + oldRoles + " -> " + rolesText(user));
+                    "Roles for " + user.getUsername() + ": " + oldRoles + " -> " + rolesText(user));
         }
         if (methodsChanged) {
             audit.log("USER_METHODS_CHANGED", "USER", user.getId(),
-                    "Inloggningsmetoder för " + user.getUsername() + ": " + oldMethods + " -> " + user.getLoginMethods());
+                    "Login methods for " + user.getUsername() + ": " + oldMethods + " -> " + user.getLoginMethods());
         }
         if (emailChanged || rolesChanged || methodsChanged) {
             sessions.invalidate(oldUsername);
@@ -165,7 +165,7 @@ public class UserService {
         if (user.getStatus() == UserStatus.DISABLED) {
             user.setStatus(user.isMustChangePassword() ? UserStatus.INVITED : UserStatus.ACTIVE);
             users.save(user);
-            audit.log("USER_ENABLED", "USER", user.getId(), "Konto återaktiverat: " + user.getUsername());
+            audit.log("USER_ENABLED", "USER", user.getId(), "Account re-enabled: " + user.getUsername());
         }
         return UserResponse.from(user, knownRoles());
     }
@@ -188,26 +188,26 @@ public class UserService {
         try {
             return methods.stream().map(m -> LoginMethod.valueOf(m.trim().toUpperCase())).collect(Collectors.toSet());
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Okänd inloggningsmetod i " + methods);
+            throw new IllegalArgumentException("Unknown login method in " + methods);
         }
     }
 
-    /** E-post är unik bland konton och får inte krocka med en konfigurerad superadmin (som skuggar databaskonton). */
+    /** An email is unique among accounts and must not collide with a configured superadmin, which shadows database accounts. */
     private void assertEmailFree(String email, AppUser self) {
         var clean = email.trim();
         if (superAdmins.find(clean).isPresent()) {
-            throw new ConflictException("Adressen används av ett konfigurerat systemkonto");
+            throw new ConflictException("The address is used by a configured system account");
         }
         users.findByEmailIgnoreCase(clean).filter(u -> self == null || !u.getId().equals(self.getId()))
-                .ifPresent(u -> { throw new ConflictException("E-postadressen används redan av ett annat konto"); });
+                .ifPresent(u -> { throw new ConflictException("The email address is already used by another account"); });
         users.findByUsername(clean).filter(u -> self == null || !u.getId().equals(self.getId()))
-                .ifPresent(u -> { throw new ConflictException("Användarnamnet används redan av ett annat konto"); });
+                .ifPresent(u -> { throw new ConflictException("The username is already used by another account"); });
     }
 
     private void applyPerson(AppUser user, Long personId) {
         boolean isMember = user.hasRole("member");
         if (personId == null) {
-            if (isMember) throw new IllegalArgumentException("Ett konto med rollen member måste kopplas till en person");
+            if (isMember) throw new IllegalArgumentException("An account with the member role must be linked to a person");
             user.setPerson(null);
             return;
         }

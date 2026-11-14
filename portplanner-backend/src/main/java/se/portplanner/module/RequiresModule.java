@@ -7,9 +7,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Kräver att modulen är aktiverad och att inloggad roll har tillräcklig nivå. Utan {@code level} krävs
- * {@code read} för GET/HEAD/OPTIONS och {@code write} för övriga metoder. Kan sitta på klass och metod;
- * båda kontrolleras.
+ * Requires the module to be enabled and the signed-in role to have a sufficient level. Without
+ * {@code level}, {@code read} is required for GET/HEAD/OPTIONS and {@code write} for every other method.
+ * It can sit on both the class and the method; both are checked.
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
@@ -17,6 +17,6 @@ import java.lang.annotation.Target;
 public @interface RequiresModule {
     String value();
 
-    /** {@link AccessLevel#NONE} = härled från HTTP-metod. */
+    /** {@link AccessLevel#NONE} means derive the level from the HTTP method. */
     AccessLevel level() default AccessLevel.NONE;
 }

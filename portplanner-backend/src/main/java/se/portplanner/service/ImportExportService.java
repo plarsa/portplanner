@@ -85,8 +85,8 @@ public class ImportExportService {
                     long toSkip = dto.slips().size() - toAdd;
                     slipsNew += toAdd;
                     slipsSkipped += toSkip;
-                    details.add("Befintlig brygga: " + dto.name() +
-                            " – " + toAdd + " nya platser, " + toSkip + " hoppar över");
+                    details.add("Existing dock: " + dto.name() +
+                            " – " + toAdd + " new slips, " + toSkip + " skipped");
                 }
             }
         }
@@ -102,7 +102,7 @@ public class ImportExportService {
 
         for (DockImportDto dto : docks) {
             if (dto.name() == null || dto.name().isBlank()) {
-                warnings.add("En post saknar bryggonamn, hoppar över");
+                warnings.add("An entry has no dock name, skipping");
                 continue;
             }
 
@@ -126,7 +126,7 @@ public class ImportExportService {
 
             for (SlipImportDto slipDto : dto.slips()) {
                 if (slipDto.slipNumber() == null || slipDto.slipNumber().isBlank()) {
-                    warnings.add("Brygga " + dto.name() + ": plats utan nummer, hoppar över");
+                    warnings.add("Dock " + dto.name() + ": slip without a number, skipping");
                     slipsSkipped++;
                     continue;
                 }
@@ -135,8 +135,8 @@ public class ImportExportService {
                     continue;
                 }
                 if (slipDto.maxWidthM() == null) {
-                    warnings.add("Brygga " + dto.name() + " plats " + slipDto.slipNumber() +
-                            ": bredd saknas, hoppar över");
+                    warnings.add("Dock " + dto.name() + " slip " + slipDto.slipNumber() +
+                            ": width is missing, skipping");
                     slipsSkipped++;
                     continue;
                 }
@@ -156,8 +156,8 @@ public class ImportExportService {
             }
         }
         auditService.log("IMPORTED", "DOCK", null,
-                "Import: " + docksCreated + " bryggor och " + slipsCreated + " platser importerade" +
-                (slipsSkipped > 0 ? ", " + slipsSkipped + " hoppade över" : ""));
+                "Import: " + docksCreated + " docks and " + slipsCreated + " slips imported" +
+                (slipsSkipped > 0 ? ", " + slipsSkipped + " skipped" : ""));
         return new ImportResult(docksCreated, slipsCreated, slipsSkipped, warnings);
     }
 
@@ -205,12 +205,12 @@ public class ImportExportService {
         for (PersonImportDto dto : persons) {
             if (dto.firstName() == null || dto.firstName().isBlank() ||
                     dto.lastName() == null || dto.lastName().isBlank()) {
-                warnings.add("Post saknar för- eller efternamn, hoppar över");
+                warnings.add("An entry has no first or last name, skipping");
                 personsSkipped++;
                 continue;
             }
             if (dto.email() == null || dto.email().isBlank()) {
-                warnings.add("Person " + dto.firstName() + " " + dto.lastName() + " saknar e-post, hoppar över");
+                warnings.add("Person " + dto.firstName() + " " + dto.lastName() + " has no email, skipping");
                 personsSkipped++;
                 continue;
             }
@@ -234,8 +234,8 @@ public class ImportExportService {
         }
 
         auditService.log("IMPORTED", "PERSON", null,
-                "Import: " + personsCreated + " personer importerade" +
-                (personsSkipped > 0 ? ", " + personsSkipped + " hoppade över" : ""));
+                "Import: " + personsCreated + " persons imported" +
+                (personsSkipped > 0 ? ", " + personsSkipped + " skipped" : ""));
         return new PersonImportResult(personsCreated, personsSkipped, warnings);
     }
 
@@ -267,15 +267,15 @@ public class ImportExportService {
                     ? personsByEmail.get(dto.ownerEmail().toLowerCase()) : null;
             if (owner == null) {
                 ownersNotFound++;
-                details.add("Ägare ej hittad: " + dto.ownerEmail() + " (båt: " + dto.model() + ")");
+                details.add("Owner not found: " + dto.ownerEmail() + " (boat: " + dto.model() + ")");
                 continue;
             }
             if (boatRepository.existsByModelIgnoreCaseAndOwnerId(dto.model(), owner.getId())) {
                 boatsExisting++;
-                details.add("Befintlig båt: " + dto.model() + " (" + owner.getFirstName() + " " + owner.getLastName() + ")");
+                details.add("Existing boat: " + dto.model() + " (" + owner.getFirstName() + " " + owner.getLastName() + ")");
             } else {
                 boatsNew++;
-                details.add("Ny båt: " + dto.model() + " – ägare " + owner.getFirstName() + " " + owner.getLastName());
+                details.add("New boat: " + dto.model() + " – owner " + owner.getFirstName() + " " + owner.getLastName());
             }
         }
         return new BoatImportPreview(boatsNew, boatsExisting, ownersNotFound, details);
@@ -290,18 +290,18 @@ public class ImportExportService {
 
         for (BoatImportDto dto : boats) {
             if (dto.model() == null || dto.model().isBlank()) {
-                warnings.add("Post saknar båtmodell, hoppar över");
+                warnings.add("An entry has no boat model, skipping");
                 boatsSkipped++;
                 continue;
             }
             if (dto.ownerEmail() == null || dto.ownerEmail().isBlank()) {
-                warnings.add("Båt " + dto.model() + " saknar ägarens e-post, hoppar över");
+                warnings.add("Boat " + dto.model() + " has no owner email, skipping");
                 boatsSkipped++;
                 continue;
             }
             Person owner = personsByEmail.get(dto.ownerEmail().toLowerCase());
             if (owner == null) {
-                warnings.add("Ägare ej hittad för e-post " + dto.ownerEmail() + " (båt: " + dto.model() + "), hoppar över");
+                warnings.add("Owner not found for email " + dto.ownerEmail() + " (boat: " + dto.model() + "), skipping");
                 boatsSkipped++;
                 continue;
             }
@@ -310,7 +310,7 @@ public class ImportExportService {
                 continue;
             }
             if (dto.lengthM() == null || dto.widthM() == null) {
-                warnings.add("Båt " + dto.model() + " saknar längd eller bredd, hoppar över");
+                warnings.add("Boat " + dto.model() + " has no length or width, skipping");
                 boatsSkipped++;
                 continue;
             }
@@ -326,8 +326,8 @@ public class ImportExportService {
         }
 
         auditService.log("IMPORTED", "BOAT", null,
-                "Import: " + boatsCreated + " båtar importerade" +
-                (boatsSkipped > 0 ? ", " + boatsSkipped + " hoppade över" : ""));
+                "Import: " + boatsCreated + " boats imported" +
+                (boatsSkipped > 0 ? ", " + boatsSkipped + " skipped" : ""));
         return new BoatImportResult(boatsCreated, boatsSkipped, warnings);
     }
 

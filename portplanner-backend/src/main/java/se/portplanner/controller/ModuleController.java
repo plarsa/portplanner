@@ -28,16 +28,16 @@ public class ModuleController {
     }
 
     @GetMapping
-    @Operation(summary = "Alla kända moduler med den inloggades åtkomstnivå")
+    @Operation(summary = "All known modules with the signed-in user's access level")
     public Map<String, List<ModuleResponse>> list(Authentication auth) {
         return Map.of("modules", modules.modulesFor(auth));
     }
 
     @GetMapping("/{id}")
-    @Operation(summary = "En modul med den inloggades åtkomstnivå")
+    @Operation(summary = "One module with the signed-in user's access level")
     public ModuleResponse get(@PathVariable String id, Authentication auth) {
         if (PortModule.find(id).isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Okänd modul: " + id);
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown module: " + id);
         }
         return modules.moduleFor(id, auth);
     }

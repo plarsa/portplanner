@@ -6,7 +6,7 @@ import se.portplanner.module.RoleGrant;
 
 import java.util.List;
 
-/** Den som utför en åtgärd: användarnamn och rolltilldelningar ur sessionen. */
+/** Whoever performs an action: the username and role grants taken from the session. */
 public record Actor(String username, List<RoleGrant> grants) {
 
     public static Actor from(Authentication auth) {
@@ -21,12 +21,12 @@ public record Actor(String username, List<RoleGrant> grants) {
         return grants.stream().anyMatch(g -> g.role().equals("admin") && g.level().compareTo(min) >= 0);
     }
 
-    /** Får läsa kontolistan: superadmin eller admin (r eller rw). */
+    /** May read the account list: superadmin, or admin with r or rw. */
     public boolean canRead() {
         return isSuperadmin() || hasAdmin(RoleGrant.Level.R);
     }
 
-    /** Får skapa och ändra konton: superadmin eller admin:rw. */
+    /** May create and change accounts: superadmin or admin:rw. */
     public boolean canManage() {
         return isSuperadmin() || hasAdmin(RoleGrant.Level.RW);
     }

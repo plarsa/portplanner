@@ -37,7 +37,7 @@ public class WinterSeasonService {
         var s = new WinterSeason();
         mapFields(s, req);
         var saved = repo.save(s);
-        auditService.log("CREATED", "WINTER_SEASON", saved.getId(), "Vintersäsong skapad: " + saved.getName());
+        auditService.log("CREATED", "WINTER_SEASON", saved.getId(), "Winter season created: " + saved.getName());
         return WinterSeasonResponse.from(saved);
     }
 
@@ -45,19 +45,19 @@ public class WinterSeasonService {
         var s = getOrThrow(id);
         mapFields(s, req);
         var saved = repo.save(s);
-        auditService.log("UPDATED", "WINTER_SEASON", saved.getId(), "Vintersäsong uppdaterad: " + saved.getName());
+        auditService.log("UPDATED", "WINTER_SEASON", saved.getId(), "Winter season updated: " + saved.getName());
         return WinterSeasonResponse.from(saved);
     }
 
     public void delete(Long id) {
         var s = getOrThrow(id);
         repo.delete(s);
-        auditService.log("DELETED", "WINTER_SEASON", id, "Vintersäsong borttagen: " + s.getName());
+        auditService.log("DELETED", "WINTER_SEASON", id, "Winter season deleted: " + s.getName());
     }
 
     private WinterSeason getOrThrow(Long id) {
         return repo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Vintersäsong " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Winter season " + id + " was not found"));
     }
 
     private void mapFields(WinterSeason s, WinterSeasonRequest req) {

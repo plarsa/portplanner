@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Map;
 
-/** Personlig vy av en modul: speglar den inloggades roll och åtkomstnivå. */
+/** A per-user view of a module: it reflects the signed-in user's role and access level. */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ModuleResponse(String id, String name, boolean enabled, boolean accessible, String access,
                              Map<String, Object> settings) {

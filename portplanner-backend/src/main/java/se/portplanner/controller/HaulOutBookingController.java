@@ -16,7 +16,7 @@ import java.util.List;
 @RestController
 @RequiresModule("storage")
 @RequestMapping("/api/haul-out-bookings")
-@Tag(name = "Vinterupptagning – anmälningar")
+@Tag(name = "Winter haul-out – bookings")
 public class HaulOutBookingController {
 
     private final HaulOutBookingService bookingService;

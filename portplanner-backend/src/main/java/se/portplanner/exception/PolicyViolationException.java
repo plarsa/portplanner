@@ -1,6 +1,6 @@
 package se.portplanner.exception;
 
-/** En regel för kontohantering har brutits. Ger 403 med en maskinläsbar kod. */
+/** An account management rule was broken. Gives 403 with a machine-readable code. */
 public class PolicyViolationException extends RuntimeException {
 
     private final String code;

@@ -7,9 +7,9 @@ import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
 /**
- * Skapa eller ersätta ett konto. {@code username} anges inte: det följer alltid e-postadressen.
- * {@code roles} skrivs {@code roll:nivå} (t.ex. {@code admin:rw}). {@code loginMethods} utelämnat betyder
- * PASSWORD vid skapande och oförändrat vid ändring. {@code personId} null betyder ingen kopplad person.
+ * Creates or replaces an account. {@code username} is not given: it always follows the email address.
+ * {@code roles} are written {@code role:level} (for example {@code admin:rw}). Leaving out {@code loginMethods}
+ * means PASSWORD on creation and no change on update. A null {@code personId} means no linked person.
  */
 public record UserRequest(
         @NotBlank @Email String email,

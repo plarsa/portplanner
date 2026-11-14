@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequiresModule("storage")
 @RequestMapping("/api/pricing-rules")
-@Tag(name = "Vinterupptagning – prisregler")
+@Tag(name = "Winter haul-out – pricing rules")
 public class PricingRuleController {
 
     private final PricingRuleService service;

@@ -16,7 +16,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Portplanner API")
-                        .description("System för hantering av båtplatstilldelning")
+                        .description("Marina slip assignment management")
                         .version("1.0"))
                 .addSecurityItem(new SecurityRequirement().addList("Bearer"))
                 .components(new Components()

@@ -14,7 +14,7 @@ import java.util.List;
 @RestController
 @RequiresModule("storage")
 @RequestMapping("/api/storage-packing-groups")
-@Tag(name = "Vinterupptagning – packningsgrupper")
+@Tag(name = "Winter haul-out – packing groups")
 public class StoragePackingGroupController {
 
     private final StoragePackingGroupService service;

@@ -28,7 +28,7 @@
         </div>
       </div>
 
-      <!-- Platseförslag -->
+      <!-- Slip suggestions -->
       <div v-if="activeSuggestionId === entry.id" class="suggestions">
         <div v-if="suggestions.length === 0" class="no-suggestions">
           Inga lediga platser passar denna båt just nu
@@ -53,7 +53,7 @@
       </div>
     </div>
 
-    <!-- Lägg till i kö modal -->
+    <!-- Add to queue modal -->
     <BaseModal v-if="modal" title="Lägg till i kö" @close="modal = false" @save="saveAdd">
       <div class="form-col">
         <label>Person *
@@ -83,7 +83,7 @@
       </div>
       <p v-if="err" class="error">{{ err }}</p>
     </BaseModal>
-    <!-- Redigera kö-post modal -->
+    <!-- Edit queue entry modal -->
     <BaseModal v-if="editModal && editingEntry" :title="'Redigera – ' + editingEntry.personName" @close="editModal = false" @save="saveEdit">
       <div class="form-col">
         <label>Båt

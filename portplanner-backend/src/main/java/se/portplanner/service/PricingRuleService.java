@@ -39,12 +39,12 @@ public class PricingRuleService {
 
     public PricingRuleResponse create(PricingRuleRequest req) {
         var season = seasonRepo.findById(req.seasonId())
-                .orElseThrow(() -> new ResourceNotFoundException("Vintersäsong " + req.seasonId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Winter season " + req.seasonId() + " was not found"));
         var rule = new PricingRule();
         rule.setSeason(season);
         mapFields(rule, req);
         var saved = ruleRepo.save(rule);
-        auditService.log("CREATED", "PRICING_RULE", saved.getId(), "Prisregel skapad för säsong " + season.getName());
+        auditService.log("CREATED", "PRICING_RULE", saved.getId(), "Pricing rule created for season " + season.getName());
         return PricingRuleResponse.from(saved);
     }
 
@@ -61,11 +61,11 @@ public class PricingRuleService {
     @Transactional(readOnly = true)
     public PriceCalculationResponse calculateForBooking(Long bookingId) {
         var booking = bookingRepo.findById(bookingId)
-                .orElseThrow(() -> new ResourceNotFoundException("Anmälan " + bookingId + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Booking " + bookingId + " was not found"));
         var boat = booking.getBoat();
         var season = booking.getSlot().getSeason();
         var rule = ruleRepo.findFirstBySeasonId(season.getId())
-                .orElseThrow(() -> new ResourceNotFoundException("Ingen prisregel för säsongen"));
+                .orElseThrow(() -> new ResourceNotFoundException("The season has no pricing rule"));
 
         var length = boat.getLengthM();
         var width = boat.getWidthM();

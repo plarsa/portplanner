@@ -3,7 +3,7 @@ package se.portplanner.security;
 import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.stereotype.Component;
 
-/** Avslutar alla sessioner för ett konto, t.ex. när det inaktiveras eller får ändrade roller. */
+/** Ends every session of an account, for instance when it is disabled or its roles change. */
 @Component
 public class SessionInvalidator {
 
