@@ -51,6 +51,15 @@ class RentalObjectApiTest {
     }
 
     @Test
+    void aSuperadminReachesTheAdminApi() throws Exception {
+        // rentals grants superadmin:rw, and the module reports access=write for them, so the
+        // role gate must let them through just like an admin.
+        mvc.perform(post("/api/rentals/objects").with(asUser("superadmin:rw"))
+                        .contentType(APPLICATION_JSON).content(TRAILER))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
     void zeroMaxDurationIsRejected() throws Exception {
         mvc.perform(post("/api/rentals/objects").with(asUser("admin:rw"))
                         .contentType(APPLICATION_JSON)

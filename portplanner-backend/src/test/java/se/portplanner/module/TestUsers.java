@@ -24,7 +24,12 @@ public final class TestUsers {
         var parsed = Arrays.stream(grants).map(RoleGrant::valueOf).toList();
         var authorities = new ArrayList<SimpleGrantedAuthority>();
         parsed.forEach(g -> authorities.add(new SimpleGrantedAuthority(g.toAuthority())));
-        if (parsed.stream().anyMatch(g -> !g.role().equals("member"))) {
+        if (parsed.stream().anyMatch(g -> g.role().equals("superadmin"))) {
+            // A configured superadmin is issued ROLE_HARBOUR_MASTER and never ROLE_ADMIN,
+            // the way UserDetailsServiceImpl issues it.
+            authorities.add(new SimpleGrantedAuthority("ROLE_HARBOUR_MASTER"));
+        }
+        if (parsed.stream().anyMatch(g -> !g.role().equals("member") && !g.role().equals("superadmin"))) {
             authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
         }
         if (parsed.stream().anyMatch(g -> g.role().equals("member"))) {
