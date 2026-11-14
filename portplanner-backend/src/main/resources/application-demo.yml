@@ -1,0 +1,31 @@
+# Demo- och testprofil: alla moduler är aktiverade och admin har skrivrätt överallt.
+# Starta med: --spring.profiles.active=demo (eller SPRING_PROFILES_ACTIVE=demo).
+# Använd aldrig i produktion: kontot nedan har ett publikt känt lösenord.
+portplanner:
+  iam:
+    superadmins:
+      - username: demo
+        password: demo-lösenord-2026
+        enabled: true
+  modules:
+    base:
+      enabled: true
+      access: [superadmin:rw, admin:rw, member:rw]
+    storage:
+      enabled: true
+      access: [superadmin:rw, admin:rw, member:rw]
+    member-portal:
+      enabled: true
+      access: [superadmin:rw, admin:rw, member:rw]
+    audit:
+      enabled: true
+      access: [superadmin:rw, admin:rw]
+    reports:
+      enabled: true
+      access: [superadmin:rw, admin:rw]
+    ai-mail:
+      enabled: true
+      access: [superadmin:rw, admin:rw]
+    import-export:
+      enabled: true
+      access: [superadmin:rw, admin:rw]

@@ -1,1 +1,0 @@
-ALTER TABLE queue_entries ALTER COLUMN boat_id DROP NOT NULL;

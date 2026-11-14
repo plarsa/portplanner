@@ -64,7 +64,7 @@ Klart när: modultesterna är omskrivna och gröna, beräkningen har egna enhets
 
 ### Fas 3: Kontomodell (databas)
 
-Flyway `V13__iam_accounts.sql`:
+Flyway (införd som `V13__iam_accounts.sql`, senare sammanslagen i baslinjen `V1__baseline.sql`):
 - `app_users`: lägg till `email` (unik när satt), `status` (`INVITED`/`ACTIVE`/`DISABLED`, standard `ACTIVE`), `last_login_at`, `created_at`, `must_change_password`.
 - Ny tabell `app_user_roles (user_id, role, level)` med `level` `R`/`RW`, unik per `(user_id, role)`. Migrering: `ADMIN` och `HARBOUR_MASTER` → `admin:rw`, `MEMBER` → `member:rw`. Därefter `DROP COLUMN role`.
 - Ny tabell `app_user_login_methods (user_id, method)`. Alla befintliga konton får `PASSWORD`.
