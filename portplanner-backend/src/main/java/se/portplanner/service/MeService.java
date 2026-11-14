@@ -154,7 +154,7 @@ public class MeService {
         var person = currentUser().getPerson();
         if (person == null) throw new IllegalStateException("Your account is not linked to a person");
         var slot = haulOutSlotRepository.findById(slotId)
-                .orElseThrow(() -> new ResourceNotFoundException("Tid " + slotId + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Haul-out slot " + slotId + " was not found"));
         int booked = haulOutBookingRepository.countBySlotIdAndStatusNot(slot.getId(), HaulOutBookingStatus.CANCELLED);
         if (booked >= slot.getCapacity()) throw new IllegalStateException("This slot is fully booked");
         var boat = boatRepository.findById(boatId)

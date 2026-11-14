@@ -104,7 +104,7 @@ public class UserService {
         user = users.save(user);
 
         audit.log("USER_CREATED", "USER", user.getId(),
-                "Konto skapat: " + user.getUsername() + ", roller " + rolesText(user));
+                "Account created: " + user.getUsername() + ", roles " + rolesText(user));
         return new UserCreatedResponse(UserResponse.from(user, knownRoles()), temporary);
     }
 
@@ -153,7 +153,7 @@ public class UserService {
         if (user.getStatus() != UserStatus.DISABLED) {
             user.setStatus(UserStatus.DISABLED);
             users.save(user);
-            audit.log("USER_DISABLED", "USER", user.getId(), "Konto inaktiverat: " + user.getUsername());
+            audit.log("USER_DISABLED", "USER", user.getId(), "Account disabled: " + user.getUsername());
         }
         sessions.invalidate(user.getUsername());
         return UserResponse.from(user, knownRoles());
@@ -212,12 +212,12 @@ public class UserService {
             return;
         }
         var person = persons.findById(personId)
-                .orElseThrow(() -> new ResourceNotFoundException("Person " + personId + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Person " + personId + " was not found"));
         users.findAll().stream()
                 .filter(u -> u.getPerson() != null && u.getPerson().getId().equals(personId))
                 .filter(u -> user.getId() == null || !u.getId().equals(user.getId()))
                 .findAny()
-                .ifPresent(u -> { throw new ConflictException("Personen har redan ett konto"); });
+                .ifPresent(u -> { throw new ConflictException("The person already has an account"); });
         user.setPerson(person);
     }
 
@@ -226,6 +226,6 @@ public class UserService {
     }
 
     private AppUser getOrThrow(Long id) {
-        return users.findById(id).orElseThrow(() -> new ResourceNotFoundException("Konto " + id + " hittades inte"));
+        return users.findById(id).orElseThrow(() -> new ResourceNotFoundException("Account " + id + " was not found"));
     }
 }

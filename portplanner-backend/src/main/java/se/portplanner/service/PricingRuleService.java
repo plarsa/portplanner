@@ -99,7 +99,7 @@ public class PricingRuleService {
 
     private PricingRule getOrThrow(Long id) {
         return ruleRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Prisregel " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Pricing rule " + id + " was not found"));
     }
 
     private void mapFields(PricingRule rule, PricingRuleRequest req) {

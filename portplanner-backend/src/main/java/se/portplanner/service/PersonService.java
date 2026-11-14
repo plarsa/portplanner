@@ -50,7 +50,7 @@ public class PersonService {
         mapFields(person, req);
         var saved = personRepository.save(person);
         auditService.log("CREATED", "PERSON", saved.getId(),
-                "Person skapad: " + saved.getFirstName() + " " + saved.getLastName() + " (" + saved.getEmail() + ")");
+                "Person created: " + saved.getFirstName() + " " + saved.getLastName() + " (" + saved.getEmail() + ")");
         return PersonResponse.from(saved);
     }
 
@@ -59,7 +59,7 @@ public class PersonService {
         mapFields(person, req);
         var saved = personRepository.save(person);
         auditService.log("UPDATED", "PERSON", saved.getId(),
-                "Person uppdaterad: " + saved.getFirstName() + " " + saved.getLastName());
+                "Person updated: " + saved.getFirstName() + " " + saved.getLastName());
         return PersonResponse.from(saved);
     }
 
@@ -71,12 +71,12 @@ public class PersonService {
         deletionChecks.forEach(check -> check.check(id));
         String name = person.getFirstName() + " " + person.getLastName();
         personRepository.delete(person);
-        auditService.log("DELETED", "PERSON", id, "Person borttagen: " + name);
+        auditService.log("DELETED", "PERSON", id, "Person deleted: " + name);
     }
 
     private Person getOrThrow(Long id) {
         return personRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Person " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Person " + id + " was not found"));
     }
 
     private void mapFields(Person p, PersonRequest req) {

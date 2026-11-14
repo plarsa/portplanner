@@ -48,7 +48,7 @@ public class QueueService {
 
     public QueueEntryResponse add(QueueEntryRequest req) {
         var person = personRepository.findById(req.personId())
-                .orElseThrow(() -> new ResourceNotFoundException("Person " + req.personId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Person " + req.personId() + " was not found"));
 
         Boat boat = null;
         if (req.boatId() != null) {
@@ -130,12 +130,12 @@ public class QueueService {
             throw new IllegalArgumentException("A slip can only be offered to a queue entry with status WAITING");
         }
         var slip = slipRepository.findById(slipId)
-                .orElseThrow(() -> new ResourceNotFoundException("Plats " + slipId + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Slip " + slipId + " was not found"));
         entry.setOfferedSlip(slip);
         entry.setStatus(QueueEntryStatus.OFFERED);
         var saved = queueRepository.save(entry);
         auditService.log("OFFERED", "QUEUE_ENTRY", entryId,
-                "Plats erbjuden: " + slip.getSlipNumber() + " till " +
+                "Slip offered: " + slip.getSlipNumber() + " to " +
                 entry.getPerson().getFirstName() + " " + entry.getPerson().getLastName());
         return QueueEntryResponse.from(saved);
     }

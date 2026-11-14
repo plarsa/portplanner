@@ -57,7 +57,7 @@ public class HaulOutBookingService {
 
     public HaulOutBookingResponse create(HaulOutBookingRequest req) {
         var slot = slotRepo.findById(req.slotId())
-                .orElseThrow(() -> new ResourceNotFoundException("Upptagningstid " + req.slotId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Haul-out slot " + req.slotId() + " was not found"));
         int booked = bookingRepo.countBySlotIdAndStatusNot(slot.getId(), HaulOutBookingStatus.CANCELLED);
         if (booked >= slot.getCapacity()) {
             throw new IllegalStateException("This slot is fully booked");
@@ -65,7 +65,7 @@ public class HaulOutBookingService {
         var boat = boatRepo.findById(req.boatId())
                 .orElseThrow(() -> new ResourceNotFoundException("Boat " + req.boatId() + " was not found"));
         var person = personRepo.findById(req.personId())
-                .orElseThrow(() -> new ResourceNotFoundException("Person " + req.personId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Person " + req.personId() + " was not found"));
 
         var booking = new HaulOutBooking();
         booking.setSlot(slot);

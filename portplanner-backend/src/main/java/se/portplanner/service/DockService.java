@@ -53,7 +53,7 @@ public class DockService {
         dock.setDescription(req.description());
         dock.setLayoutJson(req.layoutJson());
         var saved = dockRepository.save(dock);
-        auditService.log("CREATED", "DOCK", saved.getId(), "Brygga skapad: " + saved.getName());
+        auditService.log("CREATED", "DOCK", saved.getId(), "Dock created: " + saved.getName());
         return DockResponse.from(saved);
     }
 
@@ -63,7 +63,7 @@ public class DockService {
         dock.setDescription(req.description());
         if (req.layoutJson() != null) dock.setLayoutJson(req.layoutJson());
         var saved = dockRepository.save(dock);
-        auditService.log("UPDATED", "DOCK", saved.getId(), "Brygga uppdaterad: " + saved.getName());
+        auditService.log("UPDATED", "DOCK", saved.getId(), "Dock updated: " + saved.getName());
         return DockResponse.from(saved);
     }
 
@@ -76,11 +76,11 @@ public class DockService {
         slipRepository.deleteAll(slips);
         dockRepository.deleteById(id);
         auditService.log("DELETED", "DOCK", id,
-                "Brygga borttagen: " + dock.getName() + " (" + slips.size() + " platser)");
+                "Dock deleted: " + dock.getName() + " (" + slips.size() + " platser)");
     }
 
     private Dock getOrThrow(Long id) {
         return dockRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Brygga " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Dock " + id + " was not found"));
     }
 }

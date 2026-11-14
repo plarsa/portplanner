@@ -55,7 +55,7 @@ public class HaulOutSlotService {
         slot.setEndTime(req.endTime());
         slot.setCapacity(req.capacity() != null ? req.capacity() : 1);
         var saved = slotRepo.save(slot);
-        auditService.log("CREATED", "HAUL_OUT_SLOT", saved.getId(), "Upptagningstid skapad: " + saved.getSlotDate());
+        auditService.log("CREATED", "HAUL_OUT_SLOT", saved.getId(), "Haul-out slot created: " + saved.getSlotDate());
         return HaulOutSlotResponse.from(saved, 0);
     }
 
@@ -73,11 +73,11 @@ public class HaulOutSlotService {
     public void delete(Long id) {
         var slot = getOrThrow(id);
         slotRepo.delete(slot);
-        auditService.log("DELETED", "HAUL_OUT_SLOT", id, "Upptagningstid borttagen: " + slot.getSlotDate());
+        auditService.log("DELETED", "HAUL_OUT_SLOT", id, "Haul-out slot deleted: " + slot.getSlotDate());
     }
 
     private HaulOutSlot getOrThrow(Long id) {
         return slotRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Upptagningstid " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Haul-out slot " + id + " was not found"));
     }
 }

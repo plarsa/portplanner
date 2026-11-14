@@ -55,6 +55,6 @@ public class StoragePackingGroupService {
 
     private StoragePackingGroup getOrThrow(Long id) {
         return groupRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Packningsgrupp " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Packing group " + id + " was not found"));
     }
 }

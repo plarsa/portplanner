@@ -53,7 +53,7 @@ public class TariffService {
         mapFields(tariff, req);
         var saved = tariffRepository.save(tariff);
         auditService.log("UPDATED", "TARIFF", saved.getId(),
-                "Tariff uppdaterad: " + saved.getName() + " (" + saved.getCategory() + ")");
+                "Tariff updated: " + saved.getName() + " (" + saved.getCategory() + ")");
         return TariffResponse.from(saved);
     }
 
@@ -61,12 +61,12 @@ public class TariffService {
         var tariff = getOrThrow(id);
         tariffRepository.delete(tariff);
         auditService.log("DELETED", "TARIFF", id,
-                "Tariff borttagen: " + tariff.getName() + " (" + tariff.getCategory() + ")");
+                "Tariff deleted: " + tariff.getName() + " (" + tariff.getCategory() + ")");
     }
 
     private Tariff getOrThrow(Long id) {
         return tariffRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Tariff " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Tariff " + id + " was not found"));
     }
 
     private void mapFields(Tariff t, TariffRequest req) {

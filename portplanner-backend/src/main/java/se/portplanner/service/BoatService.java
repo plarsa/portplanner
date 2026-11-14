@@ -75,7 +75,7 @@ public class BoatService {
 
     private void mapFields(Boat boat, BoatRequest req) {
         var owner = personRepository.findById(req.ownerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Person " + req.ownerId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Person " + req.ownerId() + " was not found"));
         boat.setModel(req.model());
         boat.setLengthM(req.lengthM());
         boat.setWidthM(req.widthM());

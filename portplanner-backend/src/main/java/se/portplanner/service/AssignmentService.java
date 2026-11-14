@@ -77,14 +77,14 @@ public class AssignmentService {
 
         var saved = assignmentRepository.save(assignment);
         auditService.log("ASSIGNED", "ASSIGNMENT", saved.getId(),
-                "Tilldelning: " + boat.getModel() + " → plats " + slip.getSlipNumber() +
+                "Assigned: " + boat.getModel() + " → slip " + slip.getSlipNumber() +
                 " (" + slip.getDock().getName() + ")");
         return AssignmentResponse.from(saved);
     }
 
     public AssignmentResponse end(Long id) {
         var assignment = assignmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Tilldelning " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Assignment " + id + " was not found"));
         if (assignment.getStatus() != AssignmentStatus.ACTIVE) {
             throw new IllegalArgumentException("The assignment has already ended");
         }

@@ -73,7 +73,7 @@ public class SlipService {
 
     private void mapFields(Slip slip, SlipRequest req) {
         var dock = dockRepository.findById(req.dockId())
-                .orElseThrow(() -> new ResourceNotFoundException("Brygga " + req.dockId() + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Dock " + req.dockId() + " was not found"));
         slip.setSlipNumber(req.slipNumber());
         slip.setMaxLengthM(req.maxLengthM());
         slip.setMaxWidthM(req.maxWidthM());

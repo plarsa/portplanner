@@ -50,7 +50,7 @@ public class StoragePlacementService {
         if (req.status() != null) p.setStatus(StoragePlacementStatus.valueOf(req.status()));
         if (req.packingGroupId() != null) {
             var group = groupRepo.findById(req.packingGroupId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Packningsgrupp " + req.packingGroupId() + " hittades inte"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Packing group " + req.packingGroupId() + " was not found"));
             p.setPackingGroup(group);
         } else if (req.packingGroupId() == null && req.orderInGroup() == null) {
             // explicit null to clear group
@@ -84,6 +84,6 @@ public class StoragePlacementService {
 
     private StoragePlacement getOrThrow(Long id) {
         return placementRepo.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Placering " + id + " hittades inte"));
+                .orElseThrow(() -> new ResourceNotFoundException("Placement " + id + " was not found"));
     }
 }
