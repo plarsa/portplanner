@@ -256,7 +256,7 @@ Funktionskraven (`REN-…`) finns i `module_spec.md` avsnitt 2.8. Modulen följe
 | `requires_approval` | Bokningen skapas som `PENDING` och måste godkännas |
 | `max_days_ahead` | Hur många dagar fram i tiden en bokning får starta |
 
-Reglerna tillämpas i `RentalRuleValidator`, som får objektet och det önskade intervallet. Vid brott kastas en egen `RentalRuleException` som `GlobalExceptionHandler` svarar 409 på. `PolicyViolationException` används inte: den ger 403, vilket är reserverat för behörighet och modulfel (FE-5) och skulle blandas ihop med dem i frontend. En ny regel blir en kolumn, en kontroll i validatorn och ett fält i admin-formuläret.
+Reglerna tillämpas i `RentalRuleValidator`, som får objektet och det önskade intervallet. Vid brott kastas det befintliga `ConflictException`, som `GlobalExceptionHandler` redan svarar 409 på; ingen egen exception-typ behövs. `PolicyViolationException` används inte: den ger 403, vilket är reserverat för behörighet och modulfel (FE-5) och skulle blandas ihop med dem i frontend. En ny regel blir en kolumn, en kontroll i validatorn och ett fält i admin-formuläret.
 
 ### 11.4 Fillagring
 
