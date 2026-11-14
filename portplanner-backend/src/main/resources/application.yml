@@ -23,6 +23,12 @@ spring:
       initialize-schema: always
     timeout: 8h
 
+  servlet:
+    multipart:
+      # Also caps the import-export upload, which posts whole JSON exports.
+      max-file-size: 5MB
+      max-request-size: 10MB
+
 springdoc:
   api-docs:
     path: /v3/api-docs
