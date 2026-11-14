@@ -3,10 +3,17 @@ package se.portplanner.controller;
 import se.portplanner.module.RequiresModule;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import se.portplanner.dto.*;
 import se.portplanner.service.MeService;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -71,5 +78,56 @@ public class MeController {
     public HaulOutBookingResponse createMyHaulOutBooking(@RequestParam Long slotId,
                                                           @RequestParam Long boatId) {
         return meService.createMyHaulOutBooking(slotId, boatId);
+    }
+
+    @RequiresModule("rentals")
+    @GetMapping("/rentals/objects")
+    @Operation(summary = "Rental objects open for booking")
+    public List<RentalObjectResponse> getRentalObjects() {
+        return meService.getRentalObjects();
+    }
+
+    @RequiresModule("rentals")
+    @GetMapping("/rentals/objects/{id}/image")
+    @Operation(summary = "A rental object's image")
+    public ResponseEntity<InputStreamResource> getRentalObjectImage(@PathVariable Long id) {
+        var content = meService.getRentalObjectImage(id);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(content.contentType()))
+                .contentLength(content.size())
+                .body(new InputStreamResource(content.data()));
+    }
+
+    @RequiresModule("rentals")
+    @GetMapping("/rentals/objects/{id}/availability")
+    @Operation(summary = "The times already taken on a rental object")
+    public List<RentalBusyIntervalResponse> getRentalAvailability(
+            @PathVariable Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
+        return meService.getRentalAvailability(id, from, to);
+    }
+
+    @RequiresModule("rentals")
+    @GetMapping("/rentals/bookings")
+    @Operation(summary = "My rental bookings")
+    public List<RentalBookingResponse> getMyRentalBookings() {
+        return meService.getMyRentalBookings();
+    }
+
+    @RequiresModule("rentals")
+    @PostMapping("/rentals/bookings")
+    @ResponseStatus(HttpStatus.CREATED)
+    @Operation(summary = "Book a rental object")
+    public RentalBookingResponse createMyRentalBooking(@Valid @RequestBody RentalBookingRequest req) {
+        return meService.createMyRentalBooking(req);
+    }
+
+    @RequiresModule("rentals")
+    @DeleteMapping("/rentals/bookings/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @Operation(summary = "Cancel one of my rental bookings")
+    public void cancelMyRentalBooking(@PathVariable Long id) {
+        meService.cancelMyRentalBooking(id);
     }
 }

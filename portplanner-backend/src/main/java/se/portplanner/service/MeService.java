@@ -8,8 +8,10 @@ import se.portplanner.exception.ResourceNotFoundException;
 import se.portplanner.model.*;
 import se.portplanner.model.HaulOutBooking;
 import se.portplanner.model.HaulOutBookingStatus;
+import se.portplanner.file.StoredFileContent;
 import se.portplanner.repository.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -23,6 +25,8 @@ public class MeService {
     private final PersonRepository personRepository;
     private final HaulOutSlotRepository haulOutSlotRepository;
     private final HaulOutBookingRepository haulOutBookingRepository;
+    private final RentalObjectService rentalObjectService;
+    private final RentalBookingService rentalBookingService;
 
     public MeService(AppUserRepository userRepository,
                      AssignmentRepository assignmentRepository,
@@ -30,7 +34,9 @@ public class MeService {
                      BoatRepository boatRepository,
                      PersonRepository personRepository,
                      HaulOutSlotRepository haulOutSlotRepository,
-                     HaulOutBookingRepository haulOutBookingRepository) {
+                     HaulOutBookingRepository haulOutBookingRepository,
+                     RentalObjectService rentalObjectService,
+                     RentalBookingService rentalBookingService) {
         this.userRepository = userRepository;
         this.assignmentRepository = assignmentRepository;
         this.queueRepository = queueRepository;
@@ -38,6 +44,44 @@ public class MeService {
         this.personRepository = personRepository;
         this.haulOutSlotRepository = haulOutSlotRepository;
         this.haulOutBookingRepository = haulOutBookingRepository;
+        this.rentalObjectService = rentalObjectService;
+        this.rentalBookingService = rentalBookingService;
+    }
+
+    // ── Rentals (REN-4 to REN-8) ───────────────────────────────────────────
+
+    /** Only objects open for booking; the admin list is the one that shows the rest. */
+    public List<RentalObjectResponse> getRentalObjects() {
+        return rentalObjectService.findBookable();
+    }
+
+    public StoredFileContent getRentalObjectImage(Long objectId) {
+        return rentalObjectService.readImage(objectId);
+    }
+
+    public List<RentalBusyIntervalResponse> getRentalAvailability(Long objectId, LocalDateTime from,
+                                                                  LocalDateTime to) {
+        return rentalBookingService.busyIntervals(objectId, from, to);
+    }
+
+    public List<RentalBookingResponse> getMyRentalBookings() {
+        return rentalBookingService.findByPerson(myPerson().getId());
+    }
+
+    @Transactional
+    public RentalBookingResponse createMyRentalBooking(RentalBookingRequest req) {
+        return rentalBookingService.book(req.objectId(), myPerson().getId(), req.startAt(), req.endAt());
+    }
+
+    @Transactional
+    public void cancelMyRentalBooking(Long bookingId) {
+        rentalBookingService.cancel(bookingId, myPerson().getId());
+    }
+
+    private Person myPerson() {
+        var person = currentUser().getPerson();
+        if (person == null) throw new IllegalStateException("Your account is not linked to a person");
+        return person;
     }
 
     public MeResponse getMe() {
