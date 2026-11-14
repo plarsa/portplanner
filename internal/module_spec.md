@@ -86,7 +86,28 @@ Loggningen är en grundfunktion som **alltid** är på och inte kan stängas av.
 | IMP-2 | Exportera samma data till fil |
 | IMP-3 | Importen validerar och rapporterar fel per rad utan att spara delvis |
 
-### 2.8 Föreslagna framtida moduler (ej specificerade)
+### 2.8 `rentals` – Uthyrning (ny)
+
+Uthyrning av hamnens eller klubbens egna objekt, t.ex. upptagningstrailer och båtar för dagsegling. Modulen hanterar inga kostnader: ingen avgift, ingen deposition och ingen debitering vid sen återlämning. Medlemsbokning kräver även `member-portal` (frivillig koppling, DEP-3). Genomförandet beskrivs i `module.md` avsnitt 11.
+
+| Id | Funktion |
+|---|---|
+| REN-1 | Hantera uthyrningsobjekt: namn, beskrivning och om objektet är öppet för bokning |
+| REN-2 | Ladda upp och byta objektets bild. Bilden **ska** hämtas genom modulens API och **får inte** ligga på en publik adress |
+| REN-3 | Sätta regler per objekt: längsta bokningslängd i timmar, om bokning kräver godkännande, och hur många dagar fram i tiden objektet får bokas. Fler regler tillkommer |
+| REN-4 | Medlemmen väljer objekt ur en lista med bild och beskrivning och ser objektets kalender med upptagna tider. Kalendern visar att en tid är upptagen, aldrig vem som bokat den |
+| REN-5 | Medlemmen bokar ett tidsintervall på timnivå. Bokningen **ska** avvisas om den bryter mot objektets regler eller överlappar en befintlig bokning |
+| REN-6 | Kräver objektet godkännande skapas bokningen som preliminär och håller tiden tills en administratör godkänner eller avslår den |
+| REN-7 | Medlemmen **kan** avboka sin egen bokning fram till starttiden. Efter starttiden kan medlemmen inte ändra bokningen |
+| REN-8 | Vid återlämning **kan** låntagaren rapportera fel och brister på objektet. Rapporten spärrar inte objektet och tiden efter fortsätter vara bokningsbar |
+| REN-9 | Administratör ser felrapporter på objektet och i en samlad lista, och **kan** markera en rapport som åtgärdad |
+| REN-10 | Administratör ser och hanterar alla bokningar för ett objekt och **kan** avboka åt en medlem |
+| REN-11 | Uppladdade filer **ska** lagras genom ett utbytbart lager så att installationen kan välja filsystem, S3 eller databas utan att modulens API ändras |
+| REN-12 | Administratör **kan** boka ett objekt åt en medlem. En sådan bokning kräver inget godkännande |
+| REN-13 | Administratör **kan** markera en bokning som återlämnad och skriva felrapporten åt medlemmen, när medlemmen inte gör det själv |
+| REN-14 | `member` **ska** bara komma åt sina egna bokningar och medlemsfunktionerna, aldrig objekthantering, godkännande, andras bokningar eller felrapportlistan, även om `rentals.access` ger `member` nivån `rw` (vilket REN-5 kräver) |
+
+### 2.9 Föreslagna framtida moduler (ej specificerade)
 
 `billing`, `notifications`, `guest-harbour`, `waitlist-rules`, `maintenance`, `metering`, `documents`, `integrations`. Se `module.md`. Varje ska specificeras i eget avsnitt innan utveckling börjar.
 
@@ -115,6 +136,7 @@ Standardposter per modul (förslag, ska bekräftas av produktägaren). De använ
 | `reports` | `[superadmin:rw, admin:r]` |
 | `ai-mail` | `[superadmin:rw, admin:rw]` |
 | `import-export` | `[superadmin:rw, admin:rw]` |
+| `rentals` | `[superadmin:rw, admin:rw, member:rw]` (REN-5, `member`: endast egna bokningar) |
 
 ## 4. Krav på konfiguration
 
@@ -227,4 +249,6 @@ Exempel:
 - Standardnivåer per modul (avsnitt 3) är inte godkända.
 - Ska `/api/me/**` vara öppet för konton med andra roller än `member` (om kopplade till en person), eller bara för `member`?
 - Funktionslistorna för `reports`, `ai-mail` och de framtida modulerna är förslag och behöver detaljeras.
+- Behörighetskrav per uthyrningsobjekt (t.ex. genomgången kurs eller körkort) är inte specificerade och ingår inte i första versionen av `rentals`.
+- Avisering till medlemmen när en preliminär bokning godkänns eller avslås kräver `notifications` och ingår inte i `rentals`.
 - Beslutat: ett konto har flera rolltilldelningar och nivån beräknas som i avsnitt 3 (tak per post, högsta över matchande poster).

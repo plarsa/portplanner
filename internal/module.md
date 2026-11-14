@@ -32,6 +32,7 @@ PortPlanner ska vara uppdelat i **moduler** som kan slås på och av per install
 | `reports` | Rapporter | **Ny:** beläggning, intäkter (flyttas från revenue-badges), kölängd/väntetid, exempelvis export till PDF/Excel | `base` |
 | `ai-mail` | AI-mailhantering | **Ny (modul 6 i gamla planen):** Gmail-integration, Claude sammanfattar/klassar/utkast till svar | `base` |
 | `import-export` | Import/export | **Befintligt, egen modul (ingår inte i bas):** `ImportExportController/Service`, `ImportExportView` | `base` |
+| `rentals` | Uthyrning | **Ny:** uthyrningsobjekt med bild och regler, kalenderbokning i medlemsportalen, felrapport vid återlämning | `base` (frivillig koppling till `member-portal`) |
 
 ### Förslag på ytterligare moduler (nya, kan säljas separat)
 
@@ -92,6 +93,19 @@ portplanner:
     import-export:
       enabled: true
       access: [superadmin:rw, admin:rw]
+    rentals:
+      enabled: false
+      access: [superadmin:rw, admin:rw, member:rw]   # member: egna bokningar
+```
+
+Fillagringen är gemensam och ligger därför utanför modulerna, i `base`:
+
+```yaml
+portplanner:
+  file-store:
+    type: local                          # local | s3 | database
+    local:
+      path: ${DATA_DIR:./data}/files
 ```
 
 - Modulinställningar kan överstyras per kund via profilfil (`application-kundx.yml`) eller miljövariabler (`PORTPLANNER_MODULES_STORAGE_ENABLED=true`).
@@ -204,3 +218,131 @@ Båda SPA:erna (`portplanner-frontend`, `portplanner-member`):
 - **Standardposter per kund:** standardposterna per modul måste beslutas med produktägaren. Ett konto har flera rolltilldelningar; nivån beräknas som högsta av tak-nivåerna över matchande poster (beslutat).
 - **Körtidsväxling** utan omstart (admin-UI eller databas) är utanför v1.
 - **Auktorisering:** modulgating ersätter inte rollkontroller. Nuvarande brist (inga `@PreAuthorize`, `member` kan anropa admin-API) bör åtgärdas parallellt.
+
+## 11. Modulen `rentals` (uthyrning)
+
+Funktionskraven (`REN-…`) finns i `module_spec.md` avsnitt 2.8. Modulen följer mönstret från `storage`: egen post i `PortModule`, egna controllers med `@RequiresModule("rentals")`, egna tabeller i samma Flyway-schema och egna vyer i båda SPA:erna. De första objekten är en upptagningstrailer och ett antal båtar för dagsegling.
+
+### 11.1 Vägar som övervägdes
+
+**Vad ett uthyrningsobjekt är.** Valt: ett eget `RentalObject` utan koppling till båtregistret. Alternativen var en valfri främmande nyckel till `Boat` för att återanvända modell och längd för klubbens båtar, och en flagga `rentable` på `Boat`. Trailern är ingen båt, beskrivningen och bilden är uthyrningsspecifika, och modulen håller sig för sig själv (DEP-4). En nullbar `boat_id` kan läggas till senare utan att något annat ändras.
+
+**Var reglerna bor.** Valt: egna kolumner på objektet. Alternativet var en generisk regeltabell eller en JSON-kolumn, som ger en ny regel utan migrering. Varje ny regel behöver ändå kod som tillämpar den och ett fält i admin-gränssnittet, så migreringen är den billigaste delen. Kolumner ger dessutom validering vid start och läsbara data i databasen.
+
+**Filerna.** Valt: ett `FileStore`-interface med filsystemet som första implementation. Alternativen var S3 direkt och blobbar i databasen. Installationen kör en EC2-instans med H2 som fil på disk, så uppladdade filer får samma säkerhetskopieringsbehov som databasen redan har. S3 blir intressant först vid fler instanser eller när disken inte ska hålla data.
+
+### 11.2 Datamodell
+
+| Tabell | Innehåll |
+|---|---|
+| `rental_objects` | `id`, `name`, `description`, `bookable`, reglerna (11.3), `image_file_id` |
+| `rental_bookings` | `id`, `object_id`, `person_id`, `start_at`, `end_at`, `status`, `created_at`, `returned_at` |
+| `rental_fault_reports` | `id`, `booking_id`, `description`, `reported_at`, `resolved_at`, `resolved_by` |
+| `stored_files` | `id`, `store`, `storage_key`, `original_filename`, `content_type`, `size_bytes`, `uploaded_at` |
+
+- `RentalBookingStatus`: `PENDING`, `CONFIRMED`, `REJECTED`, `CANCELLED`, `RETURNED`. Objekt utan krav på godkännande skapas direkt som `CONFIRMED`.
+- `PENDING`, `CONFIRMED` och `RETURNED` håller tiden. `REJECTED` och `CANCELLED` frigör den. En preliminär bokning håller alltså tiden medan den väntar på godkännande, så först till kvarn gäller. En återlämning före sluttiden frigör inte den återstående tiden.
+- Krockkontrollen är ett överlappningsvillkor (`start_at < :end AND end_at > :start`) mot hållande statusar. H2 kör `READ_COMMITTED` och har inget uniktvång för intervall, så en kontroll följd av en insert i samma transaktion hindrar inte två samtidiga bokningar. Tjänsten tar därför ett radlås på objektet (`SELECT ... FOR UPDATE` via `@Lock(PESSIMISTIC_WRITE)`) innan kontrollen. Det gör samtidighetstestet meningsfullt.
+- Bokningen kopplas till `Person`, precis som `HaulOutBooking` redan gör.
+- Felrapporten hänger på bokningen, så vem och när framgår utan egna kolumner. En administratör som återlämnar åt en medlem (REN-13) skriver rapporten på medlemmens bokning.
+- `stored_files` ligger i `base` (paket `se.portplanner.file`) så att andra moduler kan använda samma lager senare. Bara `rentals` skriver i den i v1.
+- Nytt schema läggs i `V2__rentals.sql`. Den samlade `V1__baseline.sql` rörs inte.
+
+### 11.3 Regler per objekt
+
+| Kolumn | Betydelse |
+|---|---|
+| `max_duration_hours` | Längsta tillåtna bokningsintervall |
+| `requires_approval` | Bokningen skapas som `PENDING` och måste godkännas |
+| `max_days_ahead` | Hur många dagar fram i tiden en bokning får starta |
+
+Reglerna tillämpas i `RentalRuleValidator`, som får objektet och det önskade intervallet. Vid brott kastas en egen `RentalRuleException` som `GlobalExceptionHandler` svarar 409 på. `PolicyViolationException` används inte: den ger 403, vilket är reserverat för behörighet och modulfel (FE-5) och skulle blandas ihop med dem i frontend. En ny regel blir en kolumn, en kontroll i validatorn och ett fält i admin-formuläret.
+
+### 11.4 Fillagring
+
+```java
+public interface FileStore {
+    /** Stores the bytes and returns an opaque key. */
+    String put(InputStream data, String contentType, long size);
+
+    InputStream get(String key);
+
+    void delete(String key);
+}
+```
+
+- `LocalFileStore` (v1) skriver under `portplanner.file-store.local.path`, som standard `${DATA_DIR:./data}/files`. Nyckeln är en UUID och läggs i två nivåer av underkataloger så att en katalog inte fylls. Lagret hör till `base`, inte till `rentals`, så att konfigurationsnyckeln inte behöver döpas om när nästa modul laddar upp filer. En avstängd modul får då inte heller bönan att försvinna.
+- `S3FileStore` (senare) använder AWS SDK v2 med bucket och prefix ur konfigurationen och rättigheter på instansens IAM-roll. Bucketen är aldrig publik.
+- `DatabaseFileStore` om behovet uppstår: bytes i en egen tabell.
+- Implementationen väljs med `@ConditionalOnProperty` på `portplanner.file-store.type`. En är aktiv i taget. Kolumnen `store` i `stored_files` säger vilken implementation som skrev filen, så ett byte av lager kan göras med ett migreringsjobb i stället för en gissning.
+- Uppladdning sker som `multipart/form-data`. Tillåtna typer är jpeg, png och webp och gränsen är 5 MB per fil, kontrollerad i modulen. `spring.servlet.multipart.max-file-size` sätts till samma värde, vilket även gäller importfilerna i `import-export` och därför ska nämnas i release-noteringen.
+- Bilden lagras i original. Ingen nedskalning eller miniatyrbild i v1; känns medlemmens objektlista trög får det bli en egen ändring (11.9).
+- Bilden hämtas med `GET /api/rentals/objects/{id}/image` för admin och `GET /api/me/rentals/objects/{id}/image` för medlem. Båda går genom `@RequiresModule` och strömmar från lagret. Ingen publik URL och inga signerade S3-länkar i v1.
+
+### 11.5 REST-API
+
+Admin (`@RequiresModule("rentals")`):
+
+| Anrop | Gör |
+|---|---|
+| `GET/POST /api/rentals/objects`, `PUT/DELETE /api/rentals/objects/{id}` | Objekt och deras regler |
+| `GET/POST/DELETE /api/rentals/objects/{id}/image` | Visa, ladda upp eller ta bort bild |
+| `GET /api/rentals/objects/{id}/bookings?from&to` | Alla bokningar för objektet |
+| `POST /api/rentals/bookings` | Boka åt en medlem (`personId`, REN-12). Skapas som `CONFIRMED` oavsett `requires_approval` |
+| `POST /api/rentals/bookings/{id}/approve`, `.../reject` | Hantera preliminära bokningar |
+| `POST /api/rentals/bookings/{id}/return` | Markera som återlämnad åt en medlem, med valfri felrapport (REN-13) |
+| `DELETE /api/rentals/bookings/{id}` | Avboka åt en medlem |
+| `GET /api/rentals/fault-reports?resolved=false` | Felrapporter |
+| `POST /api/rentals/fault-reports/{id}/resolve` | Markera som åtgärdad |
+
+Medlem (`@RequiresModule("rentals")` och `@RequiresModule("member-portal")`):
+
+| Anrop | Gör |
+|---|---|
+| `GET /api/me/rentals/objects` | Bokningsbara objekt med beskrivning och regler |
+| `GET /api/me/rentals/objects/{id}/image` | Objektets bild |
+| `GET /api/me/rentals/objects/{id}/availability?from&to` | Upptagna intervall, utan uppgift om vem som bokat |
+| `GET/POST /api/me/rentals/bookings` | Egna bokningar, boka |
+| `DELETE /api/me/rentals/bookings/{id}` | Avboka egen bokning före starttid |
+| `POST /api/me/rentals/bookings/{id}/return` | Återlämna, med valfri felrapport |
+
+### 11.6 Åtkomst inom modulen
+
+REN-5 kräver att `rentals.access` ger `member` nivån `rw`, och modulåtkomst är i dag den enda kontrollen på HTTP-nivå i systemet (`SecurityConfig` har bara `authenticated()`, och ingen `@PreAuthorize` finns). Utan en spärr skulle en medlem kunna lägga upp objekt, godkänna bokningar, avboka åt andra och läsa vem som bokat vad — det sista i direkt strid med REN-4 och REN-14.
+
+Lösningen hålls så liten som möjligt och gäller bara den här modulen: adressrymderna är redan delade, så `SecurityConfig` får en matchare som kräver en annan roll än `member` för `/api/rentals/**`, medan medlemmens funktioner ligger under `/api/me/rentals/**` och där kontrolleras ägarskap i tjänsten som i `MeService`. Bilden finns därför på båda adresserna. Detta är projektets första rollkontroll per endpoint och ersätter inte IAM-spåret i avsnitt 10; det breddas inte till övriga moduler i den här ändringen.
+
+### 11.7 Frontend
+
+- Admin: `RentalObjectsView.vue` med lista, formulär för objekt och regler, bilduppladdning, bokningar per objekt (med boka åt medlem, godkänn, avslå, återlämna, avboka) och en flik med felrapporter. Route `/rentals` med `meta: { module: 'rentals' }`.
+- Medlem: `RentalsView.vue` med objektlista (bild, namn, kort beskrivning), och per objekt en månadskalender där dagar med bokningar är markerade. Klick på en dag ger dygnets timmar där upptagna intervall är utgråade och man väljer start och slut. Egna bokningar listas ovanför med knapp för avboka respektive återlämna.
+- Kalendern skrivs för hand med samma beroendefria stil som övriga vyer. Inget kalender- eller datumbibliotek läggs till; båda SPA:erna har i dag fyra beroenden och det ska de fortsätta ha.
+- Återlämningen öppnar ett formulär med fritext för fel och brister, som får hoppas över.
+- Vitest finns inte i något av SPA:erna. Att sätta upp frontend-tester ligger kvar som eget spår (avsnitt 9) och ingår inte här.
+
+### 11.8 Test
+
+- Enhetstest för `RentalRuleValidator`: för långt intervall, för långt fram i tiden, start i förflutet.
+- Krocktest: två bokningar som överlappar ger konflikt; bokning mot avbokad tid går igenom.
+- Godkännande: objekt med `requires_approval` ger `PENDING` som håller tiden; avslag frigör den.
+- Åtkomst: `rentals.enabled=false` ger 403 `MODULE_DISABLED` på både admin- och medlemsanropen. En medlem kommer inte åt en annan medlems bokning.
+- `FileStore`: `LocalFileStore` sparar, läser och tar bort; bildanropet kräver åtkomst till modulen.
+- Tillgänglighetsanropet läcker inte vem som bokat.
+- Ett konto med bara `member:rw` får 403 på `/api/rentals/**` trots att modulen är tillgänglig för `member`.
+- Admin bokar åt en medlem på ett objekt med `requires_approval` och bokningen blir `CONFIRMED` direkt.
+- Admin återlämnar en bokning som medlemmen inte återlämnat, med felrapport.
+- Radering av en person med bokningar ger 409, inte 500. Radering av ett objekt med bokningar ger 409, och raderas ett objekt utan bokningar försvinner bilden ur lagret.
+
+### 11.9 Radering och beroenden till `base`
+
+- `DELETE /api/rentals/objects/{id}` nekas med 409 om objektet har bokningar, på samma sätt som `PersonService` nekar radering av en person med konto. Att ta ett objekt ur bruk görs normalt med `bookable: false`. Raderas ett objekt utan bokningar tas bilden bort ur lagret och raden ur `stored_files`.
+- `rental_bookings.person_id` är en vanlig främmande nyckel utan `ON DELETE`, som övriga tabeller. Utan åtgärd skulle radering av en person som någon gång hyrt ge ett databasfel och 500. `base` får därför inte referera modulen (DEP-4), så `PersonService` frågar en injicerad lista av `PersonDeletionCheck` innan den raderar, och `rentals` bidrar med en implementation som nekar när personen har bokningar. Detta är den första sådana kopplingen i projektet och är det som avsnitt 5.6 föreskriver.
+
+### 11.10 Öppna frågor
+
+- Behörighetskrav per objekt (kurs, körkort) är en kommande regel, inte med i v1.
+- Bokningsbara timmar på dygnet (t.ex. 08–18) är ingen regel i v1; en bokning kan läggas på vilken timme som helst.
+- Ett objekt har en bild i v1. Flera bilder kräver att `image_file_id` byts mot en kopplingstabell.
+- Miniatyrbilder för medlemmens objektlista är inte med. Blir listan trög på mobil är det en egen ändring.
+- En bokning som ingen återlämnar städas inte automatiskt. Administratören stänger den (REN-13); något bakgrundsjobb finns inte.
+- Avisering vid godkänd eller avslagen bokning kräver `notifications`.
