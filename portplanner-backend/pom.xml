@@ -218,4 +218,28 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- Development only: restart/livereload and the H2 console.
+             Build or run with -Pdev. -->
+        <profile>
+            <id>dev</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-devtools</artifactId>
+                    <scope>runtime</scope>
+                    <optional>true</optional>
+                </dependency>
+
+                <!-- Serves the H2 console at spring.h2.console.path; it is no longer part of
+                     spring-boot-autoconfigure. -->
+                <dependency>
+                    <groupId>org.springframework.boot</groupId>
+                    <artifactId>spring-boot-h2console</artifactId>
+                    <scope>runtime</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>
