@@ -14,7 +14,7 @@ spring:
     locations: classpath:db/migration
   h2:
     console:
-      enabled: true
+      enabled: false
       path: /h2-console
 
   session:
@@ -67,15 +67,15 @@ portplanner:
       enabled: true            # must be true, the app refuses to start otherwise
       access: [superadmin:rw, admin:rw, member:rw]   # member: own data only
     storage:                   # Winter storage
-      enabled: true
+      enabled: false
       access: [superadmin:rw, admin:rw, member:rw]
       default-season-start: 09-15
       max-boats-per-packing-group: 6
     member-portal:
-      enabled: true
+      enabled: false
       access: [superadmin:rw, admin:rw, member:rw]
     audit:
-      enabled: true
+      enabled: false
       access: [superadmin:r, admin:r]
     reports:
       enabled: false
