@@ -99,11 +99,12 @@
         <label class="full">E-post
           <input :value="accountForm.email" readonly />
         </label>
-        <label class="full">Roll *
-          <select v-model="accountForm.role" required>
-            <option v-for="r in roles" :key="r" :value="r">{{ r }}</option>
-          </select>
-        </label>
+        <div class="full roles-field">
+          <span class="roles-title">Roller *</span>
+          <label v-for="r in roles" :key="r" class="role-check">
+            <input type="checkbox" :value="r" v-model="accountForm.roles" />{{ r }}
+          </label>
+        </div>
       </div>
       <p class="hint">Kontot får ett lösenord som visas en gång.</p>
       <p v-if="accountErr" class="error">{{ accountErr }}</p>
@@ -167,7 +168,7 @@ const auth = useAuthStore()
 const accountByPerson = ref({})
 const roles = ref([])
 const accountModal = ref(false)
-const accountForm = ref({ personId: null, email: '', role: 'member:rw' })
+const accountForm = ref({ personId: null, email: '', roles: ['member'] })
 const accountErr = ref('')
 const password = ref(null)
 
@@ -190,16 +191,22 @@ function showPassword(account, temporaryPassword) {
 
 function openCreateAccount(p) {
   accountErr.value = ''
-  accountForm.value = { personId: p.id, email: p.email, role: 'member:rw' }
+  accountForm.value = { personId: p.id, email: p.email, roles: ['member'] }
   accountModal.value = true
 }
 
 async function createAccount() {
   accountErr.value = ''
+  if (accountForm.value.roles.length === 0) {
+    accountErr.value = 'Välj minst en roll'
+    return
+  }
   try {
     const { data } = await createUser({
       email: accountForm.value.email,
-      roles: [accountForm.value.role],
+      // The API wants role:level, while /roles gives bare names. An account made here
+      // always gets write access.
+      roles: accountForm.value.roles.map((r) => `${r}:rw`),
       personId: accountForm.value.personId,
     })
     accountModal.value = false
@@ -299,7 +306,7 @@ onMounted(async () => {
   // The roles the create-account modal offers; harmless to fetch once up front.
   try {
     roles.value = (await getAssignableRoles()).data
-  } catch { roles.value = ['member:rw'] }
+  } catch { roles.value = ['member'] }
 })
 </script>
 
@@ -380,6 +387,9 @@ dd { font-size: 0.9rem; color: #222; margin: 0; }
 .pw-warning { font-size: 0.82rem; color: #9a6400; background: #fff4e0; border-radius: 6px;
   padding: 0.5rem 0.6rem; margin: 0.6rem 0 0; }
 .hint { color: #666; font-size: 0.8rem; margin-top: 0.5rem; }
+.roles-field { display: flex; flex-direction: column; gap: 0.3rem; }
+.roles-title { font-size: 0.85rem; font-weight: 600; }
+.role-check { flex-direction: row; align-items: center; gap: 0.4rem; font-weight: 400; }
 
 @media (max-width: 400px) {
   .detail-grid { grid-template-columns: 1fr; }
