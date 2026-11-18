@@ -1,11 +1,18 @@
 # Demo and test profile: every module is enabled and admin has write access everywhere.
 # Start with: --spring.profiles.active=demo (or SPRING_PROFILES_ACTIVE=demo).
 # Never use in production: the account below has a publicly known password.
+
+
+spring:
+  h2:
+    console:
+      enabled: true
+
 portplanner:
   iam:
     superadmins:
       - username: demo
-        password: demo-password-2026
+        password: demo
         enabled: true
   modules:
     base:

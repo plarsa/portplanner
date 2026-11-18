@@ -38,7 +38,7 @@ class DemoProfileTest {
     @Test
     void demoSuperadminCanLogIn() throws Exception {
         mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\":\"demo\",\"password\":\"demo-password-2026\"}"))
+                .content("{\"username\":\"demo\",\"password\":\"demo\"}"))
                 .andExpect(status().isOk());
     }
 
