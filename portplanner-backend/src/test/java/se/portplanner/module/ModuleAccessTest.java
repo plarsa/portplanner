@@ -35,8 +35,8 @@ class ModuleAccessTest {
 
     @Test
         void readOnlyRoleCannotWrite() throws Exception {
-        mvc.perform(get("/api/export/docks").with(asUser("admin:rw"))).andExpect(status().isOk());
-        mvc.perform(post("/api/import/docks").with(asUser("admin:rw")))
+        mvc.perform(get("/api/export").with(asUser("admin:rw"))).andExpect(status().isOk());
+        mvc.perform(post("/api/import").with(asUser("admin:rw")))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.error").value("MODULE_ROLE_FORBIDDEN"));
     }

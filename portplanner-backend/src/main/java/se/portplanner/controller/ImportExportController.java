@@ -1,13 +1,17 @@
 package se.portplanner.controller;
 
-import se.portplanner.module.RequiresModule;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.springframework.web.bind.annotation.*;
-import se.portplanner.dto.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import se.portplanner.dto.ImportPreview;
+import se.portplanner.dto.ImportResult;
+import se.portplanner.dto.PortplannerExport;
+import se.portplanner.module.RequiresModule;
 import se.portplanner.service.ImportExportService;
-
-import java.util.List;
 
 @RestController
 @RequiresModule("import-export")
@@ -21,57 +25,21 @@ public class ImportExportController {
         this.importExportService = importExportService;
     }
 
-    @GetMapping("/export/docks")
-    @Operation(summary = "Export all docks and slips as JSON")
-    public List<DockImportDto> exportDocks() {
-        return importExportService.exportDocks();
+    @GetMapping("/export")
+    @Operation(summary = "Export the whole harbour as one JSON file, one section per area")
+    public PortplannerExport export() {
+        return importExportService.exportAll();
     }
 
-    @PostMapping("/import/docks/preview")
+    @PostMapping("/import/preview")
     @Operation(summary = "Preview an import without saving")
-    public ImportPreview preview(@RequestBody List<DockImportDto> docks) {
-        return importExportService.preview(docks);
+    public ImportPreview preview(@RequestBody PortplannerExport file) {
+        return importExportService.previewAll(file);
     }
 
-    @PostMapping("/import/docks")
-    @Operation(summary = "Import docks and slips from JSON")
-    public ImportResult importDocks(@RequestBody List<DockImportDto> docks) {
-        return importExportService.importDocks(docks);
-    }
-
-    @GetMapping("/export/persons")
-    @Operation(summary = "Export all persons as JSON")
-    public List<PersonImportDto> exportPersons() {
-        return importExportService.exportPersons();
-    }
-
-    @PostMapping("/import/persons/preview")
-    @Operation(summary = "Preview a person import without saving")
-    public PersonImportPreview previewPersons(@RequestBody List<PersonImportDto> persons) {
-        return importExportService.previewPersons(persons);
-    }
-
-    @PostMapping("/import/persons")
-    @Operation(summary = "Import persons from JSON")
-    public PersonImportResult importPersons(@RequestBody List<PersonImportDto> persons) {
-        return importExportService.importPersons(persons);
-    }
-
-    @GetMapping("/export/boats")
-    @Operation(summary = "Export all boats as JSON")
-    public List<BoatImportDto> exportBoats() {
-        return importExportService.exportBoats();
-    }
-
-    @PostMapping("/import/boats/preview")
-    @Operation(summary = "Preview a boat import without saving")
-    public BoatImportPreview previewBoats(@RequestBody List<BoatImportDto> boats) {
-        return importExportService.previewBoats(boats);
-    }
-
-    @PostMapping("/import/boats")
-    @Operation(summary = "Import boats from JSON")
-    public BoatImportResult importBoats(@RequestBody List<BoatImportDto> boats) {
-        return importExportService.importBoats(boats);
+    @PostMapping("/import")
+    @Operation(summary = "Import a file, one section per area")
+    public ImportResult importFile(@RequestBody PortplannerExport file) {
+        return importExportService.importAll(file);
     }
 }

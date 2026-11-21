@@ -51,22 +51,28 @@ class ImportExportIntegrationTest {
                 .forEach(d -> dockService.delete(d.getId()));
     }
 
-    @Test
-    void importDocksAndDeleteThem() throws Exception {
-        String json = new String(
+    /** The fixture is a bare list of docks, which now travels as the file's docks section. */
+    private String fileWithDocks() throws Exception {
+        String docks = new String(
                 Objects.requireNonNull(getClass().getResourceAsStream("/bryggor-import.json"))
                         .readAllBytes(),
                 StandardCharsets.UTF_8);
+        return "{\"docks\":" + docks + "}";
+    }
+
+    @Test
+    void importDocksAndDeleteThem() throws Exception {
+        String json = fileWithDocks();
 
         // 1. Import bryggor.json – should create 2 docks and 61 slips
-        mvc.perform(post("/api/import/docks")
+        mvc.perform(post("/api/import")
                 .cookie(session)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.docksCreated").value(2))
-                .andExpect(jsonPath("$.slipsCreated").value(61))
-                .andExpect(jsonPath("$.warnings").isEmpty());
+                .andExpect(jsonPath("$.docks.docksCreated").value(2))
+                .andExpect(jsonPath("$.docks.slipsCreated").value(61))
+                .andExpect(jsonPath("$.docks.warnings").isEmpty());
 
         // 2. Verify both docks are visible in the docks list
         mvc.perform(get("/api/docks").cookie(session))
@@ -93,26 +99,23 @@ class ImportExportIntegrationTest {
 
     @Test
     void importIsIdempotentForExistingDocks() throws Exception {
-        String json = new String(
-                Objects.requireNonNull(getClass().getResourceAsStream("/bryggor-import.json"))
-                        .readAllBytes(),
-                StandardCharsets.UTF_8);
+        String json = fileWithDocks();
 
         // First import
-        mvc.perform(post("/api/import/docks")
+        mvc.perform(post("/api/import")
                 .cookie(session)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.docksCreated").value(2));
+                .andExpect(jsonPath("$.docks.docksCreated").value(2));
 
         // Second import – both docks already exist, no slips added
-        mvc.perform(post("/api/import/docks")
+        mvc.perform(post("/api/import")
                 .cookie(session)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.docksCreated").value(0))
-                .andExpect(jsonPath("$.slipsCreated").value(0));
+                .andExpect(jsonPath("$.docks.docksCreated").value(0))
+                .andExpect(jsonPath("$.docks.slipsCreated").value(0));
     }
 }

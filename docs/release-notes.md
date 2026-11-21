@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Import and export use a single file with one section per area: persons, boats and docks.
 - An administrator can create an account for a person and issue it a new password, from the person's panel.
 - An account can be given several roles when it is created.
 - The landing page, the member portal and the admin portal follow the Portplanner design: new navigation, typography, colours and status markers.

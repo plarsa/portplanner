@@ -1,10 +1,8 @@
 package se.portplanner.dto;
 
-import java.util.List;
-
+/** What an import did, per area. */
 public record ImportResult(
-        int docksCreated,
-        int slipsCreated,
-        int slipsSkipped,
-        List<String> warnings
+        PersonImportResult persons,
+        BoatImportResult boats,
+        DockImportResult docks
 ) {}

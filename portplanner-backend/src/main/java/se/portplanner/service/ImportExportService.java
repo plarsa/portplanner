@@ -40,6 +40,34 @@ public class ImportExportService {
         this.auditService = auditService;
     }
 
+    // ── The whole harbour in one file ──────────────────────────────────────
+
+    @Transactional(readOnly = true)
+    public PortplannerExport exportAll() {
+        return new PortplannerExport(exportPersons(), exportBoats(), exportDocks());
+    }
+
+    @Transactional(readOnly = true)
+    public ImportPreview previewAll(PortplannerExport file) {
+        return new ImportPreview(
+                previewPersons(orEmpty(file.persons())),
+                previewBoats(orEmpty(file.boats())),
+                previewDocks(orEmpty(file.docks())));
+    }
+
+    /** Persons are imported first: a boat finds its owner by email, and the owner may be in the same file. */
+    public ImportResult importAll(PortplannerExport file) {
+        var persons = importPersons(orEmpty(file.persons()));
+        var boats = importBoats(orEmpty(file.boats()));
+        var docks = importDocks(orEmpty(file.docks()));
+        return new ImportResult(persons, boats, docks);
+    }
+
+    /** A file may leave a section out, which means there is nothing to import for that area. */
+    private static <T> List<T> orEmpty(List<T> section) {
+        return section == null ? List.of() : section;
+    }
+
     // ── Export ─────────────────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
@@ -63,7 +91,7 @@ public class ImportExportService {
     // ── Preview (dry-run) ──────────────────────────────────────────────────
 
     @Transactional(readOnly = true)
-    public ImportPreview preview(List<DockImportDto> docks) {
+    public DockImportPreview previewDocks(List<DockImportDto> docks) {
         Map<String, Dock> existing = existingDocksByName();
         int docksNew = 0, docksExisting = 0, slipsNew = 0, slipsSkipped = 0;
         List<String> details = new ArrayList<>();
@@ -90,12 +118,12 @@ public class ImportExportService {
                 }
             }
         }
-        return new ImportPreview(docksNew, docksExisting, slipsNew, slipsSkipped, details);
+        return new DockImportPreview(docksNew, docksExisting, slipsNew, slipsSkipped, details);
     }
 
     // ── Import ─────────────────────────────────────────────────────────────
 
-    public ImportResult importDocks(List<DockImportDto> docks) {
+    public DockImportResult importDocks(List<DockImportDto> docks) {
         Map<String, Dock> existing = existingDocksByName();
         int docksCreated = 0, slipsCreated = 0, slipsSkipped = 0;
         List<String> warnings = new ArrayList<>();
@@ -158,7 +186,7 @@ public class ImportExportService {
         auditService.log("IMPORTED", "DOCK", null,
                 "Import: " + docksCreated + " docks and " + slipsCreated + " slips imported" +
                 (slipsSkipped > 0 ? ", " + slipsSkipped + " skipped" : ""));
-        return new ImportResult(docksCreated, slipsCreated, slipsSkipped, warnings);
+        return new DockImportResult(docksCreated, slipsCreated, slipsSkipped, warnings);
     }
 
     // ── Person export ──────────────────────────────────────────────────────

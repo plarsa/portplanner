@@ -1,11 +1,8 @@
 package se.portplanner.dto;
 
-import java.util.List;
-
+/** What an import would do, per area, without saving anything. */
 public record ImportPreview(
-        int docksNew,
-        int docksExisting,
-        int slipsNew,
-        int slipsSkipped,
-        List<String> details
+        PersonImportPreview persons,
+        BoatImportPreview boats,
+        DockImportPreview docks
 ) {}

@@ -2,7 +2,7 @@ package se.portplanner.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import se.portplanner.dto.ImportResult;
+import se.portplanner.dto.DockImportResult;
 import se.portplanner.model.Dock;
 import se.portplanner.model.Slip;
 import se.portplanner.model.SlipStatus;
@@ -27,7 +27,7 @@ public class ImportService {
         this.slipRepository = slipRepository;
     }
 
-    public ImportResult importSlipsTsv(String tsvData) {
+    public DockImportResult importSlipsTsv(String tsvData) {
         int docksCreated = 0;
         int slipsCreated = 0;
         int slipsSkipped = 0;
@@ -129,7 +129,7 @@ public class ImportService {
                 .filter(d -> d.getId() != null)
                 .count();
 
-        return new ImportResult((int) newDocks, slipsCreated, slipsSkipped, warnings);
+        return new DockImportResult((int) newDocks, slipsCreated, slipsSkipped, warnings);
     }
 
     private BigDecimal parseDecimal(String s) {
