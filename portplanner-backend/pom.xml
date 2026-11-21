@@ -198,6 +198,22 @@
                             </resources>
                         </configuration>
                     </execution>
+                    <!-- Shared style layer → served at /portplanner.css -->
+                    <execution>
+                        <id>copy-style-layer</id>
+                        <phase>generate-resources</phase>
+                        <goals><goal>copy-resources</goal></goals>
+                        <configuration>
+                            <outputDirectory>${project.build.outputDirectory}/static</outputDirectory>
+                            <overwrite>true</overwrite>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/../shared/styles</directory>
+                                    <filtering>false</filtering>
+                                </resource>
+                            </resources>
+                        </configuration>
+                    </execution>
                     <!-- Member SPA → static/member/ -->
                     <execution>
                         <id>copy-member-frontend</id>

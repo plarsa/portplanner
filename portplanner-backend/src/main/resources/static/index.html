@@ -4,62 +4,106 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Portplanner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="/portplanner.css" />
     <style>
-      *, *::before, *::after { box-sizing: border-box; }
-      body {
-        margin: 0;
-        min-height: 100vh;
-        display: flex;
-        flex-direction: column;
-        font-family: system-ui, -apple-system, sans-serif;
-        background: #f4f7fb;
-        color: #1a2535;
-      }
+      body { min-height: 100vh; display: flex; flex-direction: column; }
       main {
         flex: 1;
         display: flex;
         flex-direction: column;
-        align-items: center;
         justify-content: center;
-        padding: 2rem 1.5rem;
+        max-width: var(--max-width);
+        margin: 0 auto;
+        width: 100%;
+        padding: 72px 24px;
       }
-      h1 { font-size: 2rem; font-weight: 700; margin: 0 0 0.5rem; }
-      .tagline { color: #5a6b80; margin: 0 0 2.5rem; font-size: 0.95rem; }
-      .choices { display: flex; gap: 1.25rem; flex-wrap: wrap; justify-content: center; }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 6px;
+      }
+      .brand svg { width: 44px; height: 44px; color: var(--ink); stroke-width: 7; }
+      h1 { margin: 0; font-size: clamp(2.1rem, 3.4vw + 1rem, 3rem); }
+      .lead { margin: 0 0 44px; color: var(--text-muted); }
+      .choices {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+        gap: 0;
+        border-top: 1px solid var(--paper-border);
+      }
+      /* The register pattern: hairlines carry the structure, not cards. */
       .choice {
         display: block;
-        width: 220px;
-        padding: 1.5rem;
-        border-radius: 10px;
-        background: #1a3a5c;
-        color: white;
+        padding: 22px 0;
+        border-bottom: 1px solid var(--paper-border);
         text-decoration: none;
-        text-align: center;
       }
-      .choice:hover { background: #24507d; }
-      .choice .label { display: block; font-size: 1.15rem; font-weight: 700; }
-      .choice .hint { display: block; margin-top: 0.35rem; font-size: 0.85rem; color: rgba(255,255,255,0.75); }
+      .choice + .choice { border-left: 0; }
+      .choice .index {
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        font-weight: 500;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
+      .choice .label {
+        display: block;
+        margin: 6px 0 2px;
+        font-weight: 600;
+        font-size: 1.15rem;
+        color: var(--ink);
+      }
+      .choice .hint { display: block; font-size: 0.92rem; color: var(--text-muted); }
+      .choice:hover .label { color: var(--sea); }
+      @media (min-width: 620px) {
+        .choice + .choice { border-left: 1px solid var(--paper-border); padding-left: 22px; }
+      }
       footer {
-        padding: 0.6rem 1rem;
+        padding: 14px 24px;
         text-align: center;
-        font-size: 0.75rem;
-        color: #7d8a9c;
-        background: #e8eef6;
+        font-family: var(--font-mono);
+        font-size: 0.68rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        border-top: 1px solid var(--paper-border);
       }
     </style>
   </head>
   <body>
     <main>
-      <h1>&#9875; Portplanner</h1>
-      <p class="tagline">Hamnens platstilldelning, kö och vinterupptagning</p>
+      <p class="kicker">Hamnens register</p>
+      <div class="brand">
+        <!-- Wordmark: a jetty seen from the side. Source: designguide bilder/portplanner-mark.svg -->
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M6 50H58" />
+          <path d="M15 50V16" />
+          <path d="M28 50V16" />
+          <path d="M41 50V16" />
+          <path d="M54 50V16" />
+          <circle cx="21.5" cy="36" r="5" fill="currentColor" stroke="none" />
+        </svg>
+        <h1>Portplanner</h1>
+      </div>
+      <p class="lead">Hamnens platstilldelning, kö och vinterupptagning.</p>
       <div class="choices">
         <a class="choice" href="/member/">
-          <span class="label">User</span>
-          <span class="hint">Medlemsportal</span>
+          <span class="index">01</span>
+          <span class="label">Medlemsportal</span>
+          <span class="hint">Min plats, mina båtar, kö och hyra</span>
         </a>
         <a class="choice" href="/admin/">
-          <span class="label">Admin</span>
-          <span class="hint">Hamnadministration</span>
+          <span class="index">02</span>
+          <span class="label">Hamnadministration</span>
+          <span class="hint">Platser, bryggor, tilldelningar och taxor</span>
         </a>
       </div>
     </main>

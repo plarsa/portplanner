@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<title>Portplanner — applikationsyta</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../../shared/styles/portplanner.css">
+<style>
+  /* Statusfärger — finns inte på sajten, definieras för portalerna */
+  :root{
+    --ok-text:#0F5132;   --ok-bg:#DEF2E5;   --ok-border:#C2E4D0;
+    --info-text:#0E4A80; --info-bg:#EAF4FC; --info-border:#CFE3F5;
+    --warn-text:#77450A; --warn-bg:#FBEDD2; --warn-border:#EEDAB0;
+    --bad-text:#8E1F1F;  --bad-bg:#F9E3E1;  --bad-border:#EFC9C5;
+    --idle-text:#4C545F; --idle-bg:#EBE7E0; --idle-border:#D8D3CA;
+  }
+
+  body{padding:0 0 44px}
+
+  /* Topprad — samma regel som sajtens header: opak yta + hårfin skugga, ingen ram */
+  .appbar{position:sticky;top:0;z-index:100;background:var(--surface);
+    box-shadow:var(--shadow-header);margin-bottom:40px}
+  .appbar-inner{max-width:1180px;margin:0 auto;padding:11px 40px;
+    display:flex;align-items:center;gap:28px}
+  .appbar .brand{font-family:var(--font-display);font-weight:700;font-size:1.1rem;
+    color:var(--ink);text-decoration:none;letter-spacing:-.01em}
+  .appnav{display:flex;gap:4px;list-style:none;margin:0;padding:0;margin-left:auto}
+  .appnav a{display:block;padding:8px 14px;border-radius:var(--radius-sm);
+    text-decoration:none;color:var(--text-muted);font-size:.92rem;font-weight:500}
+  .appnav a:hover{background:var(--paper-deep);color:var(--ink)}
+  .appnav a[aria-current]{color:var(--ink);background:var(--sea-pale)}
+  .appbar-actions{display:flex;gap:10px;align-items:center}
+  .sheet{max-width:1180px;margin:0 auto;padding:0 40px}
+  .sheet h2{font-size:1.45rem;margin:0 0 6px}
+  .sheet .hint{font-size:.9rem;color:var(--text-muted);margin:0 0 24px;max-width:70ch}
+
+  /* Verktygsrad */
+  .toolbar{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:18px}
+  .toolbar h3{margin:0;font-size:1.25rem}
+  .toolbar .right{display:flex;gap:10px;align-items:flex-end}
+  .btn-sm{padding:9px 15px;font-size:.88rem}
+  .btn-secondary{background:var(--surface);color:var(--sea);border-color:var(--paper-border)}
+  .btn-secondary:hover{background:var(--sea-pale);border-color:#CFE3F5;color:var(--sea-hover)}
+
+  /* Fält */
+  .field{display:flex;flex-direction:column;gap:6px}
+  .field label{font-family:var(--font-mono);font-size:.68rem;font-weight:500;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--text-muted)}
+  .input{font:inherit;font-size:.92rem;color:var(--text);background:var(--surface);
+    border:1px solid var(--paper-border);border-radius:var(--radius-sm);padding:9px 12px;min-width:230px}
+  .input::placeholder{color:var(--text-muted)}
+  .focusdemo .input{outline:2px solid var(--sea);outline-offset:2px}
+
+  /* Tabell */
+  /* Enda stället på ytan som lyfts: datakortet. Skugga, ingen ram. */
+  .table-wrap{border-radius:var(--radius);background:var(--surface);overflow:hidden;
+    box-shadow:var(--shadow-raised)}
+  table{width:100%;border-collapse:collapse;font-size:.92rem}
+  thead th{text-align:left;font-family:var(--font-mono);font-size:.68rem;letter-spacing:.12em;
+    text-transform:uppercase;color:var(--text-muted);font-weight:500;padding:13px 20px;
+    background:var(--paper-deep);border-bottom:1px solid var(--border)}
+  tbody td{padding:13px 20px;border-bottom:1px solid var(--border);color:var(--text)}
+  tbody tr:last-child td{border-bottom:0}
+  tbody tr:hover td{background:var(--paper)}
+  td.num{font-family:var(--font-mono);font-size:.88rem}
+  td.muted{color:var(--text-muted)}
+
+  /* Statuspills */
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:var(--radius-sm);
+    font-size:.78rem;font-weight:600;border:1px solid transparent}
+  .pill svg{width:13px;height:13px;stroke-width:2.2}
+  .pill-ok{color:var(--ok-text);background:var(--ok-bg);border-color:var(--ok-border)}
+  .pill-info{color:var(--info-text);background:var(--info-bg);border-color:var(--info-border)}
+  .pill-warn{color:var(--warn-text);background:var(--warn-bg);border-color:var(--warn-border)}
+  .pill-bad{color:var(--bad-text);background:var(--bad-bg);border-color:var(--bad-border)}
+  .pill-idle{color:var(--idle-text);background:var(--idle-bg);border-color:var(--idle-border)}
+  .pill-row{display:flex;gap:10px;flex-wrap:wrap;margin:0 0 28px}
+</style>
+</head>
+<body>
+
+  <header class="appbar">
+    <div class="appbar-inner">
+      <a class="brand" href="#">Portplanner</a>
+      <ul class="appnav">
+        <li><a href="#" aria-current="page">Båtplatser</a></li>
+        <li><a href="#">Väntelista</a></li>
+        <li><a href="#">Bryggkarta</a></li>
+        <li><a href="#">Taxor</a></li>
+      </ul>
+      <div class="appbar-actions">
+        <a href="#" class="btn btn-secondary btn-sm">Logga ut</a>
+      </div>
+    </div>
+  </header>
+
+  <div class="sheet">
+
+  <h2>Applikationsyta</h2>
+  <p class="hint">Sajtens tokens satta på en tät datayta. Topprad, statusfärger, fält, tabell och
+    fokusring definieras här — toppraden följer samma regel som sajtens header: opak vit yta,
+    hårfin skugga, ingen ram. Skuggan finns bara på det som ligger ovanpå sidan.</p>
+
+  <div class="pill-row">
+    <span class="pill pill-ok"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>Tilldelad</span>
+    <span class="pill pill-info"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.6h.01"/></svg>I kö</span>
+    <span class="pill pill-warn"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 4l-7.4 13A2 2 0 004.6 20h14.8a2 2 0 001.7-3L13.7 4a2 2 0 00-3.4 0z"/></svg>Väntar betalning</span>
+    <span class="pill pill-bad"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>Förfallen</span>
+    <span class="pill pill-idle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>Ledig</span>
+  </div>
+
+  <div class="toolbar">
+    <h3>Båtplatser</h3>
+    <div class="right">
+      <div class="field focusdemo">
+        <label for="sok">Sök</label>
+        <input class="input" id="sok" value="Brygga B">
+      </div>
+      <a href="#" class="btn btn-secondary btn-sm">Exportera</a>
+      <a href="#" class="btn btn-primary btn-sm">Tilldela plats</a>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Plats</th><th>Båt</th><th>Ägare</th><th>Längd</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="num">B 12</td><td>Najad 331</td><td class="muted">Karlsson</td><td class="num muted">9,8 m</td>
+            <td><span class="pill pill-ok"><svg viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>Tilldelad</span></td></tr>
+        <tr><td class="num">B 14</td><td class="muted">—</td><td class="muted">—</td><td class="num muted">10,5 m</td>
+            <td><span class="pill pill-idle"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12h8"/></svg>Ledig</span></td></tr>
+        <tr><td class="num">C 03</td><td>Maxi 77</td><td class="muted">Lind</td><td class="num muted">7,7 m</td>
+            <td><span class="pill pill-warn"><svg viewBox="0 0 24 24"><path d="M12 9v4M12 17h.01M10.3 4l-7.4 13A2 2 0 004.6 20h14.8a2 2 0 001.7-3L13.7 4a2 2 0 00-3.4 0z"/></svg>Väntar betalning</span></td></tr>
+        <tr><td class="num">C 07</td><td>Hallberg-Rassy 34</td><td class="muted">Ek</td><td class="num muted">10,3 m</td>
+            <td><span class="pill pill-bad"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M15 9l-6 6M9 9l6 6"/></svg>Förfallen</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+</div></body></html>

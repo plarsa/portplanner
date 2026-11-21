@@ -5,6 +5,8 @@ export default defineConfig({
   base: '/member/',
   plugins: [vue()],
   server: {
+    // The style layer lives in shared/, outside this app's root.
+    fs: { allow: ['..'] },
     port: 5174,
     proxy: {
       '/api': {
