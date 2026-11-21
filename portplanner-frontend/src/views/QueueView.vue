@@ -1,55 +1,59 @@
 <template>
   <AppLayout>
-    <div class="page-header">
+    <div class="toolbar">
       <h2>Kö</h2>
-      <button class="btn-primary" @click="openAdd">+ Lägg till i kö</button>
+      <div class="right">
+        <button class="btn btn-primary btn-sm" @click="openAdd">Lägg till i kö</button>
+      </div>
     </div>
 
-    <div v-if="!queue.length" class="empty-state">Kön är tom</div>
+    <p v-if="!queue.length" class="empty">Kön är tom</p>
 
-    <div v-for="(entry, idx) in queue" :key="entry.id" class="queue-card">
-      <div class="queue-header">
-        <div class="queue-pos">{{ idx + 1 }}</div>
-        <div class="queue-info">
-          <strong>{{ entry.personName }}</strong>
-          <span v-if="entry.boatName" class="sub">{{ entry.boatName }} – {{ entry.boatLengthM }}×{{ entry.boatWidthM }}m
-            <span v-if="entry.boatDraftM"> / {{ entry.boatDraftM }}m djup</span>
-          </span>
-          <span v-else class="sub muted">Ingen båt angiven</span>
-          <span class="date">Anmäld: {{ formatDate(entry.requestedDate) }}</span>
-          <span v-if="entry.notes" class="notes">{{ entry.notes }}</span>
+    <!-- The queue is a register: a mono index, the entry, and hairlines between. -->
+    <div v-if="queue.length" class="panel queue">
+      <div v-for="(entry, idx) in queue" :key="entry.id" class="entry">
+        <div class="entry-head">
+          <span class="index num">{{ String(idx + 1).padStart(2, '0') }}</span>
+          <div class="entry-info">
+            <strong>{{ entry.personName }}</strong>
+            <span v-if="entry.boatName" class="sub">
+              {{ entry.boatName }} –
+              <span class="num">{{ entry.boatLengthM }}×{{ entry.boatWidthM }} m</span>
+              <span v-if="entry.boatDraftM"> / <span class="num">{{ entry.boatDraftM }} m</span> djup</span>
+            </span>
+            <span v-else class="sub muted">Ingen båt angiven</span>
+            <span class="sub muted">Anmäld <span class="num">{{ formatDate(entry.requestedDate) }}</span></span>
+            <span v-if="entry.notes" class="notes">{{ entry.notes }}</span>
+          </div>
+          <div class="entry-actions">
+            <button v-if="entry.boatId" class="btn btn-secondary btn-sm" @click="loadSuggestions(entry)">
+              {{ activeSuggestionId === entry.id ? 'Dölj förslag' : 'Visa lediga platser' }}
+            </button>
+            <button class="btn btn-secondary btn-sm" @click="openEdit(entry)">Redigera</button>
+            <button class="btn btn-danger btn-sm" @click="cancel(entry)">Avboka</button>
+          </div>
         </div>
-        <div class="queue-actions">
-          <button v-if="entry.boatId" @click="loadSuggestions(entry)">
-            {{ activeSuggestionId === entry.id ? 'Dölj förslag' : 'Visa lediga platser' }}
-          </button>
-          <button @click="openEdit(entry)">Redigera</button>
-          <button class="danger" @click="cancel(entry)">Avboka</button>
-        </div>
-      </div>
 
-      <!-- Slip suggestions -->
-      <div v-if="activeSuggestionId === entry.id" class="suggestions">
-        <div v-if="suggestions.length === 0" class="no-suggestions">
-          Inga lediga platser passar denna båt just nu
+        <div v-if="activeSuggestionId === entry.id" class="suggestions">
+          <p v-if="suggestions.length === 0" class="empty">
+            Inga lediga platser passar denna båt just nu
+          </p>
+          <table v-else>
+            <thead>
+              <tr><th>Brygga</th><th>Plats</th><th>Max L</th><th>Max B</th><th>Max djup</th><th></th></tr>
+            </thead>
+            <tbody>
+              <tr v-for="s in suggestions" :key="s.id">
+                <td>{{ s.dockName }}</td>
+                <td class="num">{{ s.slipNumber }}</td>
+                <td class="num muted">{{ s.maxLengthM }} m</td>
+                <td class="num muted">{{ s.maxWidthM }} m</td>
+                <td class="num muted">{{ s.maxDraftM ? s.maxDraftM + ' m' : '–' }}</td>
+                <td><button class="btn btn-primary btn-sm" @click="assign(entry, s)">Tilldela</button></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
-        <table v-else>
-          <thead>
-            <tr><th>Brygga</th><th>Plats</th><th>Max L</th><th>Max B</th><th>Max Djup</th><th></th></tr>
-          </thead>
-          <tbody>
-            <tr v-for="s in suggestions" :key="s.id">
-              <td>{{ s.dockName }}</td>
-              <td>{{ s.slipNumber }}</td>
-              <td>{{ s.maxLengthM }}m</td>
-              <td>{{ s.maxWidthM }}m</td>
-              <td>{{ s.maxDraftM ? s.maxDraftM + 'm' : '–' }}</td>
-              <td>
-                <button class="assign-btn" @click="assign(entry, s)">Tilldela</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
 
@@ -57,8 +61,8 @@
     <BaseModal v-if="modal" title="Lägg till i kö" @close="modal = false" @save="saveAdd">
       <div class="form-col">
         <label>Person *
-          <input v-model="personSearch" type="text" placeholder="Sök namn…" class="search-input" @input="form.personId = ''; form.boatId = ''" />
-          <select v-model.number="form.personId" required size="5" @change="form.boatId = ''; boatSearch = ''">
+          <input v-model="personSearch" type="text" placeholder="Sök namn…" class="input search-input" @input="form.personId = ''; form.boatId = ''" />
+          <select class="input" v-model.number="form.personId" required size="5" @change="form.boatId = ''; boatSearch = ''">
             <option value="">Välj person…</option>
             <option v-for="p in filteredPersons" :key="p.id" :value="p.id">
               {{ p.firstName }} {{ p.lastName }}
@@ -66,8 +70,8 @@
           </select>
         </label>
         <label>Båt
-          <input v-model="boatSearch" type="text" placeholder="Sök båt…" class="search-input" />
-          <select v-model.number="form.boatId" size="4">
+          <input v-model="boatSearch" type="text" placeholder="Sök båt…" class="input search-input" />
+          <select class="input" v-model.number="form.boatId" size="4">
             <option value="">Ingen båt (valfritt)…</option>
             <option v-for="b in filteredBoatsForPerson" :key="b.id" :value="b.id">
               {{ b.model }} – {{ b.lengthM }}×{{ b.widthM }}m
@@ -75,10 +79,10 @@
           </select>
         </label>
         <label>Datum i kö
-          <input v-model="form.requestedDate" type="text" placeholder="ÅÅÅÅ-MM-DD" maxlength="10" />
+          <input class="input" v-model="form.requestedDate" type="text" placeholder="ÅÅÅÅ-MM-DD" maxlength="10" />
         </label>
         <label>Anteckning
-          <textarea v-model="form.notes" rows="3" placeholder="Ev. önskemål om plats…" />
+          <textarea class="input" v-model="form.notes" rows="3" placeholder="Ev. önskemål om plats…" />
         </label>
       </div>
       <p v-if="err" class="error">{{ err }}</p>
@@ -87,8 +91,8 @@
     <BaseModal v-if="editModal && editingEntry" :title="'Redigera – ' + editingEntry.personName" @close="editModal = false" @save="saveEdit">
       <div class="form-col">
         <label>Båt
-          <input v-model="editBoatSearch" type="text" placeholder="Sök båt…" class="search-input" />
-          <select v-model.number="editForm.boatId" size="4">
+          <input v-model="editBoatSearch" type="text" placeholder="Sök båt…" class="input search-input" />
+          <select class="input" v-model.number="editForm.boatId" size="4">
             <option value="">Ingen båt (valfritt)…</option>
             <option v-for="b in filteredBoatsForEdit" :key="b.id" :value="b.id">
               {{ b.model }} – {{ b.lengthM }}×{{ b.widthM }}m
@@ -96,10 +100,10 @@
           </select>
         </label>
         <label>Datum i kö
-          <input v-model="editForm.requestedDate" type="text" placeholder="ÅÅÅÅ-MM-DD" maxlength="10" />
+          <input class="input" v-model="editForm.requestedDate" type="text" placeholder="ÅÅÅÅ-MM-DD" maxlength="10" />
         </label>
         <label>Anteckning
-          <textarea v-model="editForm.notes" rows="4" placeholder="Ev. önskemål om plats…" />
+          <textarea class="input" v-model="editForm.notes" rows="4" placeholder="Ev. önskemål om plats…" />
         </label>
       </div>
       <p v-if="editErr" class="error">{{ editErr }}</p>
@@ -247,35 +251,55 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-h2 { font-size: 1.5rem; }
-.empty-state { color: #999; text-align: center; padding: 3rem; background: white; border-radius: 10px; }
-.queue-card { background: white; border-radius: 10px; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); overflow: hidden; }
-.queue-header { display: flex; align-items: flex-start; gap: 1rem; padding: 1rem 1.25rem; }
-.queue-pos { background: #1a3a5c; color: white; border-radius: 50%; width: 2rem; height: 2rem; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.9rem; flex-shrink: 0; }
-.queue-info { flex: 1; display: flex; flex-direction: column; gap: 0.2rem; }
-.queue-info strong { font-size: 1rem; }
-.sub { color: #444; font-size: 0.875rem; }
-.muted { color: #bbb; }
-.date { color: #999; font-size: 0.8rem; }
-.notes { color: #555; font-size: 0.85rem; font-style: italic; }
-.queue-actions { display: flex; gap: 0.5rem; flex-shrink: 0; }
-.suggestions { border-top: 1px solid #eee; padding: 1rem 1.25rem; background: #fafafa; }
-.no-suggestions { color: #999; font-size: 0.9rem; }
-table { width: 100%; border-collapse: collapse; }
-th { background: #f0f0f0; padding: 0.5rem 0.75rem; text-align: left; font-size: 0.82rem; color: #555; }
-td { padding: 0.5rem 0.75rem; border-top: 1px solid #eee; font-size: 0.88rem; }
-button { padding: 0.35rem 0.8rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.82rem; background: #e8f0fe; color: #1a3a5c; }
-button:hover { background: #d0e2ff; }
-button.danger { background: #fee; color: #c0392b; }
-button.assign-btn { background: #1a3a5c; color: white; }
-button.assign-btn:hover { background: #234e7a; }
-.btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-primary:hover { background: #234e7a; }
-.form-col { display: flex; flex-direction: column; gap: 0.85rem; }
-label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
-label input, label select, label textarea { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
-.search-input { padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 5px; font-size: 0.85rem; font-weight: 400; margin-bottom: 0.2rem; }
-label select[size] { min-height: 6rem; }
-.error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
+.queue { padding: 0; }
+.entry { padding: 18px 22px; border-bottom: 1px solid var(--paper-border); }
+.entry:last-child { border-bottom: 0; }
+.entry-head { display: flex; align-items: flex-start; gap: 18px; }
+
+/* The index is the register's mark: mono, muted, never a filled circle. */
+.index { color: var(--text-muted); padding-top: 2px; }
+
+.entry-info { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.entry-info strong { color: var(--ink); font-weight: 600; }
+.sub { font-size: 0.9rem; color: var(--text); }
+.notes { font-size: 0.9rem; color: var(--text-muted); }
+.entry-actions { display: flex; gap: 10px; flex-shrink: 0; flex-wrap: wrap; justify-content: flex-end; }
+
+/* A table inside the panel is not a separate card, so it carries no shadow. */
+.suggestions { margin-top: 14px; border-top: 1px solid var(--paper-border); padding-top: 14px; }
+.suggestions table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.suggestions thead th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 8px 10px;
+  background: var(--paper-deep);
+}
+.suggestions tbody td { padding: 8px 10px; border-bottom: 1px solid var(--paper-border); }
+.suggestions tbody tr:last-child td { border-bottom: 0; }
+
+.form-col { display: flex; flex-direction: column; gap: 14px; }
+/* A composite label (search box plus list) still wears the guide's label style. */
+.form-col label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.form-col .input { font-family: var(--font); text-transform: none; letter-spacing: 0; }
+.form-col select[size] { min-height: 6rem; }
+.search-input { font-size: 0.88rem; }
+@media (max-width: 760px) {
+  .entry-head { flex-wrap: wrap; }
+  .entry-actions { width: 100%; justify-content: flex-start; }
+}
 </style>

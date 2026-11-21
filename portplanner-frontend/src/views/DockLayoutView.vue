@@ -1,20 +1,20 @@
 <template>
   <AppLayout>
-    <div class="page-header">
+    <div class="toolbar">
       <div class="left">
-        <button class="back-btn" @click="$router.back()">← Tillbaka</button>
+        <button class="btn btn-secondary btn-sm" @click="$router.back()">← Tillbaka</button>
         <h2>{{ dock?.name ?? '…' }} – Layout</h2>
       </div>
       <div class="right">
-        <button @click="toggleMode">{{ isEditing ? '👁 Visningsläge' : '✏️ Redigera layout' }}</button>
-        <button v-if="isEditing" class="btn-primary" @click="save" :disabled="saving">
+        <button class="btn btn-secondary btn-sm" @click="toggleMode">{{ isEditing ? '👁 Visningsläge' : '✏️ Redigera layout' }}</button>
+        <button v-if="isEditing" class="btn btn-primary btn-sm" @click="save" :disabled="saving">
           {{ saving ? 'Sparar…' : 'Spara' }}
         </button>
       </div>
     </div>
 
     <!-- Edit toolbar -->
-    <div v-if="isEditing" class="toolbar">
+    <div v-if="isEditing" class="paintbar">
       <span class="tl">Rita:</span>
       <button v-for="m in paintModes" :key="m.value"
               :class="['mode-btn', m.value.toLowerCase(), { active: paintMode === m.value }]"
@@ -23,15 +23,15 @@
       </button>
       <span class="tl-sep"></span>
       <span class="tl">Storlek:</span>
-      <label>Bredd <input type="number" v-model.number="gridWidth" min="5" max="60" /></label>
-      <label>Höjd <input type="number" v-model.number="gridHeight" min="5" max="40" /></label>
+      <label>Bredd <input class="input" type="number" v-model.number="gridWidth" min="5" max="60" /></label>
+      <label>Höjd <input class="input" type="number" v-model.number="gridHeight" min="5" max="40" /></label>
       <span class="tl-sep"></span>
       <div class="zoom-controls">
         <span class="tl">Zoom:</span>
-        <button @click="zoomOut" :disabled="zoomLevel <= 0.25">−</button>
+        <button class="btn btn-secondary btn-sm" @click="zoomOut" :disabled="zoomLevel <= 0.25">−</button>
         <span class="zoom-label">{{ Math.round(zoomLevel * 100) }}%</span>
-        <button @click="zoomIn" :disabled="zoomLevel >= 2.0">+</button>
-        <button @click="zoomLevel = 1.0" title="Återställ zoom">↺</button>
+        <button class="btn btn-secondary btn-sm" @click="zoomIn" :disabled="zoomLevel >= 2.0">+</button>
+        <button class="btn btn-secondary btn-sm" @click="zoomLevel = 1.0" title="Återställ zoom">↺</button>
       </div>
     </div>
 
@@ -43,10 +43,10 @@
       <span class="leg-item"><span class="leg-swatch occupied"></span> Tilldelad plats</span>
       <span class="leg-item"><span class="leg-swatch maintenance"></span> Underhåll</span>
       <div class="zoom-controls">
-        <button @click="zoomOut" :disabled="zoomLevel <= 0.25">−</button>
+        <button class="btn btn-secondary btn-sm" @click="zoomOut" :disabled="zoomLevel <= 0.25">−</button>
         <span class="zoom-label">{{ Math.round(zoomLevel * 100) }}%</span>
-        <button @click="zoomIn" :disabled="zoomLevel >= 2.0">+</button>
-        <button @click="zoomLevel = 1.0" title="Återställ zoom">↺</button>
+        <button class="btn btn-secondary btn-sm" @click="zoomIn" :disabled="zoomLevel >= 2.0">+</button>
+        <button class="btn btn-secondary btn-sm" @click="zoomLevel = 1.0" title="Återställ zoom">↺</button>
       </div>
     </div>
 
@@ -91,9 +91,9 @@
     </div>
 
     <!-- Viewer popup -->
-    <div v-if="popup" class="popup-overlay" @click.self="popup = null">
-      <div class="popup-card">
-        <div class="popup-header">
+    <div v-if="popup" class="modal-backdrop" @click.self="popup = null">
+      <div class="modal popup">
+        <div class="popup-head">
           <h3>Plats {{ popup.slip.slipNumber }}</h3>
           <button class="close-btn" @click="popup = null">✕</button>
         </div>
@@ -103,7 +103,7 @@
           <dt>Max djup</dt><dd>{{ popup.slip.maxDraftM ? popup.slip.maxDraftM + ' m' : '–' }}</dd>
           <dt>Kategori</dt><dd>{{ popup.slip.category ?? '–' }}</dd>
           <dt>Status</dt>
-          <dd><span :class="['status-badge', popup.slip.status.toLowerCase()]">{{ statusLabel(popup.slip.status) }}</span></dd>
+          <dd><span :class="['pill', pillClass(popup.slip.status)]">{{ statusLabel(popup.slip.status) }}</span></dd>
         </dl>
         <div class="popup-assignment">
           <template v-if="popup.assignment">
@@ -120,10 +120,16 @@
 </template>
 
 <script setup>
+/* Slip status in the guide's roles: assigned is green, free is neutral. */
+function pillClass(s) {
+  return { AVAILABLE: 'pill-idle', OCCUPIED: 'pill-ok', MAINTENANCE: 'pill-warn' }[s] ?? 'pill-idle'
+}
+
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
-import { getDock, getDockSlips, updateDock } from '../api/docks'
+import { getDock, getDockSlips, getDockLayout, saveDockLayout } from '../api/docks'
+import { cellKey, parseLayout, serializeLayout } from '../lib/dockLayout'
 import { getAssignments } from '../api/assignments'
 
 const route = useRoute()
@@ -155,20 +161,18 @@ const zoomLevel = ref(1.0)
 
 // ── Helpers ──────────────────────────────────────────────
 
-function key(r, c) { return `${r},${c}` }
-
 function isPlaced(slipId) {
   return Object.values(cells.value).some(v => v.type === 'SLIP' && v.slipId === slipId)
 }
 
 function slipForCell(r, c) {
-  const cell = cells.value[key(r, c)]
+  const cell = cells.value[cellKey(r, c)]
   if (!cell || cell.type !== 'SLIP') return null
   return slips.value.find(s => s.id === cell.slipId) ?? null
 }
 
 function cellClass(r, c) {
-  const cell = cells.value[key(r, c)]
+  const cell = cells.value[cellKey(r, c)]
   if (!cell) return 'cell water'
   if (cell.type === 'LAND') return 'cell land'
   if (cell.type === 'DOCK') return 'cell dock-cell'
@@ -201,7 +205,7 @@ function setPaintMode(m) {
 }
 
 function paintCell(r, c) {
-  const k = key(r, c)
+  const k = cellKey(r, c)
   if (paintMode.value === 'RADERA') {
     const current = cells.value[k]
     // For reactive deletion we need to reassign
@@ -266,37 +270,21 @@ function toggleMode() {
 
 // ── Load / Save ───────────────────────────────────────────
 
-function parseLayout(json) {
-  if (!json) return
-  try {
-    const data = JSON.parse(json)
-    if (data.gridWidth) gridWidth.value = data.gridWidth
-    if (data.gridHeight) gridHeight.value = data.gridHeight
-    const next = {}
-    for (const cell of data.cells ?? []) {
-      next[key(cell.row, cell.col)] = cell.type === 'SLIP'
-        ? { type: 'SLIP', slipId: cell.slipId }
-        : { type: cell.type }
-    }
-    cells.value = next
-  } catch (e) { /* corrupt json – start fresh */ }
+function applyLayout(json) {
+  const layout = parseLayout(json)
+  if (!layout) return
+  gridWidth.value = layout.gridWidth
+  gridHeight.value = layout.gridHeight
+  cells.value = layout.cells
 }
 
 async function save() {
   saving.value = true
   try {
-    const layoutJson = JSON.stringify({
-      gridWidth: gridWidth.value,
-      gridHeight: gridHeight.value,
-      cells: Object.entries(cells.value).map(([k, v]) => {
-        const [row, col] = k.split(',').map(Number)
-        return v.type === 'SLIP'
-          ? { row, col, type: 'SLIP', slipId: v.slipId }
-          : { row, col, type: v.type }
-      })
+    const layoutJson = serializeLayout({
+      cells: cells.value, gridWidth: gridWidth.value, gridHeight: gridHeight.value,
     })
-    await updateDock(dockId, { name: dock.value.name, description: dock.value.description, layoutJson })
-    dock.value.layoutJson = layoutJson
+    await saveDockLayout(dockId, layoutJson)
     isEditing.value = false
   } finally {
     saving.value = false
@@ -304,8 +292,8 @@ async function save() {
 }
 
 onMounted(async () => {
-  const [{ data: d }, { data: s }, { data: allAssignments }] = await Promise.all([
-    getDock(dockId), getDockSlips(dockId), getAssignments()
+  const [{ data: d }, { data: s }, { data: allAssignments }, { data: layout }] = await Promise.all([
+    getDock(dockId), getDockSlips(dockId), getAssignments(), getDockLayout(dockId)
   ])
   dock.value = d
   slips.value = s
@@ -314,106 +302,171 @@ onMounted(async () => {
     if (a.status === 'ACTIVE') bySlip[a.slipId] = a
   }
   assignmentsBySlipId.value = bySlip
-  parseLayout(d.layoutJson)
+  applyLayout(layout.layoutJson)
 })
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-.left { display: flex; align-items: center; gap: 1rem; }
-.right { display: flex; gap: 0.75rem; }
-h2 { font-size: 1.4rem; margin: 0; }
-.back-btn { background: #eee; border: none; border-radius: 6px; padding: 0.4rem 0.8rem; cursor: pointer; font-size: 0.85rem; }
-.back-btn:hover { background: #ddd; }
-.btn-primary { background: #1a3a5c; color: white; border: none; border-radius: 6px; padding: 0.45rem 1rem; cursor: pointer; }
-.btn-primary:hover:not(:disabled) { background: #234e7a; }
-.btn-primary:disabled { opacity: 0.6; cursor: default; }
-button { padding: 0.4rem 0.85rem; border: none; border-radius: 6px; cursor: pointer; background: #e8f0fe; color: #1a3a5c; font-size: 0.85rem; }
-button:hover { background: #d0e2ff; }
+.toolbar .left { display: flex; align-items: center; gap: 14px; }
+h2 { font-size: 1.45rem; margin: 0; }
 
-/* Toolbar */
-.toolbar { display: flex; align-items: center; gap: 0.6rem; background: white; border-radius: 8px; padding: 0.6rem 1rem; margin-bottom: 0.75rem; box-shadow: 0 1px 4px rgba(0,0,0,0.08); flex-wrap: wrap; }
-.tl { font-size: 0.82rem; font-weight: 600; color: #555; }
+/* The paint toolbar. Each mode wears the fill it paints, so the control shows
+   its own result instead of an invented colour. */
+.paintbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+.tl {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
 .tl-sep { flex: 1; }
-.mode-btn { font-weight: 600; }
-.mode-btn.land { background: #f0e0c8; color: #7a5230; }
-.mode-btn.land:hover, .mode-btn.land.active { background: #c8a97c; color: white; }
-.mode-btn.dock { background: #e0e0e0; color: #333; }
-.mode-btn.dock:hover, .mode-btn.dock.active { background: #757575; color: white; }
-.mode-btn.plats { background: #bbdefb; color: #0d47a1; }
-.mode-btn.plats:hover, .mode-btn.plats.active { background: #1565c0; color: white; }
-.mode-btn.radera { background: #ffcdd2; color: #b71c1c; }
-.mode-btn.radera:hover, .mode-btn.radera.active { background: #e53935; color: white; }
-label { display: flex; align-items: center; gap: 0.3rem; font-size: 0.82rem; font-weight: 600; color: #555; }
-label input { width: 52px; padding: 0.25rem 0.4rem; border: 1px solid #ddd; border-radius: 4px; font-size: 0.85rem; }
+.mode-btn {
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-family: var(--font);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  background: var(--surface);
+  color: var(--text-muted);
+}
+.mode-btn.land { background: var(--map-land); color: var(--idle-text); }
+.mode-btn.dock { background: var(--map-dock); color: #fff; border-color: var(--map-dock); }
+.mode-btn.plats { background: var(--sea-pale); color: var(--sea-hover); border-color: var(--info-border); }
+.mode-btn.radera { background: var(--bad-bg); color: var(--bad-text); border-color: var(--bad-border); }
+.mode-btn.active { outline: 2px solid var(--sea); outline-offset: 1px; }
+.paintbar label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.paintbar label .input { width: 64px; padding: 5px 8px; font-size: 0.85rem; }
 
-/* Legend */
-.legend { display: flex; gap: 1.25rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
-.leg-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #555; }
-.leg-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.12); }
-.leg-swatch.land { background: #c8a97c; }
-.leg-swatch.dock { background: #757575; }
-.leg-swatch.available { background: #66bb6a; }
-.leg-swatch.occupied { background: #ef5350; }
-.leg-swatch.maintenance { background: #ffa726; }
+.workspace { display: flex; gap: 14px; align-items: flex-start; }
 
-/* Workspace */
-.workspace { display: flex; gap: 1rem; align-items: flex-start; }
-
-/* Grid */
-.grid-scroll { overflow: auto; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1rem; flex: 1; min-width: 0; }
+.grid-scroll {
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  padding: 14px;
+  flex: 1;
+  min-width: 0;
+}
 .grid-wrapper { position: relative; overflow: visible; }
-.grid { display: grid; gap: 1px; background: rgba(0,0,0,0.06); width: fit-content; user-select: none; }
+.grid { display: grid; gap: 1px; background: var(--paper-border); width: fit-content; user-select: none; }
 
-/* Zoom controls */
-.zoom-controls { display: flex; align-items: center; gap: 0.3rem; margin-left: auto; }
-.zoom-label { font-size: 0.82rem; font-weight: 600; color: #555; min-width: 3rem; text-align: center; }
+.zoom-controls { display: flex; align-items: center; gap: 6px; margin-left: auto; }
+.zoom-label { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); min-width: 3rem; text-align: center; }
 
-.cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: default; transition: filter 0.05s; }
-.cell:hover { filter: brightness(0.9); }
-.cell.water { background: #e3f2fd; }
-.cell.land { background: #c8a97c; }
-.cell.dock-cell { background: #757575; }
-.cell.slip { background: #66bb6a; cursor: default; }
-.cell.slip.occupied { background: #ef5350; }
-.cell.slip.maintenance { background: #ffa726; }
+.cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: default; }
+.cell:hover { filter: brightness(0.96); }
+.cell.water { background: var(--map-water); }
+.cell.land { background: var(--map-land); }
+.cell.dock-cell { background: var(--map-dock); }
+.cell.slip { background: var(--map-free-bg); }
+.cell.slip .slip-label { color: var(--map-free-text); }
+.cell.slip.occupied { background: var(--map-taken-bg); }
+.cell.slip.occupied .slip-label { color: var(--map-taken-text); }
+.cell.slip.maintenance { background: var(--map-service-bg); }
+.cell.slip.maintenance .slip-label { color: var(--map-service-text); }
 .cell.slip.clickable { cursor: pointer; }
-.slip-label { font-size: 0.6rem; font-weight: 700; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.4); line-height: 1; text-align: center; }
+.slip-label { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 500; line-height: 1; text-align: center; }
 
-/* Slip panel */
-.slip-panel { background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 0.75rem; min-width: 160px; max-width: 180px; }
-.panel-title { font-size: 0.82rem; font-weight: 700; color: #555; margin-bottom: 0.5rem; }
-.no-slips { color: #bbb; font-size: 0.82rem; }
-.slip-item { display: flex; align-items: center; gap: 0.4rem; padding: 0.4rem 0.5rem; border-radius: 5px; cursor: pointer; font-size: 0.85rem; margin-bottom: 2px; }
-.slip-item:hover { background: #f0f4ff; }
-.slip-item.selected { background: #1a3a5c; color: white; }
-.slip-item.placed .sn { color: #4caf50; font-weight: 700; }
-.slip-item.selected.placed .sn { color: #a5d6a7; }
-.sn { font-weight: 600; min-width: 2rem; }
-.sd { color: #888; font-size: 0.78rem; }
-.slip-item.selected .sd { color: rgba(255,255,255,0.7); }
-.check { margin-left: auto; color: #4caf50; font-weight: 700; }
-.slip-item.selected .check { color: #a5d6a7; }
+.slip-panel {
+  background: var(--surface);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  padding: 14px;
+  min-width: 170px;
+  max-width: 190px;
+}
+.panel-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.no-slips { color: var(--text-muted); font-size: 0.85rem; }
+.slip-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.88rem;
+  margin-bottom: 2px;
+}
+.slip-item:hover { background: var(--paper-deep); }
+.slip-item.selected { background: var(--sea-pale); color: var(--ink); }
+.sn { font-family: var(--font-mono); font-weight: 500; min-width: 2.2rem; }
+.sd { font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-muted); }
+.slip-item.placed .sn { color: var(--ok-text); }
+.check { margin-left: auto; color: var(--ok-text); }
 
-/* Popup */
-.popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
-.popup-card { background: white; border-radius: 12px; width: 340px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
-.popup-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid #eee; }
-.popup-header h3 { margin: 0; font-size: 1.1rem; }
-.close-btn { background: none; border: none; font-size: 1.1rem; color: #888; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
-.close-btn:hover { background: #f0f0f0; color: #333; }
-.popup-dl { display: grid; grid-template-columns: 110px 1fr; gap: 0.4rem 0.75rem; padding: 1rem 1.25rem; margin: 0; }
-dt { font-size: 0.8rem; font-weight: 600; color: #888; }
-dd { font-size: 0.88rem; margin: 0; }
-.status-badge { padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
-.status-badge.available { background: #c8e6c9; color: #1b5e20; }
-.status-badge.occupied { background: #ffcdd2; color: #b71c1c; }
-.status-badge.maintenance { background: #ffe0b2; color: #e65100; }
-.popup-assignment { padding: 0.75rem 1.25rem 1.1rem; border-top: 1px solid #eee; }
-.assign-header { font-size: 0.78rem; font-weight: 600; color: #888; margin-bottom: 0.35rem; text-transform: uppercase; letter-spacing: 0.04em; }
-.assign-boat { font-size: 1rem; font-weight: 700; color: #1a3a5c; margin-bottom: 0.2rem; }
-.assign-owner { font-size: 0.88rem; color: #444; margin-bottom: 0.25rem; }
-.assign-row { font-size: 0.9rem; margin-bottom: 0.15rem; }
-.assign-row.date { font-size: 0.8rem; color: #888; }
-.free-tag { background: #e8f5e9; color: #2e7d32; border-radius: 6px; padding: 0.5rem 0.75rem; font-size: 0.85rem; font-weight: 600; }
+.popup { max-width: 340px; padding: 0; }
+.popup-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 22px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--paper-border);
+}
+.popup-head h3 { margin: 0; }
+.close-btn { background: none; border: 0; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; }
+.close-btn:hover { color: var(--ink); }
+.popup-dl { display: grid; grid-template-columns: 110px 1fr; gap: 8px 14px; padding: 18px 22px; margin: 0; }
+dt { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+dd { font-size: 0.9rem; margin: 0; }
+.popup-assignment { padding: 14px 22px 18px; border-top: 1px solid var(--paper-border); }
+.assign-header {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.assign-boat { font-size: 1rem; font-weight: 600; color: var(--ink); }
+.assign-owner { font-size: 0.9rem; color: var(--text); }
+.assign-row { font-size: 0.9rem; }
+.assign-row.date { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); }
+.free-tag {
+  background: var(--idle-bg);
+  border: 1px solid var(--idle-border);
+  color: var(--idle-text);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+@media (max-width: 980px) {
+  .workspace { flex-direction: column; }
+  .slip-panel { max-width: none; width: 100%; }
+}
 </style>

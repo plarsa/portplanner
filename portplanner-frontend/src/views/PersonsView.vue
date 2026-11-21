@@ -1,12 +1,12 @@
 <template>
   <AppLayout>
-    <div class="page-header">
+    <div class="toolbar">
       <h2>Personer</h2>
-      <div class="header-right">
+      <div class="right">
         <div class="search-bar">
-          <input v-model="search" placeholder="Sök namn eller e-post…" @input="load" />
+          <input class="input" v-model="search" placeholder="Sök namn eller e-post…" @input="load" />
         </div>
-        <button class="btn-primary" @click="openCreate">+ Ny person</button>
+        <button class="btn btn-primary btn-sm" @click="openCreate">Ny person</button>
       </div>
     </div>
 
@@ -35,9 +35,9 @@
       </table>
     </div>
 
-    <div v-if="detail" class="detail-overlay" @click.self="detail = null">
-      <div class="detail-card">
-        <div class="detail-header">
+    <div v-if="detail" class="modal-backdrop" @click.self="detail = null">
+      <div class="modal detail">
+        <div class="detail-head">
           <h3>{{ detail.person.firstName }} {{ detail.person.lastName }}</h3>
           <button class="close-btn" @click="detail = null">✕</button>
         </div>
@@ -55,7 +55,7 @@
             <div v-if="accountFor(detail.person)" class="account-line">
               <span class="account-user">{{ accountFor(detail.person).username }}</span>
               <span class="account-roles">{{ accountFor(detail.person).roles.join(', ') }}</span>
-              <span :class="['account-status', accountFor(detail.person).status.toLowerCase()]">
+              <span :class="['pill', accountPill(accountFor(detail.person).status)]">
                 {{ statusText(accountFor(detail.person).status) }}
               </span>
             </div>
@@ -74,21 +74,21 @@
                 <span class="boat-block-dims">{{ b.widthM }} m × {{ b.lengthM }} m</span>
               </div>
               <div v-if="b.assignment" class="boat-assignment">
-                <span class="assign-chip occupied">Tilldelad</span>
+                <span class="pill pill-ok">Tilldelad</span>
                 <span class="assign-where">{{ b.assignment.dockName }} · Plats {{ b.assignment.slipNumber }}</span>
                 <span class="assign-since">fr.o.m. {{ formatDate(b.assignment.assignedDate) }}</span>
               </div>
               <div v-else class="boat-assignment">
-                <span class="assign-chip free">Ingen plats</span>
+                <span class="pill pill-idle">Ingen plats</span>
               </div>
             </div>
           </div>
         </div>
         <div class="detail-footer">
-          <button class="btn-danger" @click="removeFromDetail">Ta bort</button>
-          <button v-if="accountFor(detail.person)" @click="resetFor(detail.person)">Nytt lösenord</button>
-          <button v-else @click="openCreateAccount(detail.person)">Skapa konto</button>
-          <button class="btn-primary" @click="openEdit(detail.person); detail = null">Redigera</button>
+          <button class="btn btn-danger btn-sm" @click="removeFromDetail">Ta bort</button>
+          <button class="btn btn-secondary btn-sm" v-if="accountFor(detail.person)" @click="resetFor(detail.person)">Nytt lösenord</button>
+          <button class="btn btn-secondary btn-sm" v-else @click="openCreateAccount(detail.person)">Skapa konto</button>
+          <button class="btn btn-primary btn-sm" @click="openEdit(detail.person); detail = null">Redigera</button>
         </div>
       </div>
     </div>
@@ -97,12 +97,12 @@
                @close="accountModal = false" @save="createAccount">
       <div class="form-grid">
         <label class="full">E-post
-          <input :value="accountForm.email" readonly />
+          <input class="input" :value="accountForm.email" readonly />
         </label>
         <div class="full roles-field">
           <span class="roles-title">Roller *</span>
           <label v-for="r in roles" :key="r" class="role-check">
-            <input type="checkbox" :value="r" v-model="accountForm.roles" />{{ r }}
+            <input class="input" type="checkbox" :value="r" v-model="accountForm.roles" />{{ r }}
           </label>
         </div>
       </div>
@@ -110,9 +110,9 @@
       <p v-if="accountErr" class="error">{{ accountErr }}</p>
     </BaseModal>
 
-    <div v-if="password" class="detail-overlay" @click.self="password = null">
-      <div class="pw-card">
-        <div class="detail-header">
+    <div v-if="password" class="modal-backdrop" @click.self="password = null">
+      <div class="modal pw-card">
+        <div class="detail-head">
           <h3>Lösenord för {{ password.username }}</h3>
           <button class="close-btn" @click="password = null">✕</button>
         </div>
@@ -125,21 +125,21 @@
           </p>
         </div>
         <div class="detail-footer">
-          <button class="btn-primary" @click="password = null">Klar</button>
+          <button class="btn btn-primary btn-sm" @click="password = null">Klar</button>
         </div>
       </div>
     </div>
 
     <BaseModal v-if="modal" :title="editing ? 'Redigera person' : 'Ny person'" @close="modal = false" @save="save">
       <div class="form-grid">
-        <label>Förnamn *<input v-model="form.firstName" required /></label>
-        <label>Efternamn *<input v-model="form.lastName" required /></label>
-        <label class="full">E-post *<input v-model="form.email" type="email" required /></label>
-        <label>Telefon<input v-model="form.phone" /></label>
-        <label>Postnummer<input v-model="form.postalCode" /></label>
-        <label class="full">Adress<input v-model="form.address" placeholder="Gatuadress" /></label>
-        <label class="full">Fastighetsbeteckning<input v-model="form.propertyDesignation" placeholder="t.ex. Örby 1:23" /></label>
-        <label class="full">Noteringar<textarea v-model="form.notes" rows="4" placeholder="Fri text…" /></label>
+        <label>Förnamn *<input class="input" v-model="form.firstName" required /></label>
+        <label>Efternamn *<input class="input" v-model="form.lastName" required /></label>
+        <label class="full">E-post *<input class="input" v-model="form.email" type="email" required /></label>
+        <label>Telefon<input class="input" v-model="form.phone" /></label>
+        <label>Postnummer<input class="input" v-model="form.postalCode" /></label>
+        <label>Adress<input class="input" v-model="form.address" placeholder="Gatuadress" /></label>
+        <label>Fastighetsbeteckning<input class="input" v-model="form.propertyDesignation" placeholder="t.ex. Örby 1:23" /></label>
+        <label class="full">Noteringar<textarea class="input" v-model="form.notes" rows="3" placeholder="Fri text…" /></label>
       </div>
       <p v-if="err" class="error">{{ err }}</p>
     </BaseModal>
@@ -164,6 +164,11 @@ const detail = ref(null)
 const detailLoading = ref(false)
 const err = ref('')
 const auth = useAuthStore()
+
+/** Account state in the guide's roles: live is green, invited waits, disabled is dormant. */
+function accountPill(status) {
+  return { ACTIVE: 'pill-ok', INVITED: 'pill-warn', DISABLED: 'pill-idle' }[status] ?? 'pill-idle'
+}
 /** personId -> account, so the panel knows about the account without a second request. */
 const accountByPerson = ref({})
 const roles = ref([])
@@ -311,88 +316,139 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
-h2 { font-size: 1.5rem; }
-.header-right { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-.search-bar input { padding: 0.5rem 0.8rem; border: 1px solid #ddd; border-radius: 6px; width: min(280px, 100%); }
-.table-wrap { background: white; border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-table { width: 100%; border-collapse: collapse; }
-th { background: #f8f8f8; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: #555; border-bottom: 1px solid #eee; }
-td { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-td.address-cell { font-size: 0.85rem; color: #444; max-width: 200px; }
-.muted { color: #bbb; }
-.empty { color: #999; text-align: center; padding: 2rem; }
-button { padding: 0.35rem 0.8rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.85rem; background: #e8f0fe; color: #1a3a5c; }
-button:hover { background: #d0e2ff; }
-.btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-primary:hover { background: #234e7a; }
-.btn-danger { background: #fee; color: #c0392b; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-danger:hover { background: #fcc; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
-.form-grid .full { grid-column: 1 / -1; }
-label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
-label input, label textarea { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
-label textarea { resize: vertical; font-family: inherit; }
-.error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
-.clickable-row { cursor: pointer; transition: background 0.1s; }
-.clickable-row:hover { background: #f5f8ff; }
-.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
-.detail-card { background: white; border-radius: 12px; width: 480px; max-width: 95vw; height: min(85vh, 720px); display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
-.detail-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: center; padding: 1.1rem 1.4rem; border-bottom: 1px solid #eee; }
-.detail-header h3 { font-size: 1.15rem; margin: 0; }
-.close-btn { background: none; border: none; font-size: 1.1rem; color: #888; cursor: pointer; padding: 0.2rem 0.4rem; }
-.close-btn:hover { color: #333; background: #f0f0f0; border-radius: 4px; }
+.search-bar .input { width: min(280px, 100%); }
+.clickable-row { cursor: pointer; }
+.empty { display: block; text-align: center; padding: 44px; }
+.address-cell { max-width: 220px; font-size: 0.88rem; }
+
+.detail { max-width: 480px; height: min(85vh, 720px); display: flex; flex-direction: column; padding: 0; }
+.detail-head {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 22px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--paper-border);
+}
+.detail-head h3 { margin: 0; }
+.close-btn { background: none; border: 0; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; }
+.close-btn:hover { color: var(--ink); }
 .detail-scroll { flex: 1; overflow-y: auto; min-height: 0; }
-.detail-grid { display: grid; grid-template-columns: 150px 1fr; gap: 0.5rem 1rem; padding: 1.2rem 1.4rem; margin: 0; }
-dt { font-size: 0.82rem; font-weight: 600; color: #888; align-self: start; padding-top: 0.1rem; }
-dd { font-size: 0.9rem; color: #222; margin: 0; }
-.notes-text { white-space: pre-wrap; color: #555; font-style: italic; }
-.detail-footer { flex-shrink: 0; padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
-.boats-section { border-top: 1px solid #eee; padding: 1rem 1.4rem; }
-.boats-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 0.75rem; }
-.boats-loading { color: #aaa; font-size: 0.85rem; }
-.boats-empty { color: #bbb; font-size: 0.88rem; }
-.boat-block { background: #f8faff; border: 1px solid #e4ecff; border-radius: 8px; padding: 0.75rem 1rem; margin-bottom: 0.6rem; }
-.boat-block-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.45rem; }
-.boat-block-name { font-weight: 700; font-size: 0.95rem; color: #1a3a5c; }
-.boat-block-dims { font-size: 0.78rem; color: #888; }
-.boat-assignment { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
-.assign-chip { font-size: 0.72rem; font-weight: 700; padding: 0.15rem 0.5rem; border-radius: 10px; }
-.assign-chip.occupied { background: #f8d7da; color: #721c24; }
-.assign-chip.free { background: #d4edda; color: #155724; }
-.assign-where { font-size: 0.85rem; font-weight: 600; color: #333; }
-.assign-since { font-size: 0.78rem; color: #999; margin-left: auto; }
+.detail-grid { display: grid; grid-template-columns: 150px 1fr; gap: 10px 22px; padding: 18px 22px; margin: 0; }
+dt {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  align-self: start;
+  padding-top: 2px;
+}
+dd { margin: 0; font-size: 0.9rem; color: var(--text); }
+.notes-text { white-space: pre-wrap; color: var(--text-muted); }
+.detail-footer {
+  flex-shrink: 0;
+  padding: 14px 22px;
+  border-top: 1px solid var(--paper-border);
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 10px;
+}
+/* Removing a person is the one destructive action here, so it keeps its distance. */
+.detail-footer .btn-danger { margin-right: auto; }
+
+.boats-section { border-top: 1px solid var(--paper-border); padding: 18px 22px; }
+.boats-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.boats-loading, .boats-empty { color: var(--text-muted); font-size: 0.9rem; }
+.boat-block {
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  margin-bottom: 10px;
+}
+.boat-block-header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.boat-block-name { font-weight: 600; color: var(--ink); }
+.boat-block-dims { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); }
+.boat-assignment { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.assign-where { font-size: 0.9rem; font-weight: 500; color: var(--ink); }
+.assign-since { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); margin-left: auto; }
+
+/* Same block as the boat list below it: a hairline above, the card's own padding. */
+.account-section { border-top: 1px solid var(--paper-border); padding: 18px 22px; }
+.account-line { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; font-size: 0.9rem; }
+.account-user { font-weight: 600; color: var(--ink); }
+.account-roles, .account-login { font-size: 0.82rem; color: var(--text-muted); }
+.account-login { margin-top: 4px; }
+
+/* A one-time password is a code: mono, roomy, and selected in one click. */
+.pw-card { max-width: 420px; padding: 0; }
+.pw-body { padding: 18px 22px; }
+.pw-value {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 1.15rem;
+  letter-spacing: 0.04em;
+  background: var(--paper-deep);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  text-align: center;
+  user-select: all;
+}
+.pw-note { font-size: 0.85rem; color: var(--text-muted); margin: 10px 0 0; }
+.pw-warning {
+  font-size: 0.85rem;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  margin: 10px 0 0;
+}
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
+.form-grid .full { grid-column: 1 / -1; }
+.form-grid label, .roles-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.form-grid .input { font-family: var(--font); text-transform: none; letter-spacing: 0; }
+.form-grid textarea.input { resize: vertical; }
+.roles-field { display: flex; flex-direction: column; gap: 6px; }
+.role-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font);
+  font-size: 0.92rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+
 @media (max-width: 640px) {
   .col-email, .col-address, .col-boats { display: none; }
-  .page-header { flex-direction: column; align-items: stretch; }
-  .header-right { flex-direction: column; align-items: stretch; }
+  .toolbar, .toolbar .right { flex-direction: column; align-items: stretch; }
+  .form-grid { grid-template-columns: 1fr; }
 }
-.account-section { margin-top: 1.25rem; }
-.account-line { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; font-size: 0.88rem; }
-.account-user { font-weight: 600; }
-.account-roles { color: #666; font-size: 0.82rem; }
-.account-status { border-radius: 4px; padding: 0.1rem 0.45rem; font-size: 0.75rem; font-weight: 700; }
-.account-status.active { background: #e8f6ec; color: #1d7a3a; }
-.account-status.invited { background: #fff4e0; color: #9a6400; }
-.account-status.disabled { background: #f0f0f0; color: #888; }
-.account-login { color: #888; font-size: 0.78rem; margin-top: 0.3rem; }
-
-.pw-card { background: white; border-radius: 10px; width: 100%; max-width: 420px;
-  display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.2); }
-.pw-body { padding: 1.25rem 1.5rem; }
-.pw-value { display: block; font-size: 1.15rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  background: #f4f7fb; border-radius: 6px; padding: 0.75rem; text-align: center; letter-spacing: 0.04em;
-  user-select: all; }
-.pw-note { font-size: 0.82rem; color: #666; margin: 0.6rem 0 0; }
-.pw-warning { font-size: 0.82rem; color: #9a6400; background: #fff4e0; border-radius: 6px;
-  padding: 0.5rem 0.6rem; margin: 0.6rem 0 0; }
-.hint { color: #666; font-size: 0.8rem; margin-top: 0.5rem; }
-.roles-field { display: flex; flex-direction: column; gap: 0.3rem; }
-.roles-title { font-size: 0.85rem; font-weight: 600; }
-.role-check { flex-direction: row; align-items: center; gap: 0.4rem; font-weight: 400; }
-
 @media (max-width: 400px) {
   .detail-grid { grid-template-columns: 1fr; }
-  dt { margin-top: 0.4rem; }
+  dt { margin-top: 6px; }
 }
 </style>

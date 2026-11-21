@@ -1,8 +1,8 @@
 <template>
   <AppLayout>
-    <div class="page-header">
+    <div class="toolbar">
       <h2>Uthyrning</h2>
-      <button class="btn-primary" @click="openCreate">+ Nytt objekt</button>
+      <button class="btn btn-primary btn-sm" @click="openCreate">Nytt objekt</button>
     </div>
 
     <div class="tabs">
@@ -29,14 +29,14 @@
               <li>{{ o.requiresApproval ? 'Kräver godkännande' : 'Inget godkännande' }}</li>
             </ul>
             <div class="card-actions">
-              <button @click="select(o)">Bokningar</button>
-              <button @click="openEdit(o)">Redigera</button>
+              <button class="btn btn-secondary btn-sm" @click="select(o)">Bokningar</button>
+              <button class="btn btn-secondary btn-sm" @click="openEdit(o)">Redigera</button>
               <label class="file-btn">
                 Bild
-                <input type="file" accept="image/jpeg,image/png,image/webp" @change="upload(o, $event)" />
+                <input class="input" type="file" accept="image/jpeg,image/png,image/webp" @change="upload(o, $event)" />
               </label>
-              <button v-if="o.hasImage" @click="removeImage(o)">Ta bort bild</button>
-              <button class="danger" @click="remove(o)">Ta bort</button>
+              <button class="btn btn-secondary btn-sm" v-if="o.hasImage" @click="removeImage(o)">Ta bort bild</button>
+              <button class="btn btn-danger btn-sm" @click="remove(o)">Ta bort</button>
             </div>
           </div>
         </div>
@@ -44,10 +44,10 @@
       </div>
 
       <!-- Bookings for the selected object -->
-      <div v-if="selected" class="panel">
-        <div class="panel-header">
+      <div v-if="selected" class="section">
+        <div class="toolbar">
           <h3>Bokningar – {{ selected.name }}</h3>
-          <button class="btn-primary" @click="openBookFor">Boka åt medlem</button>
+          <button class="btn btn-primary btn-sm" @click="openBookFor">Boka åt medlem</button>
         </div>
         <div class="table-wrap">
           <table>
@@ -59,13 +59,13 @@
                 <td>{{ b.personName }}</td>
                 <td>{{ formatTime(b.startAt) }}</td>
                 <td>{{ formatTime(b.endAt) }}</td>
-                <td><span class="status" :class="b.status.toLowerCase()">{{ statusText(b.status) }}</span></td>
+                <td><span class="pill" :class="bookingPill(b.status)">{{ statusText(b.status) }}</span></td>
                 <td>{{ b.returnedAt ? formatTime(b.returnedAt) : '–' }}</td>
                 <td class="actions">
-                  <button v-if="b.status === 'PENDING'" @click="act(approveBooking, b.id)">Godkänn</button>
-                  <button v-if="b.status === 'PENDING'" class="danger" @click="act(rejectBooking, b.id)">Avslå</button>
-                  <button v-if="canReturn(b)" @click="openReturn(b)">Återlämna</button>
-                  <button v-if="['PENDING','CONFIRMED'].includes(b.status)" class="danger"
+                  <button class="btn btn-secondary btn-sm" v-if="b.status === 'PENDING'" @click="act(approveBooking, b.id)">Godkänn</button>
+                  <button v-if="b.status === 'PENDING'" class="btn btn-danger btn-sm" @click="act(rejectBooking, b.id)">Avslå</button>
+                  <button class="btn btn-secondary btn-sm" v-if="canReturn(b)" @click="openReturn(b)">Återlämna</button>
+                  <button v-if="['PENDING','CONFIRMED'].includes(b.status)" class="btn btn-danger btn-sm"
                           @click="act(cancelBooking, b.id)">Avboka</button>
                 </td>
               </tr>
@@ -91,7 +91,7 @@
             <td>{{ formatTime(f.reportedAt) }}</td>
             <td class="desc-cell">{{ f.description }}</td>
             <td class="actions">
-              <button @click="resolve(f)">Åtgärdad</button>
+              <button class="btn btn-secondary btn-sm" @click="resolve(f)">Åtgärdad</button>
             </td>
           </tr>
           <tr v-if="!faults.length">
@@ -106,20 +106,20 @@
                @close="modal = false" @save="save">
       <div class="form-grid">
         <label class="full">Namn *
-          <input v-model="form.name" placeholder="t.ex. Upptagningstrailer" required />
+          <input class="input" v-model="form.name" placeholder="t.ex. Upptagningstrailer" required />
         </label>
         <label class="full">Beskrivning
           <MarkdownEditor v-model="form.description"
                           placeholder="## Rubrik&#10;Text om objektet. Kräver dragkrok." />
         </label>
         <label>Längsta bokning (timmar) *
-          <input v-model.number="form.maxDurationHours" type="number" min="1" required />
+          <input class="input" v-model.number="form.maxDurationHours" type="number" min="1" required />
         </label>
         <label>Dagar fram i tiden *
-          <input v-model.number="form.maxDaysAhead" type="number" min="1" required />
+          <input class="input" v-model.number="form.maxDaysAhead" type="number" min="1" required />
         </label>
-        <label class="check"><input v-model="form.bookable" type="checkbox" /> Öppen för bokning</label>
-        <label class="check"><input v-model="form.requiresApproval" type="checkbox" /> Kräver godkännande</label>
+        <label class="check"><input class="input" v-model="form.bookable" type="checkbox" /> Öppen för bokning</label>
+        <label class="check"><input class="input" v-model="form.requiresApproval" type="checkbox" /> Kräver godkännande</label>
       </div>
       <p v-if="err" class="error">{{ err }}</p>
     </BaseModal>
@@ -129,7 +129,7 @@
                @close="bookModal = false" @save="bookFor">
       <div class="form-grid">
         <label class="full">Medlem *
-          <select v-model.number="bookForm.personId" required>
+          <select class="input" v-model.number="bookForm.personId" required>
             <option value="">Välj medlem…</option>
             <option v-for="p in persons" :key="p.id" :value="p.id">
               {{ p.firstName }} {{ p.lastName }}
@@ -137,10 +137,10 @@
           </select>
         </label>
         <label>Från *
-          <input v-model="bookForm.startAt" type="datetime-local" step="3600" required />
+          <input class="input" v-model="bookForm.startAt" type="datetime-local" step="3600" required />
         </label>
         <label>Till *
-          <input v-model="bookForm.endAt" type="datetime-local" step="3600" required />
+          <input class="input" v-model="bookForm.endAt" type="datetime-local" step="3600" required />
         </label>
       </div>
       <p class="hint">Bokningen kräver inget godkännande.</p>
@@ -151,7 +151,7 @@
     <BaseModal v-if="returnModal" title="Återlämna" saveLabel="Återlämna"
                @close="returnModal = false" @save="doReturn">
       <label class="full">Fel och brister
-        <textarea v-model="faultText" rows="4" placeholder="Lämna tomt om allt är i ordning…"></textarea>
+        <textarea class="input" v-model="faultText" rows="4" placeholder="Lämna tomt om allt är i ordning…"></textarea>
       </label>
       <p v-if="err" class="error">{{ err }}</p>
     </BaseModal>
@@ -159,6 +159,11 @@
 </template>
 
 <script setup>
+/* Booking state in the guide's five roles. */
+const bookingPill = (s) =>
+  ({ PENDING: 'pill-warn', CONFIRMED: 'pill-ok', RETURNED: 'pill-info',
+     REJECTED: 'pill-bad', CANCELLED: 'pill-idle' })[s] ?? 'pill-idle'
+
 import { ref, onMounted, computed } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
 import BaseModal from '../components/BaseModal.vue'
@@ -378,68 +383,108 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-h2 { font-size: 1.5rem; }
-.tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
-.tabs button { background: white; border: 1px solid #ddd; }
-.tabs button.on { background: #1a3a5c; color: white; border-color: #1a3a5c; }
-.count { background: #c0392b; color: white; border-radius: 10px; padding: 0 0.4rem; margin-left: 0.4rem; font-size: 0.75rem; }
+.tabs { display: flex; gap: 4px; margin-bottom: 22px; }
+.tabs button {
+  background: none;
+  border: 0;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.tabs button:hover { background: var(--paper-deep); color: var(--ink); }
+.tabs button.on { background: var(--sea-pale); color: var(--ink); }
+.count {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-sm);
+  padding: 0 5px;
+  margin-left: 8px;
+}
 
-.objects { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
-.card { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); display: flex; flex-direction: column; }
-.card.selected { outline: 2px solid #1a3a5c; }
-.thumb { width: 100%; height: 150px; object-fit: cover; display: block; background: #eef2f7; }
-.empty-thumb { display: flex; align-items: center; justify-content: center; color: #9aa7b5; font-size: 0.85rem; }
-.card-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
-.card-body h3 { font-size: 1.05rem; margin: 0; }
-.desc { color: #666; font-size: 0.85rem; margin: 0; }
-.empty-desc { font-style: italic; color: #aaa; }
+.objects { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.card.selected { border-color: var(--sea); }
+.thumb { width: 100%; height: 150px; object-fit: cover; display: block; background: var(--paper-deep); }
+.empty-thumb { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.88rem; }
+.card-body { padding: 18px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.card-body h3 { margin: 0; }
+.desc { color: var(--text-muted); font-size: 0.9rem; margin: 0; }
+.empty-desc { color: var(--text-muted); }
+
 /* The description is injected with v-html, so its elements need :deep to be reached. */
-.markdown-body :deep(h4) { font-size: 0.92rem; margin: 0.5rem 0 0.2rem; color: #1a3a5c; }
-.markdown-body :deep(h5) { font-size: 0.85rem; margin: 0.45rem 0 0.2rem; color: #1a3a5c; }
-.markdown-body :deep(p) { margin: 0.25rem 0; }
-.markdown-body :deep(ul) { margin: 0.25rem 0; padding-left: 1.1rem; }
-.markdown-body :deep(li) { margin: 0.1rem 0; }
+.markdown-body :deep(h4) { font-size: 0.95rem; margin: 10px 0 2px; color: var(--ink); }
+.markdown-body :deep(h5) { font-size: 0.9rem; margin: 10px 0 2px; color: var(--ink); }
+.markdown-body :deep(p) { margin: 4px 0; }
+.markdown-body :deep(ul) { margin: 4px 0; padding-left: 18px; }
+.markdown-body :deep(li) { margin: 2px 0; }
 .markdown-body :deep(> :first-child) { margin-top: 0; }
 .markdown-body :deep(> :last-child) { margin-bottom: 0; }
-.rules { list-style: none; padding: 0; margin: 0; font-size: 0.8rem; color: #555; }
-.rules li { padding: 0.1rem 0; }
-.card-actions { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: auto; }
-.file-btn { position: relative; overflow: hidden; display: inline-flex; align-items: center;
-  padding: 0.35rem 0.8rem; border-radius: 5px; cursor: pointer; font-size: 0.85rem;
-  background: #e8f0fe; color: #1a3a5c; font-weight: 400; }
+
+/* The guide's ticks: the bullet is a 14px sea rule. */
+.rules { list-style: none; padding: 0; margin: 0; font-size: 0.88rem; color: var(--text-muted); }
+.rules li { display: flex; align-items: baseline; gap: 10px; padding: 2px 0; }
+.rules li::before { content: ""; width: 14px; height: 1px; background: var(--sea); flex-shrink: 0; }
+
+.card-actions, .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: auto; }
+.file-btn {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 15px;
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--sea);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.file-btn:hover { background: var(--sea-pale); border-color: var(--info-border); }
 .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 
-.panel { margin-top: 1.75rem; }
-.panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-.panel-header h3 { font-size: 1.1rem; }
+.section { margin-top: 28px; }
+.desc-cell { max-width: 260px; font-size: 0.88rem; color: var(--text-muted); }
+.empty { color: var(--text-muted); text-align: center; padding: 44px; }
 
-.table-wrap { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-table { width: 100%; border-collapse: collapse; }
-th { background: #f8f8f8; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: #555; border-bottom: 1px solid #eee; }
-td { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-.desc-cell { color: #666; font-size: 0.85rem; max-width: 260px; }
-.actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.empty { color: #999; text-align: center; padding: 2rem; }
-.status { border-radius: 4px; padding: 0.15rem 0.5rem; font-size: 0.78rem; font-weight: 700; }
-.status.pending { background: #fff4e0; color: #9a6400; }
-.status.confirmed { background: #e8f6ec; color: #1d7a3a; }
-.status.returned { background: #eef2f7; color: #4a5a6a; }
-.status.rejected, .status.cancelled { background: #fdeaea; color: #b3362c; }
-
-button { padding: 0.35rem 0.8rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.85rem; background: #e8f0fe; color: #1a3a5c; }
-button:hover { background: #d0e2ff; }
-button.danger { background: #fee; color: #c0392b; }
-button.danger:hover { background: #fcc; }
-.btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-primary:hover { background: #234e7a; }
-
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
 .form-grid .full { grid-column: 1 / -1; }
-label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
-label.check { flex-direction: row; align-items: center; gap: 0.5rem; font-weight: 400; }
-label input, label select, label textarea { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; font-family: inherit; }
-label.check input { padding: 0; }
-.hint { color: #666; font-size: 0.8rem; margin-top: 0.5rem; }
-.error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.form-grid label.check {
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font);
+  font-size: 0.92rem;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
+}
+.form-grid .input { font-family: var(--font); text-transform: none; letter-spacing: 0; }
+.form-grid textarea.input { resize: vertical; }
+@media (max-width: 620px) { .form-grid { grid-template-columns: 1fr; } }
 </style>

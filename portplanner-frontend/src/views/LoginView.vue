@@ -1,23 +1,28 @@
 <template>
   <div class="login-page">
-    <div class="login-card">
-      <h1>⚓ Portplanner</h1>
-      <p class="subtitle">Logga in för att fortsätta</p>
-      <form @submit.prevent="handleLogin">
-        <div class="field">
-          <label>Användarnamn</label>
-          <input v-model="form.username" type="text" autocomplete="username" required />
-        </div>
-        <div class="field">
-          <label>Lösenord</label>
-          <input v-model="form.password" type="password" autocomplete="current-password" required />
-        </div>
-        <p v-if="error" class="error">{{ error }}</p>
-        <button type="submit" :disabled="loading">
-          {{ loading ? 'Loggar in…' : 'Logga in' }}
-        </button>
-      </form>
-    </div>
+    <form class="panel login-form" @submit.prevent="handleLogin">
+      <div class="brand">
+        <svg viewBox="0 0 64 64" aria-hidden="true">
+          <path d="M6 50H58" /><path d="M15 50V16" /><path d="M28 50V16" />
+          <path d="M41 50V16" /><path d="M54 50V16" />
+          <circle cx="21.5" cy="36" r="5" fill="currentColor" stroke="none" />
+        </svg>
+        <h1>Portplanner</h1>
+      </div>
+      <p class="hint">Logga in för att fortsätta</p>
+      <div class="field">
+        <label for="username">Användarnamn</label>
+        <input id="username" class="input" v-model="form.username" type="text" autocomplete="username" required />
+      </div>
+      <div class="field">
+        <label for="password">Lösenord</label>
+        <input id="password" class="input" v-model="form.password" type="password" autocomplete="current-password" required />
+      </div>
+      <p v-if="error" class="error">{{ error }}</p>
+      <button class="btn btn-primary" type="submit" :disabled="loading">
+        {{ loading ? 'Loggar in…' : 'Logga in' }}
+      </button>
+    </form>
   </div>
 </template>
 
@@ -49,38 +54,12 @@ async function handleLogin() {
 </script>
 
 <style scoped>
-.login-page {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #1a3a5c;
-}
-.login-card {
-  background: white;
-  padding: 2.5rem;
-  border-radius: 12px;
-  width: 100%;
-  max-width: 380px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-}
-h1 { font-size: 1.8rem; margin-bottom: 0.25rem; color: #1a3a5c; }
-.subtitle { color: #666; margin-bottom: 1.5rem; }
-.field { margin-bottom: 1rem; }
-label { display: block; font-size: 0.875rem; font-weight: 600; margin-bottom: 0.3rem; }
-input {
-  width: 100%; padding: 0.6rem 0.8rem;
-  border: 1px solid #ddd; border-radius: 6px; font-size: 1rem;
-}
-input:focus { outline: 2px solid #1a3a5c; border-color: transparent; }
-button {
-  width: 100%; padding: 0.75rem;
-  background: #1a3a5c; color: white;
-  border: none; border-radius: 6px;
-  font-size: 1rem; font-weight: 600; cursor: pointer;
-  margin-top: 0.5rem;
-}
-button:disabled { opacity: 0.6; cursor: not-allowed; }
-button:hover:not(:disabled) { background: #234e7a; }
-.error { color: #c0392b; font-size: 0.875rem; margin-bottom: 0.5rem; }
+.login-page { flex: 1; display: flex; align-items: center; justify-content: center; padding: 44px 24px; }
+.login-form { width: 100%; max-width: 380px; display: flex; flex-direction: column; gap: 14px; }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--ink); }
+.brand svg { width: 26px; height: 26px; stroke-width: 7; }
+h1 { font-size: 1.6rem; margin: 0; }
+.hint { margin: -8px 0 4px; }
+.btn { margin-top: 8px; }
+.btn:disabled { opacity: 0.6; cursor: not-allowed; }
 </style>

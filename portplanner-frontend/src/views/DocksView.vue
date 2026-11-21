@@ -1,14 +1,14 @@
 <template>
   <AppLayout>
-    <div class="page-header">
+    <div class="toolbar">
       <h2>Bryggor & Båtplatser</h2>
-      <div class="header-actions">
-        <button class="btn-secondary" @click="openSlipCreate">+ Ny båtplats</button>
-        <button class="btn-primary" @click="openDockCreate">+ Ny brygga</button>
+      <div class="right">
+        <button class="btn btn-secondary btn-sm" @click="openSlipCreate">Ny båtplats</button>
+        <button class="btn btn-primary btn-sm" @click="openDockCreate">Ny brygga</button>
       </div>
     </div>
     <div class="sub-nav">
-      <button v-for="dock in docks" :key="dock.id" :class="['nav-btn', { active: activeTab === dock.id }]" @click="activeTab = dock.id">{{ dock.name }}</button>
+      <button v-for="dock in docks" :key="dock.id" :class="['navtab', { active: activeTab === dock.id }]" @click="activeTab = dock.id">{{ dock.name }}</button>
     </div>
     <template v-if="activeDock">
       <div class="dock-card">
@@ -18,10 +18,10 @@
             <span v-if="activeDock.description" class="desc">{{ activeDock.description }}</span>
           </div>
           <div class="dock-actions">
-            <span class="badge">{{ activeDock.slipCount }} platser</span>
-            <button @click="router.push('/docks/' + activeDock.id + '/layout')">Visa layout</button>
-            <button @click="openDockEdit(activeDock)">Redigera</button>
-            <button class="danger" @click="removeDock(activeDock)">Ta bort</button>
+            <span class="count"><span class="num">{{ activeDock.slipCount }}</span> platser</span>
+            <button class="btn btn-secondary btn-sm" @click="router.push('/docks/' + activeDock.id + '/layout')">Visa layout</button>
+            <button class="btn btn-secondary btn-sm" @click="openDockEdit(activeDock)">Redigera</button>
+            <button class="btn btn-danger btn-sm" @click="removeDock(activeDock)">Ta bort</button>
           </div>
         </div>
         <div class="table-wrap">
@@ -32,11 +32,11 @@
             <tbody>
               <tr v-for="s in slipsByDock[activeDock.id]" :key="s.id" class="clickable-row" @click="openDetail(s, activeDock.name)">
                 <td>{{ s.slipNumber }}</td>
-                <td class="col-cat"><span v-if="s.category" class="cat-badge">{{ s.category }}</span><span v-else class="muted">–</span></td>
+                <td class="col-cat"><span v-if="s.category" class="num">{{ s.category }}</span><span v-else class="muted">–</span></td>
                 <td class="col-dim">{{ s.maxLengthM }} m</td>
                 <td class="col-dim">{{ s.maxWidthM }} m</td>
                 <td class="col-draft">{{ s.maxDraftM ? s.maxDraftM + ' m' : '–' }}</td>
-                <td><span :class="['status', s.status.toLowerCase()]">{{ statusLabel(s.status) }}</span></td>
+                <td><span class="pill" :class="pillClass(s.status)">{{ statusLabel(s.status) }}</span></td>
               </tr>
             </tbody>
           </table>
@@ -46,9 +46,9 @@
     </template>
     <div v-else-if="!docks.length" class="empty-state">Inga bryggor registrerade</div>
 
-    <div v-if="detail" class="detail-overlay" @click.self="detail = null">
-      <div class="detail-card">
-        <div class="detail-header">
+    <div v-if="detail" class="modal-backdrop" @click.self="detail = null">
+      <div class="modal detail">
+        <div class="detail-head">
           <div>
             <h3>Plats {{ detail.slip.slipNumber }}</h3>
             <div class="detail-sub">{{ detail.dockName }}</div>
@@ -60,7 +60,7 @@
           <dt>Max längd</dt><dd>{{ detail.slip.maxLengthM }} m</dd>
           <dt>Max bredd</dt><dd>{{ detail.slip.maxWidthM }} m</dd>
           <dt>Djup</dt><dd>{{ detail.slip.maxDraftM ? detail.slip.maxDraftM + ' m' : '–' }}</dd>
-          <dt>Status</dt><dd><span :class="['status', detail.slip.status.toLowerCase()]">{{ statusLabel(detail.slip.status) }}</span></dd>
+          <dt>Status</dt><dd><span class="pill" :class="pillClass(detail.slip.status)">{{ statusLabel(detail.slip.status) }}</span></dd>
           <template v-if="detail.slip.notes"><dt>Kommentar</dt><dd class="notes-text">{{ detail.slip.notes }}</dd></template>
         </dl>
         <div class="boat-section">
@@ -76,37 +76,37 @@
           <div v-else class="boat-block free">Ingen båt tilldelad</div>
         </div>
         <div class="detail-footer">
-          <button class="btn-danger" @click="removeSlipFromDetail">Ta bort</button>
-          <button class="btn-primary" @click="openSlipEdit(detail.slip); detail = null">Redigera plats</button>
+          <button class="btn btn-danger btn-sm" @click="removeSlipFromDetail">Ta bort</button>
+          <button class="btn btn-primary btn-sm" @click="openSlipEdit(detail.slip); detail = null">Redigera plats</button>
         </div>
       </div>
     </div>
 
     <BaseModal v-if="dockModal" :title="editingDock ? 'Redigera brygga' : 'Ny brygga'" @close="dockModal = false" @save="saveDock">
       <div class="form-col">
-        <label>Namn *<input v-model="dockForm.name" required /></label>
-        <label>Beskrivning<textarea v-model="dockForm.description" rows="3" /></label>
+        <label>Namn *<input class="input" v-model="dockForm.name" required /></label>
+        <label>Beskrivning<textarea class="input" v-model="dockForm.description" rows="3" /></label>
       </div>
       <p v-if="dockErr" class="error">{{ dockErr }}</p>
     </BaseModal>
     <BaseModal v-if="slipModal" :title="editingSlip ? 'Redigera båtplats' : 'Ny båtplats'" @close="slipModal = false" @save="saveSlip">
       <div class="form-grid">
-        <label class="full">Platsnummer *<input v-model="slipForm.slipNumber" required /></label>
-        <label>Max längd m *<input v-model.number="slipForm.maxLengthM" type="number" step="0.1" min="0" required /></label>
-        <label>Max bredd m *<input v-model.number="slipForm.maxWidthM" type="number" step="0.1" min="0" required /></label>
-        <label class="full">Djup m<input v-model.number="slipForm.maxDraftM" type="number" step="0.1" min="0" /></label>
+        <label class="full">Platsnummer *<input class="input" v-model="slipForm.slipNumber" required /></label>
+        <label>Max längd m *<input class="input" v-model.number="slipForm.maxLengthM" type="number" step="0.1" min="0" required /></label>
+        <label>Max bredd m *<input class="input" v-model.number="slipForm.maxWidthM" type="number" step="0.1" min="0" required /></label>
+        <label class="full">Djup m<input class="input" v-model.number="slipForm.maxDraftM" type="number" step="0.1" min="0" /></label>
         <label v-if="!editingSlip" class="full">Brygga *
-          <select v-model.number="slipForm.dockId" required>
+          <select class="input" v-model.number="slipForm.dockId" required>
             <option v-for="d in docks" :key="d.id" :value="d.id">{{ d.name }}</option>
           </select>
         </label>
         <label class="full">Tariff
-          <select v-model="slipForm.category">
+          <select class="input" v-model="slipForm.category">
             <option value="">Ingen tariff</option>
             <option v-for="cat in tariffCategories" :key="cat" :value="cat">{{ cat }}</option>
           </select>
         </label>
-        <label class="full">Kommentar<textarea v-model="slipForm.notes" rows="3" placeholder="Fritext…" /></label>
+        <label class="full">Kommentar<textarea class="input" v-model="slipForm.notes" rows="3" placeholder="Fritext…" /></label>
       </div>
       <p v-if="slipErr" class="error">{{ slipErr }}</p>
     </BaseModal>
@@ -146,6 +146,11 @@ const assignmentBySlipId = ref({})
 const boatById = ref({})
 
 function statusLabel(s) { return { AVAILABLE: 'Ledig', OCCUPIED: 'Tilldelad', MAINTENANCE: 'Underhåll' }[s] ?? s }
+
+/* The guide puts "tilldelad" under green and "ledig" under neutral grey. */
+function pillClass(s) {
+  return { AVAILABLE: 'pill-idle', OCCUPIED: 'pill-ok', MAINTENANCE: 'pill-warn' }[s] ?? 'pill-idle'
+}
 
 async function load() {
   const [{ data: docksData }, { data: tariffs }, { data: boatsData }, { data: assignments }] =
@@ -212,73 +217,89 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
-h2 { font-size: 1.5rem; }
-.header-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-.sub-nav { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.25rem; }
-.nav-btn { background: #eef2f7; color: #1a3a5c; border: none; border-radius: 20px; padding: 0.4rem 1rem; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 0.15s; }
-.nav-btn:hover { background: #dce6f5; }
-.nav-btn.active { background: #1a3a5c; color: white; }
-.empty-state { color: #999; text-align: center; padding: 3rem; background: white; border-radius: 10px; }
-.dock-card { background: white; border-radius: 10px; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); overflow: hidden; }
-.dock-header { display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; border-bottom: 1px solid #eee; flex-wrap: wrap; gap: 0.5rem; }
-.dock-info { display: flex; align-items: baseline; gap: 0.5rem; flex-wrap: wrap; }
-.dock-header strong { font-size: 1rem; }
-.desc { color: #666; font-size: 0.85rem; }
-.dock-actions { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
-.badge { background: #e8f0fe; color: #1a3a5c; padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-.no-slips { color: #999; padding: 1rem 1.25rem; font-size: 0.9rem; }
-table { width: 100%; border-collapse: collapse; }
-th { background: #f8f8f8; padding: 0.6rem 1rem; text-align: left; font-size: 0.82rem; color: #555; }
-td { padding: 0.6rem 1rem; border-top: 1px solid #f0f0f0; font-size: 0.9rem; }
-.cat-badge { background: #1a3a5c; color: white; border-radius: 4px; padding: 0.1rem 0.45rem; font-size: 0.78rem; font-weight: 700; }
-.muted { color: #bbb; }
-.status { padding: 0.2rem 0.6rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
-.status.available { background: #d4edda; color: #155724; }
-.status.occupied { background: #f8d7da; color: #721c24; }
-.status.maintenance { background: #fff3cd; color: #856404; }
-button { padding: 0.3rem 0.7rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.82rem; background: #e8f0fe; color: #1a3a5c; }
-button:hover { background: #d0e2ff; }
-button.danger { background: #fee; color: #c0392b; }
-.btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; }
-.btn-primary:hover { background: #234e7a; }
-.btn-secondary { background: #eee; color: #333; padding: 0.5rem 1.1rem; border-radius: 6px; }
-.btn-danger { background: #fee; color: #c0392b; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-danger:hover { background: #fcc; }
-.form-col { display: flex; flex-direction: column; gap: 0.75rem; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+/* Dock tabs follow the top row's rule: active on --sea-pale, hover on --paper-deep. */
+.sub-nav { display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 22px; }
+.navtab {
+  background: none;
+  border: 0;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+.navtab:hover { background: var(--paper-deep); color: var(--ink); }
+.navtab.active { background: var(--sea-pale); color: var(--ink); }
+
+.dock-card { margin-bottom: 22px; }
+.dock-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 22px; margin-bottom: 14px; }
+.dock-info { display: flex; flex-direction: column; gap: 2px; }
+.dock-info strong { font-size: 1.1rem; color: var(--ink); }
+.desc { font-size: 0.9rem; color: var(--text-muted); }
+.dock-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.count { font-size: 0.88rem; color: var(--text-muted); }
+.no-slips { color: var(--text-muted); font-size: 0.9rem; padding: 14px 0; }
+.clickable-row { cursor: pointer; }
+.muted { color: var(--text-muted); }
+
+.detail { max-width: 440px; padding: 0; }
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--paper-border);
+}
+.detail-head h3 { margin: 0 0 2px; }
+.detail-sub { font-size: 0.9rem; color: var(--text-muted); }
+.close-btn { background: none; border: 0; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; }
+.close-btn:hover { color: var(--ink); }
+
+.detail-grid { display: grid; grid-template-columns: 120px 1fr; gap: 10px 22px; padding: 18px 22px; margin: 0; }
+dt { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); align-self: center; }
+dd { margin: 0; font-size: 0.9rem; color: var(--text); }
+
+.boat-section { border-top: 1px solid var(--paper-border); padding: 18px 22px; }
+.boat-block { border-radius: var(--radius-sm); padding: 10px 14px; border: 1px solid transparent; }
+.boat-block.assigned { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok-text); }
+.boat-block.free { background: var(--idle-bg); border-color: var(--idle-border); color: var(--idle-text); font-weight: 500; font-size: 0.9rem; }
+.boat-block-header { display: flex; align-items: center; gap: 10px; margin-bottom: 2px; flex-wrap: wrap; }
+.boat-block .boat-name { font-weight: 600; }
+.boat-block .boat-dims, .boat-since { font-family: var(--font-mono); font-size: 0.8rem; }
+.boat-owner { font-size: 0.9rem; }
+.notes-text { white-space: pre-wrap; color: var(--text-muted); }
+
+.detail-footer {
+  padding: 14px 22px;
+  border-top: 1px solid var(--paper-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
 .form-grid .full { grid-column: 1 / -1; }
-label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
-label input, label select, label textarea { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
-.error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
-.close-btn { background: none; border: none; font-size: 1.1rem; color: #888; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
-.close-btn:hover { background: #f0f0f0; }
-.clickable-row { cursor: pointer; transition: background 0.1s; }
-.clickable-row:hover { background: #f5f8ff; }
-.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
-.detail-card { background: white; border-radius: 12px; width: 420px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
-.detail-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1rem 1.4rem; border-bottom: 1px solid #eee; }
-.detail-header h3 { font-size: 1.15rem; margin: 0 0 0.15rem; }
-.detail-sub { font-size: 0.85rem; color: #666; }
-.detail-grid { display: grid; grid-template-columns: 120px 1fr; gap: 0.5rem 1rem; padding: 1.1rem 1.4rem; margin: 0; }
-dt { font-size: 0.82rem; font-weight: 600; color: #888; align-self: center; }
-dd { font-size: 0.9rem; color: #222; margin: 0; }
-.boat-section { border-top: 1px solid #eee; padding: 1rem 1.4rem; }
-.section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 0.6rem; }
-.boat-block { border-radius: 8px; padding: 0.75rem 1rem; }
-.boat-block.assigned { background: #f8d7da; }
-.boat-block-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.3rem; flex-wrap: wrap; }
-.boat-block .boat-name { font-weight: 700; font-size: 0.95rem; color: #721c24; }
-.boat-block .boat-dims { font-size: 0.78rem; color: #9a3a3a; }
-.boat-owner { font-size: 0.85rem; color: #721c24; }
-.boat-since { font-size: 0.78rem; color: #9a3a3a; margin-top: 0.2rem; opacity: 0.85; }
-.boat-block.free { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.88rem; }
-.notes-text { white-space: pre-wrap; color: #555; font-style: italic; }
-.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.form-grid label, .form-col label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.form-col { display: flex; flex-direction: column; gap: 14px; }
+.input { font-family: var(--font); text-transform: none; letter-spacing: 0; }
+
 @media (max-width: 640px) {
   .col-cat, .col-draft { display: none; }
   .dock-header { flex-direction: column; align-items: stretch; }
+  .form-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 400px) { .col-dim { display: none; } }
 </style>

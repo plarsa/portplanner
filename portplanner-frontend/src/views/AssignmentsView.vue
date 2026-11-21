@@ -1,26 +1,26 @@
 <template>
   <AppLayout>
-    <div class="page-header">
+    <div class="toolbar">
       <h2>Tilldelningar</h2>
       <div v-if="isDockTab" class="zoom-controls">
-        <button @click="zoomOut" :disabled="zoomLevel <= 0.25">−</button>
+        <button class="btn btn-secondary btn-sm" @click="zoomOut" :disabled="zoomLevel <= 0.25">−</button>
         <span class="zoom-label">{{ Math.round(zoomLevel * 100) }}%</span>
-        <button @click="zoomIn" :disabled="zoomLevel >= 2.0">+</button>
-        <button @click="zoomLevel = 1.0" title="Återställ zoom">↺</button>
+        <button class="btn btn-secondary btn-sm" @click="zoomIn" :disabled="zoomLevel >= 2.0">+</button>
+        <button class="btn btn-secondary btn-sm" @click="zoomLevel = 1.0" title="Återställ zoom">↺</button>
       </div>
     </div>
 
     <!-- Sub-navigation -->
     <nav class="sub-nav">
       <button v-for="dock in docks" :key="dock.id"
-              :class="['nav-btn', activeTab === 'dock-' + dock.id ? 'active' : '']"
+              :class="['navtab', activeTab === 'dock-' + dock.id ? 'active' : '']"
               @click="activeTab = 'dock-' + dock.id">{{ dock.name }}</button>
       <div class="nav-sep"></div>
-      <button :class="['nav-btn', activeTab === 'boats' ? 'active' : '']" @click="activeTab = 'boats'">
+      <button :class="['navtab', activeTab === 'boats' ? 'active' : '']" @click="activeTab = 'boats'">
         Båtar
         <span v-if="unassignedBoats.length" class="nav-badge">{{ unassignedBoats.length }}</span>
       </button>
-      <button :class="['nav-btn', activeTab === 'list' ? 'active' : '']" @click="activeTab = 'list'">Tilldelning</button>
+      <button :class="['navtab', activeTab === 'list' ? 'active' : '']" @click="activeTab = 'list'">Tilldelning</button>
     </nav>
 
     <!-- Dock layout tabs -->
@@ -58,8 +58,8 @@
     <!-- Boats tab: boats without a slip -->
     <div v-if="activeTab === 'boats'">
       <div v-if="!unassignedBoats.length" class="empty-state">Alla registrerade båtar har en plats.</div>
-      <div v-else class="tab-table-wrap">
-        <table class="tab-table">
+      <div v-else class="table-wrap">
+        <table>
           <thead>
             <tr><th>Båt</th><th>Ägare</th><th>L (m)</th><th>B (m)</th></tr>
           </thead>
@@ -80,19 +80,19 @@
       <div v-if="!assignedSlipsByDock.length" class="empty-state">Inga aktiva tilldelningar.</div>
       <div v-for="group in assignedSlipsByDock" :key="group.dock.id" class="list-dock-section">
         <div class="list-dock-heading">{{ group.dock.name }}</div>
-        <div class="tab-table-wrap">
-          <table class="tab-table">
+        <div class="table-wrap">
+          <table>
             <thead>
               <tr><th>Plats</th><th>Ägare</th><th>Båt</th><th>Fr.o.m.</th><th></th></tr>
             </thead>
             <tbody>
               <tr v-for="e in group.entries" :key="e.slip.id">
-                <td class="slip-num">{{ e.slip.slipNumber }}</td>
+                <td class="slip-num num">{{ e.slip.slipNumber }}</td>
                 <td>{{ e.assignment?.ownerName ?? '–' }}</td>
                 <td>{{ e.assignment?.boatName ?? '–' }}</td>
-                <td class="date-col">{{ formatDate(e.assignment?.assignedDate) }}</td>
+                <td class="date-col num muted">{{ formatDate(e.assignment?.assignedDate) }}</td>
                 <td class="actions">
-                  <button class="btn-unassign-sm" @click="doUnassign(e.assignment)" v-if="e.assignment">Avsluta</button>
+                  <button class="btn btn-secondary btn-sm" @click="doUnassign(e.assignment)" v-if="e.assignment">Avsluta</button>
                 </td>
               </tr>
             </tbody>
@@ -102,9 +102,9 @@
     </div>
 
     <!-- Info popup for assigned and maintenance slips -->
-    <div v-if="popup" class="popup-overlay" @click.self="popup = null">
-      <div class="popup-card">
-        <div class="popup-header">
+    <div v-if="popup" class="modal-backdrop" @click.self="popup = null">
+      <div class="modal popup">
+        <div class="popup-head">
           <div>
             <h3>Plats {{ popup.slip.slipNumber }}</h3>
             <div class="popup-dock">{{ popup.dockName }}</div>
@@ -117,7 +117,7 @@
           <dt>Max längd</dt><dd>{{ popup.slip.maxLengthM ?? '–' }} m</dd>
           <dt>Max djup</dt><dd>{{ popup.slip.maxDraftM ? popup.slip.maxDraftM + ' m' : '–' }}</dd>
           <dt>Status</dt>
-          <dd><span :class="['status-badge', popup.slip.status.toLowerCase()]">{{ statusLabel(popup.slip.status) }}</span></dd>
+          <dd><span :class="['pill', pillClass(popup.slip.status)]">{{ statusLabel(popup.slip.status) }}</span></dd>
         </dl>
         <div v-if="popup.assignment" class="popup-assignment">
           <div class="assign-label">Tilldelad båt</div>
@@ -126,16 +126,16 @@
           <div class="assign-date">Fr.o.m. {{ formatDate(popup.assignment.assignedDate) }}</div>
         </div>
         <div class="popup-footer">
-          <button v-if="popup.assignment" class="btn-unassign"
+          <button v-if="popup.assignment" class="btn btn-secondary btn-sm"
                   @click="doUnassign(popup.assignment)">Avsluta tilldelning</button>
         </div>
       </div>
     </div>
 
     <!-- Assign modal (slip → boat) -->
-    <div v-if="assignModal" class="overlay" @click.self="assignModal = false">
-      <div class="assign-card">
-        <div class="assign-header">
+    <div v-if="assignModal" class="modal-backdrop" @click.self="assignModal = false">
+      <div class="modal assign">
+        <div class="assign-head">
           <div>
             <h3>Tilldela plats {{ assignSlip.slipNumber }}</h3>
             <div class="assign-dims">{{ assignDockName }} · Max {{ assignSlip.maxWidthM }} m bredd · {{ assignSlip.maxLengthM ?? '?' }} m längd</div>
@@ -170,9 +170,9 @@
     </div>
 
     <!-- Assign modal (boat → slip) -->
-    <div v-if="boatModal" class="overlay" @click.self="boatModal = false">
-      <div class="assign-card">
-        <div class="assign-header">
+    <div v-if="boatModal" class="modal-backdrop" @click.self="boatModal = false">
+      <div class="modal assign">
+        <div class="assign-head">
           <div>
             <h3>{{ selectedBoat.model }}</h3>
             <div class="assign-dims">{{ selectedBoat.ownerName }} · {{ selectedBoat.widthM }} m bredd · {{ selectedBoat.lengthM }} m längd</div>
@@ -207,9 +207,15 @@
 </template>
 
 <script setup>
+/* Slip status in the guide's roles: assigned is green, free is neutral. */
+function pillClass(s) {
+  return { AVAILABLE: 'pill-idle', OCCUPIED: 'pill-ok', MAINTENANCE: 'pill-warn' }[s] ?? 'pill-idle'
+}
+
 import { ref, computed, onMounted } from 'vue'
 import AppLayout from '../components/AppLayout.vue'
-import { getDocks, getDockSlips } from '../api/docks'
+import { getDocks, getDockSlips, getDockLayout } from '../api/docks'
+import { cellKey, parseLayout } from '../lib/dockLayout'
 import { getBoats } from '../api/boats'
 import { getAssignments, createAssignment, endAssignment } from '../api/assignments'
 
@@ -273,12 +279,11 @@ function boatFits(boat, slip) {
   if (slip.maxLengthM && boat.lengthM > slip.maxLengthM) return false
   return true
 }
-function key(r, c) { return `${r},${c}` }
 
 function slipForCell(dockId, r, c) {
   const layout = dockLayouts.value[dockId]
   if (!layout) return null
-  const cell = layout.cells[key(r, c)]
+  const cell = layout.cells[cellKey(r, c)]
   if (!cell || cell.type !== 'SLIP') return null
   return (slipsByDock.value[dockId] ?? []).find(s => s.id === cell.slipId) ?? null
 }
@@ -286,7 +291,7 @@ function slipForCell(dockId, r, c) {
 function cellClass(dockId, r, c) {
   const layout = dockLayouts.value[dockId]
   if (!layout) return 'cell water'
-  const cell = layout.cells[key(r, c)]
+  const cell = layout.cells[cellKey(r, c)]
   if (!cell) return 'cell water'
   if (cell.type === 'LAND') return 'cell land'
   if (cell.type === 'DOCK') return 'cell dock-cell'
@@ -354,20 +359,6 @@ async function doUnassign(assignment) {
   } catch (e) { alert(e.response?.data?.error || 'Något gick fel') }
 }
 
-function parseLayout(json) {
-  if (!json) return null
-  try {
-    const data = JSON.parse(json)
-    const cells = {}
-    for (const cell of data.cells ?? []) {
-      cells[key(cell.row, cell.col)] = cell.type === 'SLIP'
-        ? { type: 'SLIP', slipId: cell.slipId }
-        : { type: cell.type }
-    }
-    return { cells, gridWidth: data.gridWidth ?? 30, gridHeight: data.gridHeight ?? 20 }
-  } catch { return null }
-}
-
 async function load() {
   const [{ data: docksData }, { data: boatsData }, { data: assignments }] =
     await Promise.all([getDocks(), getBoats(), getAssignments()])
@@ -382,12 +373,16 @@ async function load() {
   const layouts = {}
   const slipMap = {}
   const flatSlips = []
-  for (const dock of docksData) {
-    const { data: slips } = await getDockSlips(dock.id)
+  // Slips and layout per dock, in parallel: the layout is no longer part of the list.
+  const perDock = await Promise.all(docksData.map(async (dock) => ({
+    dock,
+    slips: (await getDockSlips(dock.id)).data,
+    layout: parseLayout((await getDockLayout(dock.id)).data.layoutJson),
+  })))
+  for (const { dock, slips, layout } of perDock) {
     slipMap[dock.id] = slips
     for (const s of slips) flatSlips.push({ ...s, dockName: dock.name })
-    const parsed = parseLayout(dock.layoutJson)
-    if (parsed) layouts[dock.id] = parsed
+    if (layout) layouts[dock.id] = layout
   }
   slipsByDock.value = slipMap
   allSlips.value = flatSlips
@@ -402,113 +397,153 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
-h2 { font-size: 1.5rem; }
+.zoom-controls { display: flex; align-items: center; gap: 6px; }
+.zoom-label { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); min-width: 3rem; text-align: center; }
 
-.zoom-controls { display: flex; align-items: center; gap: 0.3rem; }
-.zoom-label { font-size: 0.82rem; font-weight: 600; color: #555; min-width: 3rem; text-align: center; }
-
-/* Sub-navigation */
-.sub-nav { display: flex; align-items: center; gap: 0.25rem; margin-bottom: 1.25rem; background: white; border-radius: 10px; padding: 0.35rem 0.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); flex-wrap: wrap; }
-.nav-btn { background: none; border: none; padding: 0.45rem 0.9rem; border-radius: 6px; font-size: 0.88rem; font-weight: 600; color: #555; cursor: pointer; display: flex; align-items: center; gap: 0.4rem; transition: background 0.1s, color 0.1s; }
-.nav-btn:hover { background: #f0f4ff; color: #1a3a5c; }
-.nav-btn.active { background: #1a3a5c; color: white; }
-.nav-badge { background: #ef5350; color: white; font-size: 0.7rem; font-weight: 700; padding: 0.05rem 0.45rem; border-radius: 20px; }
-.nav-btn.active .nav-badge { background: rgba(255,255,255,0.3); }
+/* Sub-navigation follows the top row's rule rather than a filled pill. */
+.sub-nav { display: flex; align-items: center; gap: 4px; margin-bottom: 22px; flex-wrap: wrap; }
+.navtab {
+  background: none;
+  border: 0;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font);
+  font-size: 0.92rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.navtab:hover { background: var(--paper-deep); color: var(--ink); }
+.navtab.active { background: var(--sea-pale); color: var(--ink); }
+.nav-badge {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--warn-text);
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-sm);
+  padding: 0 5px;
+}
 .nav-sep { flex: 1; }
 
-/* Legend */
-.legend { display: flex; gap: 1.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
-.leg-item { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: #555; }
-.leg-swatch { width: 18px; height: 18px; border-radius: 3px; border: 1px solid rgba(0,0,0,0.12); }
-.leg-swatch.land { background: #c8a97c; }
-.leg-swatch.available { background: #66bb6a; }
-.leg-swatch.occupied { background: #ef5350; }
-.leg-swatch.maintenance { background: #ffa726; }
-
-/* Grid */
-.grid-scroll { overflow: auto; background: white; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 1rem; }
+/* The map. Fills come from the map palette in the style layer. */
+.grid-scroll {
+  overflow: auto;
+  background: var(--surface);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
 .grid-wrapper { position: relative; overflow: visible; }
-.grid { display: grid; gap: 1px; background: rgba(0,0,0,0.06); width: fit-content; user-select: none; }
-.cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: default; transition: filter 0.05s; }
-.cell:hover { filter: brightness(0.9); }
-.cell.water { background: #e3f2fd; }
-.cell.land { background: #c8a97c; }
-.cell.dock-cell { background: #757575; }
-.cell.slip { background: #66bb6a; }
-.cell.slip.occupied { background: #ef5350; }
-.cell.slip.maintenance { background: #ffa726; }
+.grid { display: grid; gap: 1px; background: var(--paper-border); width: fit-content; user-select: none; }
+.cell { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: default; }
+.cell:hover { filter: brightness(0.96); }
+.cell.water { background: var(--map-water); }
+.cell.land { background: var(--map-land); }
+.cell.dock-cell { background: var(--map-dock); }
+.cell.slip { background: var(--map-free-bg); }
+.cell.slip .slip-label { color: var(--map-free-text); }
+.cell.slip.occupied { background: var(--map-taken-bg); }
+.cell.slip.occupied .slip-label { color: var(--map-taken-text); }
+.cell.slip.maintenance { background: var(--map-service-bg); }
+.cell.slip.maintenance .slip-label { color: var(--map-service-text); }
 .cell.slip.clickable { cursor: pointer; }
-.slip-label { font-size: 0.6rem; font-weight: 700; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.4); line-height: 1; text-align: center; }
-.no-layout { color: #bbb; font-size: 0.88rem; padding: 0.5rem 0; }
+.slip-label { font-family: var(--font-mono); font-size: 0.6rem; font-weight: 500; line-height: 1; text-align: center; }
+.no-layout, .empty-state { color: var(--text-muted); font-size: 0.9rem; padding: 10px 0; }
 
-/* Shared table */
-.tab-table-wrap { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-.tab-table { width: 100%; border-collapse: collapse; }
-.tab-table th { background: #f8f8f8; padding: 0.6rem 1rem; text-align: left; font-size: 0.82rem; color: #555; border-bottom: 1px solid #eee; }
-.tab-table td { padding: 0.65rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-.tab-table td.slip-num { font-weight: 700; color: #1a3a5c; }
-.tab-table td.date-col { color: #888; font-size: 0.82rem; }
-.tab-table td.actions { width: 1%; white-space: nowrap; }
-.empty-state { color: #bbb; font-size: 0.88rem; padding: 1rem 0; }
-.clickable-row { cursor: pointer; transition: background 0.1s; }
-.clickable-row:hover { background: #f5f8ff; }
+.slip-num { font-weight: 500; color: var(--ink); }
+.clickable-row { cursor: pointer; }
+.muted { color: var(--text-muted); }
 
-/* Tilldelning list */
-.list-dock-section { margin-bottom: 1.75rem; }
-.list-dock-heading { font-size: 1rem; font-weight: 700; color: #1a3a5c; margin-bottom: 0.5rem; }
-.btn-unassign-sm { background: #fff3e0; color: #e65100; font-weight: 600; padding: 0.25rem 0.65rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.8rem; }
-.btn-unassign-sm:hover { background: #ffe0b2; }
+.list-dock-section { margin-bottom: 28px; }
+.list-dock-heading { font-size: 1.05rem; font-weight: 600; color: var(--ink); margin-bottom: 10px; }
 
-/* Buttons */
-button { padding: 0.4rem 0.85rem; border: none; border-radius: 6px; cursor: pointer; background: #e8f0fe; color: #1a3a5c; font-size: 0.85rem; }
-button:hover:not(:disabled) { background: #d0e2ff; }
-button:disabled { opacity: 0.45; cursor: default; }
-.close-btn { background: none; border: none; font-size: 1.1rem; color: #888; cursor: pointer; padding: 0.2rem 0.4rem; border-radius: 4px; }
-.close-btn:hover { background: #f0f0f0; color: #333; }
+.close-btn { background: none; border: 0; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; }
+.close-btn:hover { color: var(--ink); }
 
-/* Info popup */
-.popup-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
-.popup-card { background: white; border-radius: 12px; width: 360px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
-.popup-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1rem 1.25rem; border-bottom: 1px solid #eee; }
-.popup-header h3 { margin: 0 0 0.15rem; font-size: 1.1rem; }
-.popup-dock { font-size: 0.82rem; color: #888; }
-.popup-dl { display: grid; grid-template-columns: 110px 1fr; gap: 0.4rem 0.75rem; padding: 1rem 1.25rem; margin: 0; }
-dt { font-size: 0.8rem; font-weight: 600; color: #888; align-self: center; }
-dd { font-size: 0.88rem; margin: 0; }
-.status-badge { padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.78rem; font-weight: 600; }
-.status-badge.available { background: #c8e6c9; color: #1b5e20; }
-.status-badge.occupied { background: #ffcdd2; color: #b71c1c; }
-.status-badge.maintenance { background: #ffe0b2; color: #e65100; }
-.popup-assignment { padding: 0.85rem 1.25rem; border-top: 1px solid #eee; }
-.assign-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #888; margin-bottom: 0.4rem; }
-.assign-boat { font-size: 1rem; font-weight: 700; color: #1a3a5c; margin-bottom: 0.15rem; }
-.assign-owner { font-size: 0.88rem; color: #444; margin-bottom: 0.2rem; }
-.assign-date { font-size: 0.8rem; color: #888; }
-.popup-footer { padding: 0.75rem 1.25rem; border-top: 1px solid #eee; display: flex; justify-content: flex-end; }
-.btn-unassign { background: #fff3e0; color: #e65100; font-weight: 600; padding: 0.45rem 1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-unassign:hover { background: #ffe0b2; }
+/* Slip popup */
+.popup { max-width: 360px; padding: 0; }
+.popup-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--paper-border);
+}
+.popup-head h3 { margin: 0 0 2px; }
+.popup-dock { font-size: 0.85rem; color: var(--text-muted); }
+.popup-dl { display: grid; grid-template-columns: 110px 1fr; gap: 8px 14px; padding: 18px 22px; margin: 0; }
+dt {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  align-self: center;
+}
+dd { font-size: 0.9rem; margin: 0; }
+.popup-assignment { padding: 14px 22px; border-top: 1px solid var(--paper-border); }
+.assign-label, .section-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.assign-boat { font-size: 1rem; font-weight: 600; color: var(--ink); }
+.assign-owner { font-size: 0.9rem; color: var(--text); }
+.assign-date { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); }
+.popup-footer { padding: 14px 22px; border-top: 1px solid var(--paper-border); display: flex; justify-content: flex-end; }
 
-/* Assign modal */
-.overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 200; display: flex; align-items: center; justify-content: center; }
-.assign-card { background: white; border-radius: 12px; width: 460px; max-width: 95vw; height: min(80vh, 700px); display: flex; flex-direction: column; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
-.assign-header { flex-shrink: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1rem 1.25rem; border-bottom: 1px solid #eee; }
-.assign-header h3 { margin: 0 0 0.2rem; font-size: 1.05rem; }
-.assign-dims { font-size: 0.8rem; color: #888; }
+/* Assign dialog */
+.assign { max-width: 460px; height: min(80vh, 700px); display: flex; flex-direction: column; padding: 0; }
+.assign-head {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--paper-border);
+}
+.assign-head h3 { margin: 0 0 2px; }
+.assign-dims { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); }
 .assign-scroll { flex: 1; overflow-y: auto; min-height: 0; }
-.section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #555; padding: 0.6rem 1.25rem 0.3rem; background: #fafafa; border-top: 1px solid #f0f0f0; }
-.warn-label { color: #9a5000; background: #fffbf0; border-top-color: #ffe082; }
-.no-boats { padding: 1.25rem; color: #999; font-size: 0.9rem; }
-.no-boats-section { padding: 0.4rem 1.25rem 0.6rem; color: #bbb; font-size: 0.82rem; }
-.boat-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.65rem 1.25rem; cursor: pointer; border-top: 1px solid #f4f4f4; }
-.boat-row:hover { background: #f0f4ff; }
-.boat-row.no-fit { background: #fffbf0; }
-.boat-row.no-fit:hover { background: #fff3cd; }
-.boat-name { font-weight: 600; font-size: 0.9rem; min-width: 120px; }
-.boat-meta { font-size: 0.8rem; color: #666; flex: 1; }
-.over { color: #c0392b; font-weight: 700; }
-.warn-tag { font-size: 0.72rem; font-weight: 700; color: #9a5000; background: #ffe082; border-radius: 4px; padding: 0.1rem 0.4rem; white-space: nowrap; }
-.error { color: #c0392b; font-size: 0.85rem; }
-.assign-err { padding: 0 1.25rem 1rem; margin: 0; }
-.muted { color: #bbb; }
+.section-label { padding: 14px 22px 6px; background: var(--paper-deep); border-top: 1px solid var(--paper-border); margin: 0; }
+.warn-label { color: var(--warn-text); background: var(--warn-bg); border-top-color: var(--warn-border); }
+.no-boats, .no-boats-section { padding: 14px 22px; color: var(--text-muted); font-size: 0.9rem; }
+.boat-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 10px 22px;
+  cursor: pointer;
+  border-top: 1px solid var(--paper-border);
+}
+.boat-row:hover { background: var(--paper); }
+.boat-row.no-fit { background: var(--warn-bg); }
+.boat-row.no-fit:hover { background: var(--warn-border); }
+.boat-name { font-weight: 500; font-size: 0.92rem; min-width: 120px; color: var(--ink); }
+.boat-meta { font-family: var(--font-mono); font-size: 0.8rem; color: var(--text-muted); flex: 1; }
+.over { color: var(--bad-text); font-weight: 500; }
+.warn-tag {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--warn-text);
+  background: var(--surface);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-sm);
+  padding: 1px 6px;
+  white-space: nowrap;
+}
+.assign-err { padding: 0 22px 18px; margin: 0; }
+.actions { width: 1%; white-space: nowrap; }
 </style>

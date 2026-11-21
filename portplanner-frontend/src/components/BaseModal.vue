@@ -1,17 +1,19 @@
 <template>
   <teleport to="body">
-    <div class="overlay" @click.self="$emit('close')">
+    <div class="modal-backdrop" @click.self="$emit('close')">
       <div class="modal">
-        <div class="modal-header">
+        <div class="modal-head">
           <h3>{{ title }}</h3>
-          <button class="close-btn" @click="$emit('close')">✕</button>
+          <button class="close-btn" aria-label="Stäng" @click="$emit('close')">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" /></svg>
+          </button>
         </div>
         <div class="modal-body">
           <slot />
         </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" @click="$emit('close')">Avbryt</button>
-          <button class="btn-primary" @click="$emit('save')">{{ saveLabel }}</button>
+        <div class="modal-actions">
+          <button class="btn btn-secondary btn-sm" @click="$emit('close')">Avbryt</button>
+          <button class="btn btn-primary btn-sm" @click="$emit('save')">{{ saveLabel }}</button>
         </div>
       </div>
     </div>
@@ -24,34 +26,19 @@ defineEmits(['close', 'save'])
 </script>
 
 <style scoped>
-.overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
-  display: flex; align-items: center; justify-content: center; z-index: 100;
+.modal { max-height: 92vh; display: flex; flex-direction: column; }
+.modal-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 22px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--paper-border);
 }
-.modal {
-  background: white; border-radius: 10px; width: 100%; max-width: 480px;
-  max-height: 90vh; display: flex; flex-direction: column;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-}
-.modal-header {
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 1.25rem 1.5rem; border-bottom: 1px solid #eee;
-}
-.modal-header h3 { margin: 0; font-size: 1.1rem; }
-.close-btn { background: none; border: none; font-size: 1.1rem; cursor: pointer; color: #666; }
-.modal-body { padding: 1.5rem; overflow-y: auto; }
-.modal-footer {
-  display: flex; justify-content: flex-end; gap: 0.75rem;
-  padding: 1rem 1.5rem; border-top: 1px solid #eee;
-}
-.btn-primary {
-  background: #1a3a5c; color: white; border: none;
-  padding: 0.5rem 1.25rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
-}
-.btn-primary:hover { background: #234e7a; }
-.btn-secondary {
-  background: #eee; color: #333; border: none;
-  padding: 0.5rem 1.25rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
-}
-.btn-secondary:hover { background: #ddd; }
+.modal-head h3 { margin: 0; }
+.close-btn { background: none; border: 0; padding: 4px; cursor: pointer; color: var(--text-muted); }
+.close-btn:hover { color: var(--ink); }
+.close-btn svg { width: 18px; height: 18px; }
+.modal-body { padding: 14px 0 0; overflow-y: auto; }
+.modal-actions { padding-top: 14px; border-top: 1px solid var(--paper-border); }
 </style>

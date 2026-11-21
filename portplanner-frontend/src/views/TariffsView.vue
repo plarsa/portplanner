@@ -1,8 +1,10 @@
 <template>
   <AppLayout>
-    <div class="page-header">
+    <div class="toolbar">
       <h2>Taxelista</h2>
-      <button class="btn-primary" @click="openCreate">+ Ny taxa</button>
+      <div class="right">
+        <button class="btn btn-primary btn-sm" @click="openCreate">Ny taxa</button>
+      </div>
     </div>
 
     <div class="table-wrap">
@@ -19,20 +21,22 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="t in tariffs" :key="t.id" :class="{ active: isActive(t) }">
-            <td><span class="category-badge">{{ t.category }}</span></td>
+          <tr v-for="t in tariffs" :key="t.id" :class="{ current: isActive(t) }">
+            <td class="num">{{ t.category }}</td>
             <td>{{ t.name }}</td>
-            <td class="fee">{{ formatFee(t.annualFeeKr) }}</td>
-            <td>{{ formatDate(t.validFrom) }}</td>
-            <td>{{ t.validTo ? formatDate(t.validTo) : '–' }}</td>
-            <td class="desc-cell">{{ t.description || '–' }}</td>
-            <td class="actions">
-              <button @click="openEdit(t)">Redigera</button>
-              <button class="danger" @click="remove(t)">Ta bort</button>
+            <td class="num fee">{{ formatFee(t.annualFeeKr) }}</td>
+            <td class="num">{{ formatDate(t.validFrom) }}</td>
+            <td class="num muted">{{ t.validTo ? formatDate(t.validTo) : '–' }}</td>
+            <td class="desc-cell muted">{{ t.description || '–' }}</td>
+            <td>
+              <div class="actions">
+                <button class="btn btn-secondary btn-sm" @click="openEdit(t)">Redigera</button>
+                <button class="btn btn-danger btn-sm" @click="remove(t)">Ta bort</button>
+              </div>
             </td>
           </tr>
           <tr v-if="!tariffs.length">
-            <td colspan="7" class="empty">Inga taxor registrerade</td>
+            <td colspan="7" class="empty-cell">Inga taxor registrerade</td>
           </tr>
         </tbody>
       </table>
@@ -41,24 +45,30 @@
     <BaseModal v-if="modal" :title="editing ? 'Redigera taxa' : 'Ny taxa'"
                @close="modal = false" @save="save">
       <div class="form-grid">
-        <label>Kategori *
-          <input v-model="form.category" placeholder="t.ex. A, B, C" required />
-        </label>
-        <label>Namn *
-          <input v-model="form.name" placeholder="t.ex. Kategori A – bred plats" required />
-        </label>
-        <label>Årsavgift (kr) *
-          <input v-model.number="form.annualFeeKr" type="number" min="0" step="100" required />
-        </label>
-        <label>Gäller från *
-          <input v-model="form.validFrom" type="date" required />
-        </label>
-        <label>Gäller till
-          <input v-model="form.validTo" type="date" />
-        </label>
-        <label class="full">Beskrivning
-          <input v-model="form.description" placeholder="Valfri beskrivning…" />
-        </label>
+        <div class="field">
+          <label for="category">Kategori *</label>
+          <input id="category" class="input num" v-model="form.category" placeholder="t.ex. A, B, C" required />
+        </div>
+        <div class="field">
+          <label for="name">Namn *</label>
+          <input id="name" class="input" v-model="form.name" placeholder="t.ex. Kategori A – bred plats" required />
+        </div>
+        <div class="field">
+          <label for="fee">Årsavgift (kr) *</label>
+          <input id="fee" class="input num" v-model.number="form.annualFeeKr" type="number" min="0" step="100" required />
+        </div>
+        <div class="field">
+          <label for="validFrom">Gäller från *</label>
+          <input id="validFrom" class="input num" v-model="form.validFrom" type="date" required />
+        </div>
+        <div class="field">
+          <label for="validTo">Gäller till</label>
+          <input id="validTo" class="input num" v-model="form.validTo" type="date" />
+        </div>
+        <div class="field full">
+          <label for="description">Beskrivning</label>
+          <input id="description" class="input" v-model="form.description" placeholder="Valfri beskrivning…" />
+        </div>
       </div>
       <p v-if="err" class="error">{{ err }}</p>
     </BaseModal>
@@ -153,27 +163,15 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; }
-h2 { font-size: 1.5rem; }
-.table-wrap { background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-table { width: 100%; border-collapse: collapse; }
-th { background: #f8f8f8; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: #555; border-bottom: 1px solid #eee; }
-td { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-tr.active td { background: #f0faf4; }
-.category-badge { background: #1a3a5c; color: white; border-radius: 4px; padding: 0.15rem 0.55rem; font-size: 0.8rem; font-weight: 700; }
-.fee { font-weight: 600; color: #1a3a5c; }
-.desc-cell { color: #666; font-size: 0.85rem; max-width: 200px; }
-.actions { display: flex; gap: 0.5rem; }
-.empty { color: #999; text-align: center; padding: 2rem; }
-button { padding: 0.35rem 0.8rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.85rem; background: #e8f0fe; color: #1a3a5c; }
-button:hover { background: #d0e2ff; }
-button.danger { background: #fee; color: #c0392b; }
-button.danger:hover { background: #fcc; }
-.btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-primary:hover { background: #234e7a; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+/* A tariff that applies today is marked as such: green means current. */
+tbody tr.current td { background: var(--ok-bg); }
+.fee { font-weight: 500; color: var(--ink); }
+.desc-cell { max-width: 220px; font-size: 0.88rem; }
+.actions { display: flex; gap: 10px; }
+.empty-cell { text-align: center; padding: 44px; color: var(--text-muted); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
 .form-grid .full { grid-column: 1 / -1; }
-label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
-label input { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
-.error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
+@media (max-width: 620px) {
+  .form-grid { grid-template-columns: 1fr; }
+}
 </style>

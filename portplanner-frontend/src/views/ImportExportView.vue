@@ -3,16 +3,16 @@
     <h2>Import / Export</h2>
 
     <!-- ═══ DOCKS – EXPORT ══════════════════════════════════════════════ -->
-    <section class="card">
+    <section class="panel section">
       <h3>Exportera bryggor &amp; platser</h3>
       <p class="desc">Laddar ner alla bryggor och båtplatser som en JSON-fil du kan spara lokalt.</p>
-      <button class="btn-primary" :disabled="exporting" @click="doExport">
+      <button class="btn btn-primary btn-sm" :disabled="exporting" @click="doExport">
         {{ exporting ? 'Exporterar…' : '⬇ Ladda ner bryggor.json' }}
       </button>
     </section>
 
     <!-- ═══ DOCKS – IMPORT ══════════════════════════════════════════════ -->
-    <section class="card">
+    <section class="panel section">
       <h3>Importera bryggor &amp; platser</h3>
       <p class="desc">
         Klistra in eller ladda upp en JSON-fil. Befintliga bryggor uppdateras inte –
@@ -22,22 +22,22 @@
       <div class="input-row">
         <label class="file-btn">
           📂 Välj fil
-          <input type="file" accept=".json,application/json" @change="onFileSelected($event, 'docks')" hidden />
+          <input class="input" type="file" accept=".json,application/json" @change="onFileSelected($event, 'docks')" hidden />
         </label>
         <span class="or">eller klistra in JSON nedan</span>
       </div>
 
-      <textarea
+      <textarea class="input"
         v-model="dockJsonText"
         rows="10"
         placeholder='[{ "name": "Bryggans namn", "slips": [{ "slipNumber": "1", "maxWidthM": 3.2 }] }]'
       />
 
       <div class="btn-row">
-        <button class="btn-secondary" :disabled="!dockJsonText.trim() || dockPreviewing" @click="doPreview">
+        <button class="btn btn-secondary btn-sm" :disabled="!dockJsonText.trim() || dockPreviewing" @click="doPreview">
           {{ dockPreviewing ? 'Kontrollerar…' : '🔍 Förhandsgranska' }}
         </button>
-        <button class="btn-primary" :disabled="!dockPreview || dockImporting" @click="doImport">
+        <button class="btn btn-primary btn-sm" :disabled="!dockPreview || dockImporting" @click="doImport">
           {{ dockImporting ? 'Importerar…' : '⬆ Importera' }}
         </button>
       </div>
@@ -47,10 +47,10 @@
       <div v-if="dockPreview" class="preview-box">
         <h4>Förhandsgranskning</h4>
         <div class="stats">
-          <div class="stat"><span class="stat-val green">{{ dockPreview.docksNew }}</span><span class="stat-label">Nya bryggor</span></div>
-          <div class="stat"><span class="stat-val blue">{{ dockPreview.docksExisting }}</span><span class="stat-label">Befintliga</span></div>
-          <div class="stat"><span class="stat-val green">{{ dockPreview.slipsNew }}</span><span class="stat-label">Nya platser</span></div>
-          <div class="stat"><span class="stat-val gray">{{ dockPreview.slipsSkipped }}</span><span class="stat-label">Hoppar över</span></div>
+          <div class="stat"><span class="stat-val num ok">{{ dockPreview.docksNew }}</span><span class="stat-label">Nya bryggor</span></div>
+          <div class="stat"><span class="stat-val num info">{{ dockPreview.docksExisting }}</span><span class="stat-label">Befintliga</span></div>
+          <div class="stat"><span class="stat-val num ok">{{ dockPreview.slipsNew }}</span><span class="stat-label">Nya platser</span></div>
+          <div class="stat"><span class="stat-val num idle">{{ dockPreview.slipsSkipped }}</span><span class="stat-label">Hoppar över</span></div>
         </div>
         <ul v-if="dockPreview.details.length" class="details">
           <li v-for="(d, i) in dockPreview.details" :key="i">{{ d }}</li>
@@ -60,9 +60,9 @@
       <div v-if="dockResult" class="result-box" :class="dockResult.warnings.length ? 'warn' : 'ok'">
         <h4>Import klar</h4>
         <div class="stats">
-          <div class="stat"><span class="stat-val green">{{ dockResult.docksCreated }}</span><span class="stat-label">Bryggor skapade</span></div>
-          <div class="stat"><span class="stat-val green">{{ dockResult.slipsCreated }}</span><span class="stat-label">Platser skapade</span></div>
-          <div class="stat"><span class="stat-val gray">{{ dockResult.slipsSkipped }}</span><span class="stat-label">Hoppade över</span></div>
+          <div class="stat"><span class="stat-val num ok">{{ dockResult.docksCreated }}</span><span class="stat-label">Bryggor skapade</span></div>
+          <div class="stat"><span class="stat-val num ok">{{ dockResult.slipsCreated }}</span><span class="stat-label">Platser skapade</span></div>
+          <div class="stat"><span class="stat-val num idle">{{ dockResult.slipsSkipped }}</span><span class="stat-label">Hoppade över</span></div>
         </div>
         <ul v-if="dockResult.warnings.length" class="details warn-list">
           <li v-for="(w, i) in dockResult.warnings" :key="i">⚠ {{ w }}</li>
@@ -71,16 +71,16 @@
     </section>
 
     <!-- ═══ BOATS – EXPORT ══════════════════════════════════════════════ -->
-    <section class="card">
+    <section class="panel section">
       <h3>Exportera båtar</h3>
       <p class="desc">Laddar ner alla båtar (modell, mått, ägare via e-post) som en JSON-fil.</p>
-      <button class="btn-primary" :disabled="boatExporting" @click="doBoatExport">
+      <button class="btn btn-primary btn-sm" :disabled="boatExporting" @click="doBoatExport">
         {{ boatExporting ? 'Exporterar…' : '⬇ Ladda ner båtar.json' }}
       </button>
     </section>
 
     <!-- ═══ BOATS – IMPORT ══════════════════════════════════════════════ -->
-    <section class="card">
+    <section class="panel section">
       <h3>Importera båtar</h3>
       <p class="desc">
         Klistra in eller ladda upp en JSON-fil med båtar. Matchning sker på båtmodell + ägarens e-postadress –
@@ -90,12 +90,12 @@
       <div class="input-row">
         <label class="file-btn">
           📂 Välj fil
-          <input type="file" accept=".json,application/json" @change="onFileSelected($event, 'boats')" hidden />
+          <input class="input" type="file" accept=".json,application/json" @change="onFileSelected($event, 'boats')" hidden />
         </label>
         <span class="or">eller klistra in JSON nedan</span>
       </div>
 
-      <textarea
+      <textarea class="input"
         v-model="boatJsonText"
         rows="10"
         placeholder='[
@@ -110,10 +110,10 @@
       />
 
       <div class="btn-row">
-        <button class="btn-secondary" :disabled="!boatJsonText.trim() || boatPreviewing" @click="doBoatPreview">
+        <button class="btn btn-secondary btn-sm" :disabled="!boatJsonText.trim() || boatPreviewing" @click="doBoatPreview">
           {{ boatPreviewing ? 'Kontrollerar…' : '🔍 Förhandsgranska' }}
         </button>
-        <button class="btn-primary" :disabled="!boatPreview || boatImporting" @click="doBoatImport">
+        <button class="btn btn-primary btn-sm" :disabled="!boatPreview || boatImporting" @click="doBoatImport">
           {{ boatImporting ? 'Importerar…' : '⬆ Importera' }}
         </button>
       </div>
@@ -123,9 +123,9 @@
       <div v-if="boatPreview" class="preview-box">
         <h4>Förhandsgranskning</h4>
         <div class="stats">
-          <div class="stat"><span class="stat-val green">{{ boatPreview.boatsNew }}</span><span class="stat-label">Nya båtar</span></div>
-          <div class="stat"><span class="stat-val blue">{{ boatPreview.boatsExisting }}</span><span class="stat-label">Befintliga</span></div>
-          <div class="stat"><span class="stat-val gray">{{ boatPreview.ownersNotFound }}</span><span class="stat-label">Ägare ej hittad</span></div>
+          <div class="stat"><span class="stat-val num ok">{{ boatPreview.boatsNew }}</span><span class="stat-label">Nya båtar</span></div>
+          <div class="stat"><span class="stat-val num info">{{ boatPreview.boatsExisting }}</span><span class="stat-label">Befintliga</span></div>
+          <div class="stat"><span class="stat-val num idle">{{ boatPreview.ownersNotFound }}</span><span class="stat-label">Ägare ej hittad</span></div>
         </div>
         <ul v-if="boatPreview.details.length" class="details">
           <li v-for="(d, i) in boatPreview.details" :key="i">{{ d }}</li>
@@ -135,8 +135,8 @@
       <div v-if="boatResult" class="result-box" :class="boatResult.warnings.length ? 'warn' : 'ok'">
         <h4>Import klar</h4>
         <div class="stats">
-          <div class="stat"><span class="stat-val green">{{ boatResult.boatsCreated }}</span><span class="stat-label">Skapade</span></div>
-          <div class="stat"><span class="stat-val gray">{{ boatResult.boatsSkipped }}</span><span class="stat-label">Hoppade över</span></div>
+          <div class="stat"><span class="stat-val num ok">{{ boatResult.boatsCreated }}</span><span class="stat-label">Skapade</span></div>
+          <div class="stat"><span class="stat-val num idle">{{ boatResult.boatsSkipped }}</span><span class="stat-label">Hoppade över</span></div>
         </div>
         <ul v-if="boatResult.warnings.length" class="details warn-list">
           <li v-for="(w, i) in boatResult.warnings" :key="i">⚠ {{ w }}</li>
@@ -145,16 +145,16 @@
     </section>
 
     <!-- ═══ PERSONS – EXPORT ════════════════════════════════════════════ -->
-    <section class="card">
+    <section class="panel section">
       <h3>Exportera personer</h3>
       <p class="desc">Laddar ner alla personer (namn, e-post, telefon) som en JSON-fil.</p>
-      <button class="btn-primary" :disabled="personExporting" @click="doPersonExport">
+      <button class="btn btn-primary btn-sm" :disabled="personExporting" @click="doPersonExport">
         {{ personExporting ? 'Exporterar…' : '⬇ Ladda ner personer.json' }}
       </button>
     </section>
 
     <!-- ═══ PERSONS – IMPORT ════════════════════════════════════════════ -->
-    <section class="card">
+    <section class="panel section">
       <h3>Importera personer</h3>
       <p class="desc">
         Klistra in eller ladda upp en JSON-fil med personer. Matchning sker på e-postadress –
@@ -164,12 +164,12 @@
       <div class="input-row">
         <label class="file-btn">
           📂 Välj fil
-          <input type="file" accept=".json,application/json" @change="onFileSelected($event, 'persons')" hidden />
+          <input class="input" type="file" accept=".json,application/json" @change="onFileSelected($event, 'persons')" hidden />
         </label>
         <span class="or">eller klistra in JSON nedan</span>
       </div>
 
-      <textarea
+      <textarea class="input"
         v-model="personJsonText"
         rows="10"
         placeholder='[
@@ -183,10 +183,10 @@
       />
 
       <div class="btn-row">
-        <button class="btn-secondary" :disabled="!personJsonText.trim() || personPreviewing" @click="doPersonPreview">
+        <button class="btn btn-secondary btn-sm" :disabled="!personJsonText.trim() || personPreviewing" @click="doPersonPreview">
           {{ personPreviewing ? 'Kontrollerar…' : '🔍 Förhandsgranska' }}
         </button>
-        <button class="btn-primary" :disabled="!personPreview || personImporting" @click="doPersonImport">
+        <button class="btn btn-primary btn-sm" :disabled="!personPreview || personImporting" @click="doPersonImport">
           {{ personImporting ? 'Importerar…' : '⬆ Importera' }}
         </button>
       </div>
@@ -196,8 +196,8 @@
       <div v-if="personPreview" class="preview-box">
         <h4>Förhandsgranskning</h4>
         <div class="stats">
-          <div class="stat"><span class="stat-val green">{{ personPreview.personsNew }}</span><span class="stat-label">Nya personer</span></div>
-          <div class="stat"><span class="stat-val blue">{{ personPreview.personsExisting }}</span><span class="stat-label">Befintliga</span></div>
+          <div class="stat"><span class="stat-val num ok">{{ personPreview.personsNew }}</span><span class="stat-label">Nya personer</span></div>
+          <div class="stat"><span class="stat-val num info">{{ personPreview.personsExisting }}</span><span class="stat-label">Befintliga</span></div>
         </div>
         <ul v-if="personPreview.details.length" class="details">
           <li v-for="(d, i) in personPreview.details" :key="i">{{ d }}</li>
@@ -207,8 +207,8 @@
       <div v-if="personResult" class="result-box" :class="personResult.warnings.length ? 'warn' : 'ok'">
         <h4>Import klar</h4>
         <div class="stats">
-          <div class="stat"><span class="stat-val green">{{ personResult.personsCreated }}</span><span class="stat-label">Skapade</span></div>
-          <div class="stat"><span class="stat-val gray">{{ personResult.personsSkipped }}</span><span class="stat-label">Hoppade över</span></div>
+          <div class="stat"><span class="stat-val num ok">{{ personResult.personsCreated }}</span><span class="stat-label">Skapade</span></div>
+          <div class="stat"><span class="stat-val num idle">{{ personResult.personsSkipped }}</span><span class="stat-label">Hoppade över</span></div>
         </div>
         <ul v-if="personResult.warnings.length" class="details warn-list">
           <li v-for="(w, i) in personResult.warnings" :key="i">⚠ {{ w }}</li>
@@ -410,36 +410,58 @@ function downloadJson(data, filename) {
 </script>
 
 <style scoped>
-h2 { font-size: 1.5rem; margin-bottom: 1.5rem; }
-h3 { font-size: 1.1rem; margin-bottom: 0.4rem; }
-h4 { font-size: 0.95rem; margin-bottom: 0.75rem; color: #333; }
-.card { background: white; border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-.desc { color: #666; font-size: 0.9rem; margin-bottom: 1rem; }
-.input-row { display: flex; align-items: center; gap: 1rem; margin-bottom: 0.75rem; }
-.file-btn { background: #eee; padding: 0.45rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-.file-btn:hover { background: #ddd; }
-.or { color: #999; font-size: 0.85rem; }
-textarea { width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 6px; font-family: monospace; font-size: 0.82rem; resize: vertical; box-sizing: border-box; }
-.btn-row { display: flex; gap: 0.75rem; margin-top: 0.75rem; }
-.btn-primary { background: #1a3a5c; color: white; border: none; padding: 0.5rem 1.25rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-.btn-primary:hover:not(:disabled) { background: #234e7a; }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-secondary { background: #eee; color: #333; border: none; padding: 0.5rem 1.25rem; border-radius: 6px; cursor: pointer; font-size: 0.9rem; }
-.btn-secondary:hover:not(:disabled) { background: #ddd; }
-.btn-secondary:disabled { opacity: 0.5; cursor: not-allowed; }
-.error { color: #c0392b; font-size: 0.875rem; margin-top: 0.5rem; }
-.preview-box { margin-top: 1.25rem; background: #f0f4ff; border: 1px solid #c5d4f0; border-radius: 8px; padding: 1rem; }
-.result-box { margin-top: 1.25rem; border-radius: 8px; padding: 1rem; }
-.result-box.ok   { background: #f0fff4; border: 1px solid #b2dfdb; }
-.result-box.warn { background: #fffbf0; border: 1px solid #ffe082; }
-.stats { display: flex; gap: 1.5rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+h2 { font-size: 1.45rem; margin-bottom: 24px; }
+h3 { margin-bottom: 6px; }
+h4 { font-size: 0.95rem; margin-bottom: 10px; color: var(--ink); }
+.desc { color: var(--text-muted); font-size: 0.9rem; margin-bottom: 14px; }
+
+.input-row { display: flex; align-items: center; gap: 14px; margin-bottom: 10px; flex-wrap: wrap; }
+.file-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 15px;
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--sea);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.file-btn:hover { background: var(--sea-pale); border-color: var(--info-border); }
+.or { color: var(--text-muted); font-size: 0.88rem; }
+
+/* Pasted JSON is code, so it stays in mono. */
+textarea.input { width: 100%; font-family: var(--font-mono); font-size: 0.82rem; resize: vertical; }
+.btn-row { display: flex; gap: 10px; margin-top: 10px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.preview-box, .result-box {
+  margin-top: 22px;
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  border: 1px solid var(--paper-border);
+  background: var(--paper);
+}
+.result-box.ok { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok-text); }
+.result-box.warn { background: var(--warn-bg); border-color: var(--warn-border); color: var(--warn-text); }
+
+.stats { display: flex; gap: 22px; margin-bottom: 14px; flex-wrap: wrap; }
 .stat { display: flex; flex-direction: column; align-items: center; }
-.stat-val { font-size: 1.75rem; font-weight: 700; line-height: 1; }
-.stat-val.green { color: #2e7d32; }
-.stat-val.blue  { color: #1565c0; }
-.stat-val.gray  { color: #757575; }
-.stat-label { font-size: 0.75rem; color: #555; margin-top: 0.2rem; }
-.details { list-style: none; padding: 0; font-size: 0.85rem; color: #444; }
-.details li { padding: 0.2rem 0; border-bottom: 1px solid rgba(0,0,0,0.05); }
-.warn-list li { color: #7c5700; }
+.stat-val { font-size: 1.6rem; font-weight: 600; line-height: 1; }
+.stat-val.ok { color: var(--ok-text); }
+.stat-val.info { color: var(--info-text); }
+.stat-val.idle { color: var(--idle-text); }
+.stat-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+.details { list-style: none; padding: 0; font-size: 0.88rem; }
+.details li { padding: 4px 0; border-bottom: 1px solid var(--paper-border); }
+.details li:last-child { border-bottom: 0; }
+.warn-list li { color: var(--warn-text); }
 </style>

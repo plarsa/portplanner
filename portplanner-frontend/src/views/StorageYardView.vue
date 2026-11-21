@@ -1,12 +1,12 @@
 <template>
   <AppLayout>
-    <div class="page-header">
+    <div class="toolbar">
       <div>
         <router-link to="/winter" class="back-link">← Vinterupptagning</router-link>
         <h2>Gårdsplan — {{ season?.name }}</h2>
       </div>
-      <div class="header-actions">
-        <button class="btn-secondary" @click="openCreateYard">+ Ny gårdsplan</button>
+      <div class="right">
+        <button class="btn btn-secondary btn-sm" @click="openCreateYard">+ Ny gårdsplan</button>
       </div>
     </div>
 
@@ -15,7 +15,7 @@
     <!-- Yard tabs -->
     <div v-if="yards.length" class="yard-tabs">
       <button v-for="y in yards" :key="y.id"
-              :class="['yard-tab', activeYardId === y.id ? 'active' : '']"
+              :class="['yardtab', activeYardId === y.id ? 'active' : '']"
               @click="selectYard(y.id)">
         {{ y.name }}
       </button>
@@ -24,11 +24,11 @@
     <div v-if="activeYard" class="yard-panel">
       <!-- Toolbar -->
       <div class="yard-toolbar">
-        <button class="btn-sm" @click="suggestPlacements" :disabled="busy">Föreslå placering</button>
-        <button class="btn-sm" @click="validateYardPlan">Validera</button>
-        <button class="btn-secondary" @click="openCalibration">Kalibrera</button>
-        <button class="btn-secondary" @click="openEditYard(activeYard)">Redigera</button>
-        <button class="btn-danger-sm" @click="removeYard(activeYard)">Ta bort</button>
+        <button class="btn btn-secondary btn-sm" @click="suggestPlacements" :disabled="busy">Föreslå placering</button>
+        <button class="btn btn-secondary btn-sm" @click="validateYardPlan">Validera</button>
+        <button class="btn btn-secondary btn-sm" @click="openCalibration">Kalibrera</button>
+        <button class="btn btn-secondary btn-sm" @click="openEditYard(activeYard)">Redigera</button>
+        <button class="btn btn-danger btn-sm" @click="removeYard(activeYard)">Ta bort</button>
       </div>
 
       <!-- Validation issues -->
@@ -40,7 +40,7 @@
 
       <!-- Canvas -->
       <div class="canvas-container" @dragover.prevent @drop="onDrop">
-        <svg :width="canvasW" :height="canvasH" class="yard-svg" @click="deselectPlacement">
+        <svg :width="canvasW" :height="canvasH" class="yard-svg" data-graphic @click="deselectPlacement">
           <!-- Background image -->
           <image v-if="activeYard.backgroundImageUrl"
                  :href="activeYard.backgroundImageUrl"
@@ -50,20 +50,20 @@
           <!-- Boundary polygon -->
           <polygon v-if="boundaryPoints.length >= 3"
                    :points="boundaryPoints.map(p => `${mToP(p.xMeters)},${mToP(p.yMeters)}`).join(' ')"
-                   fill="rgba(26,58,92,0.05)" stroke="#1a3a5c" stroke-width="1.5" stroke-dasharray="6 4" />
+                   class="yard-bounds" stroke-width="1.5" stroke-dasharray="6 4" />
 
           <!-- Placements -->
           <g v-for="p in placements" :key="p.id"
              :transform="`translate(${mToP(p.xMeters)},${mToP(p.yMeters)})`"
              class="placement-group"
-             :class="{ selected: selectedId === p.id, launched: p.status === 'LAUNCHED' }"
+             :class="['status-' + p.status.toLowerCase(), { selected: selectedId === p.id, launched: p.status === 'LAUNCHED' }]"
              @click.stop="selectPlacement(p)"
              @mousedown="startDrag($event, p)">
             <!-- Boat silhouette -->
-            <polygon :points="boatSilhouette(p)" :fill="placementColor(p)" stroke="#1a3a5c" stroke-width="1" />
+            <polygon :points="boatSilhouette(p)" class="hull" stroke-width="1" />
             <!-- Label -->
             <text :x="mToP(p.widthMeters) / 2" :y="mToP(p.lengthMeters) / 2 + 4"
-                  text-anchor="middle" font-size="10" fill="#1a3a5c" font-weight="600"
+                  text-anchor="middle" font-size="10" class="hull-label"
                   style="pointer-events:none; user-select:none">
               {{ p.boatModel }}
             </text>
@@ -80,23 +80,23 @@
           <dt>Längd</dt><dd>{{ selectedPlacement.lengthMeters }} m</dd>
           <dt>Position X</dt><dd>{{ selectedPlacement.xMeters }} m</dd>
           <dt>Position Y</dt><dd>{{ selectedPlacement.yMeters }} m</dd>
-          <dt>Status</dt><dd><span :class="['status-chip', selectedPlacement.status.toLowerCase()]">{{ selectedPlacement.status }}</span></dd>
+          <dt>Status</dt><dd><span :class="['pill', placementPill(selectedPlacement.status)]">{{ selectedPlacement.status }}</span></dd>
           <dt>Grupp</dt>
           <dd>
-            <select :value="selectedPlacement.packingGroupId ?? ''" @change="assignGroup($event.target.value)">
+            <select class="input" :value="selectedPlacement.packingGroupId ?? ''" @change="assignGroup($event.target.value)">
               <option value="">Ingen grupp</option>
               <option v-for="g in groups" :key="g.id" :value="g.id">{{ g.name }}</option>
             </select>
           </dd>
           <dt v-if="selectedPlacement.packingGroupId">Ordning</dt>
           <dd v-if="selectedPlacement.packingGroupId">
-            <input type="number" :value="selectedPlacement.orderInGroup ?? ''" min="1"
+            <input class="input" type="number" :value="selectedPlacement.orderInGroup ?? ''" min="1"
                    @change="setGroupOrder(+$event.target.value)" style="width:60px" />
           </dd>
         </dl>
         <div class="side-actions">
-          <button class="btn-sm" @click="markPlaced">Satt som PLACED</button>
-          <button v-if="selectedPlacement.status !== 'LAUNCHED'" class="btn-sm" @click="launchPlacement">Sjösatt</button>
+          <button class="btn btn-secondary btn-sm" @click="markPlaced">Satt som PLACED</button>
+          <button v-if="selectedPlacement.status !== 'LAUNCHED'" class="btn btn-secondary btn-sm" @click="launchPlacement">Sjösatt</button>
         </div>
       </div>
 
@@ -104,12 +104,12 @@
       <div class="groups-section">
         <div class="groups-header">
           <span class="section-label">Packningsgrupper</span>
-          <button class="btn-sm" @click="createGroup">+ Ny grupp</button>
+          <button class="btn btn-secondary btn-sm" @click="createGroup">+ Ny grupp</button>
         </div>
         <div v-for="g in groups" :key="g.id" class="group-row">
           <span>{{ g.name }}</span>
           <span v-if="g.retrievalNote" class="group-note">{{ g.retrievalNote }}</span>
-          <button class="btn-danger-sm" @click="removeGroup(g)">Ta bort</button>
+          <button class="btn btn-danger btn-sm" @click="removeGroup(g)">Ta bort</button>
         </div>
         <div v-if="!groups.length" class="slots-empty">Inga grupper</div>
       </div>
@@ -119,9 +119,9 @@
     <BaseModal v-if="yardModal" :title="editingYard ? 'Redigera gårdsplan' : 'Ny gårdsplan'"
                @close="yardModal = false" @save="saveYard">
       <div class="form-grid">
-        <label class="full">Namn *<input v-model="yardForm.name" /></label>
-        <label class="full">Bakgrundsbild URL<input v-model="yardForm.backgroundImageUrl" placeholder="https://..." /></label>
-        <label class="full">Marginal mellan båtar (m)<input v-model.number="yardForm.laneMarginM" type="number" step="0.1" min="0" /></label>
+        <label class="full">Namn *<input class="input" v-model="yardForm.name" /></label>
+        <label class="full">Bakgrundsbild URL<input class="input" v-model="yardForm.backgroundImageUrl" placeholder="https://..." /></label>
+        <label class="full">Marginal mellan båtar (m)<input class="input" v-model.number="yardForm.laneMarginM" type="number" step="0.1" min="0" /></label>
       </div>
       <p v-if="err" class="error">{{ err }}</p>
     </BaseModal>
@@ -130,18 +130,18 @@
     <BaseModal v-if="calibModal" title="Kalibrering" @close="calibModal = false" @save="saveCalibration">
       <p class="calib-help">Ange koordinatsystemets ursprung och skala. Pixelkoordinater läses från bakgrundsbild; meter-koordinater används för placering.</p>
       <div class="form-grid">
-        <label>Ursprung pixel X<input v-model.number="calibForm.originPixelX" type="number" /></label>
-        <label>Ursprung pixel Y<input v-model.number="calibForm.originPixelY" type="number" /></label>
-        <label class="full">Pixlar per meter<input v-model.number="calibForm.pixelsPerMeter" type="number" step="0.1" /></label>
+        <label>Ursprung pixel X<input class="input" v-model.number="calibForm.originPixelX" type="number" /></label>
+        <label>Ursprung pixel Y<input class="input" v-model.number="calibForm.originPixelY" type="number" /></label>
+        <label class="full">Pixlar per meter<input class="input" v-model.number="calibForm.pixelsPerMeter" type="number" step="0.1" /></label>
       </div>
       <div class="boundary-section">
         <div class="section-label">Gränspolygon (meter-koordinater)</div>
         <div v-for="(pt, i) in calibForm.boundary" :key="i" class="boundary-row">
-          <label>X<input v-model.number="pt.xMeters" type="number" step="0.5" style="width:80px" /></label>
-          <label>Y<input v-model.number="pt.yMeters" type="number" step="0.5" style="width:80px" /></label>
-          <button class="btn-danger-sm" @click="calibForm.boundary.splice(i, 1)">✕</button>
+          <label>X<input class="input" v-model.number="pt.xMeters" type="number" step="0.5" style="width:80px" /></label>
+          <label>Y<input class="input" v-model.number="pt.yMeters" type="number" step="0.5" style="width:80px" /></label>
+          <button class="btn btn-danger btn-sm" @click="calibForm.boundary.splice(i, 1)">✕</button>
         </div>
-        <button class="btn-sm" @click="calibForm.boundary.push({ xMeters: 0, yMeters: 0 })">+ Punkt</button>
+        <button class="btn btn-secondary btn-sm" @click="calibForm.boundary.push({ xMeters: 0, yMeters: 0 })">+ Punkt</button>
       </div>
       <p v-if="err" class="error">{{ err }}</p>
     </BaseModal>
@@ -149,6 +149,11 @@
 </template>
 
 <script setup>
+/* Placement state in the guide's roles: waiting is yellow, in place is green,
+   launched is done and closed. */
+const placementPill = (s) =>
+  ({ PLANNED: 'pill-warn', PLACED: 'pill-ok', LAUNCHED: 'pill-info' })[s] ?? 'pill-idle'
+
 import { ref, computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import AppLayout from '../components/AppLayout.vue'
@@ -333,12 +338,6 @@ async function saveCalibration() {
 }
 
 // Visual helpers
-function placementColor(p) {
-  if (p.status === 'LAUNCHED') return '#d4edda'
-  if (p.status === 'PLACED') return '#cce5ff'
-  return '#f8d7da'
-}
-
 function boatSilhouette(p) {
   const w = mToP(p.widthMeters)
   const l = mToP(p.lengthMeters)
@@ -367,68 +366,129 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; }
-h2 { font-size: 1.4rem; margin: 0.2rem 0 0; }
-.back-link { font-size: 0.85rem; color: #1a3a5c; text-decoration: none; }
-.back-link:hover { text-decoration: underline; }
-.header-actions { display: flex; gap: 0.5rem; }
-.empty-state { color: #999; text-align: center; padding: 3rem; }
+h2 { font-size: 1.45rem; margin: 2px 0 0; }
+.back-link { font-size: 0.88rem; }
+.empty-state, .slots-empty { color: var(--text-muted); }
+.empty-state { text-align: center; padding: 44px; }
 
-.yard-tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; }
-.yard-tab { padding: 0.45rem 1rem; border-radius: 6px; border: 1px solid #ddd; background: white; cursor: pointer; font-size: 0.88rem; }
-.yard-tab.active { background: #1a3a5c; color: white; border-color: #1a3a5c; }
+.yard-tabs { display: flex; gap: 4px; margin-bottom: 14px; flex-wrap: wrap; }
+.yardtab {
+  padding: 8px 14px;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  font-family: var(--font);
+  font-size: 0.92rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+.yardtab:hover { background: var(--paper-deep); color: var(--ink); }
+.yardtab.active { background: var(--sea-pale); color: var(--ink); }
 
-.yard-panel { display: grid; grid-template-columns: 1fr 220px; gap: 1rem; }
-.yard-toolbar { grid-column: 1 / -1; display: flex; gap: 0.5rem; flex-wrap: wrap; background: white; padding: 0.75rem 1rem; border-radius: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+.yard-panel { display: grid; grid-template-columns: 1fr 230px; gap: 14px; }
+.yard-toolbar {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  background: var(--surface);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+}
 
-.issues-panel { grid-column: 1 / -1; background: #fff3cd; border-radius: 8px; padding: 0.75rem 1rem; }
-.issue-row { font-size: 0.85rem; color: #856404; padding: 0.2rem 0; }
+.issues-panel {
+  grid-column: 1 / -1;
+  background: var(--warn-bg);
+  border: 1px solid var(--warn-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.issue-row { font-size: 0.88rem; color: var(--warn-text); padding: 2px 0; }
 
-.canvas-container { background: white; border-radius: 8px; overflow: auto; box-shadow: 0 2px 8px rgba(0,0,0,0.07); cursor: crosshair; }
+.canvas-container {
+  background: var(--surface);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  overflow: auto;
+  cursor: crosshair;
+}
 .yard-svg { display: block; }
+
+/* The yard is a data graphic: the hull wears its status fill from the map palette. */
+.yard-bounds { fill: rgba(16, 32, 52, 0.04); stroke: var(--ink); }
 .placement-group { cursor: grab; }
 .placement-group:active { cursor: grabbing; }
-.placement-group.selected polygon { stroke: #c0392b; stroke-width: 2; }
+.placement-group .hull { stroke: var(--ink); fill: var(--map-free-bg); }
+.placement-group.status-planned .hull { fill: var(--map-service-bg); }
+.placement-group.status-placed .hull { fill: var(--map-taken-bg); }
+.placement-group.status-launched .hull { fill: var(--info-bg); }
+.placement-group.selected .hull { stroke: var(--sea); stroke-width: 2; }
 .placement-group.launched { opacity: 0.55; }
+.hull-label { fill: var(--ink); font-family: var(--font-mono); font-weight: 500; }
 
-.side-panel { background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); height: fit-content; }
-.side-title { font-weight: 700; font-size: 1rem; color: #1a3a5c; }
-.side-owner { font-size: 0.82rem; color: #888; margin-bottom: 0.75rem; }
-.side-grid { display: grid; grid-template-columns: 60px 1fr; gap: 0.4rem 0.75rem; margin: 0 0 0.75rem; }
-dt { font-size: 0.78rem; font-weight: 600; color: #888; }
-dd { font-size: 0.85rem; color: #222; margin: 0; }
-.side-grid select { font-size: 0.82rem; padding: 0.2rem; border: 1px solid #ddd; border-radius: 4px; width: 100%; }
-.side-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
-.status-chip { font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 8px; }
-.status-chip.planned { background: #f8d7da; color: #721c24; }
-.status-chip.placed { background: #cce5ff; color: #004085; }
-.status-chip.launched { background: #d4edda; color: #155724; }
+.side-panel {
+  background: var(--surface);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  padding: 14px;
+  height: fit-content;
+}
+.side-title { font-weight: 600; font-size: 1rem; color: var(--ink); }
+.side-owner { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 10px; }
+.side-grid { display: grid; grid-template-columns: 70px 1fr; gap: 8px 14px; margin: 0 0 14px; }
+dt { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+dd { font-size: 0.88rem; margin: 0; }
+.side-grid .input { font-size: 0.85rem; padding: 5px 8px; width: 100%; }
+.side-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
-.groups-section { grid-column: 1 / -1; background: white; border-radius: 8px; padding: 1rem; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-.groups-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; }
-.section-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; }
-.group-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.35rem 0; border-bottom: 1px solid #f0f0f0; font-size: 0.88rem; }
-.group-row:last-child { border-bottom: none; }
-.group-note { color: #888; font-size: 0.78rem; font-style: italic; flex: 1; }
-.slots-empty { color: #bbb; font-size: 0.85rem; }
+.groups-section {
+  grid-column: 1 / -1;
+  background: var(--surface);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+}
+.groups-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.group-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--paper-border);
+  font-size: 0.9rem;
+}
+.group-row:last-child { border-bottom: 0; }
+.group-note { color: var(--text-muted); font-size: 0.82rem; flex: 1; }
 
-.btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; font-size: 0.85rem; }
-.btn-primary:hover { background: #234e7a; }
-.btn-secondary { background: #e8f0fe; color: #1a3a5c; padding: 0.4rem 0.8rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.82rem; }
-.btn-secondary:hover { background: #d0e2ff; }
-.btn-sm { background: #e8f0fe; color: #1a3a5c; padding: 0.3rem 0.65rem; border-radius: 4px; border: none; cursor: pointer; font-size: 0.8rem; }
-.btn-sm:hover { background: #d0e2ff; }
-.btn-sm:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-danger-sm { background: #fee; color: #c0392b; padding: 0.25rem 0.6rem; border-radius: 4px; border: none; cursor: pointer; font-size: 0.78rem; }
-.btn-danger-sm:hover { background: #fcc; }
-
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
 .form-grid .full { grid-column: 1 / -1; }
-label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
-label input, label select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
-.error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
-.calib-help { font-size: 0.83rem; color: #666; margin-bottom: 0.75rem; }
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.form-grid .input { font-family: var(--font); text-transform: none; letter-spacing: 0; }
+.calib-help { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 14px; }
+.boundary-section { margin-top: 14px; }
+.boundary-row { display: flex; align-items: flex-end; gap: 10px; margin-bottom: 8px; }
 
-.boundary-section { margin-top: 1rem; }
-.boundary-row { display: flex; align-items: flex-end; gap: 0.5rem; margin-bottom: 0.4rem; }
+@media (max-width: 980px) {
+  .yard-panel { grid-template-columns: 1fr; }
+}
 </style>

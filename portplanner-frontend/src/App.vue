@@ -20,17 +20,20 @@ onMounted(() => {
 </script>
 
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: system-ui, sans-serif; background: #f5f5f5; color: #333; }
+/* Surface and type come from the shared style layer, imported in main.js. */
+* { margin: 0; padding: 0; }
 </style>
 
 <style scoped>
 .app-shell { min-height: 100vh; display: flex; flex-direction: column; }
 .app-footer {
-  padding: 0.6rem 1rem;
+  padding: 14px 24px;
   text-align: center;
-  font-size: 0.75rem;
-  color: #8a94a0;
-  background: #eceff3;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-top: 1px solid var(--paper-border);
 }
 </style>

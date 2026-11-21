@@ -1,10 +1,10 @@
 <template>
   <AppLayout>
-    <div class="page-header">
+    <div class="toolbar">
       <h2>Båtar</h2>
-      <div class="header-right">
-        <input v-model="search" class="search-input" placeholder="Sök båt eller ägare…" />
-        <button class="btn-primary" @click="openCreate">+ Ny båt</button>
+      <div class="right">
+        <input class="input search-input" v-model="search" placeholder="Sök båt eller ägare…" />
+        <button class="btn btn-primary btn-sm" @click="openCreate">Ny båt</button>
       </div>
     </div>
     <div class="table-wrap">
@@ -19,9 +19,9 @@
           <tr v-for="b in filteredBoats" :key="b.id" class="clickable-row" @click="openDetail(b)">
             <td>{{ b.model }}</td>
             <td>{{ b.ownerName }}</td>
-            <td class="col-dim">{{ b.lengthM }}</td>
-            <td class="col-dim">{{ b.widthM }}</td>
-            <td class="col-draft">{{ b.draftM || '–' }}</td>
+            <td class="col-dim num">{{ b.lengthM }}</td>
+            <td class="col-dim num">{{ b.widthM }}</td>
+            <td class="col-draft num muted">{{ b.draftM || '–' }}</td>
           </tr>
           <tr v-if="!filteredBoats.length">
             <td colspan="5" class="empty">{{ search ? 'Inga träffar' : 'Inga båtar registrerade' }}</td>
@@ -29,9 +29,9 @@
         </tbody>
       </table>
     </div>
-    <div v-if="detail" class="detail-overlay" @click.self="detail = null">
-      <div class="detail-card">
-        <div class="detail-header">
+    <div v-if="detail" class="modal-backdrop" @click.self="detail = null">
+      <div class="modal detail">
+        <div class="detail-head">
           <div>
             <h3>{{ detail.boat.model }}</h3>
             <div class="detail-owner">{{ detail.boat.ownerName }}</div>
@@ -53,19 +53,19 @@
           <div v-else class="assignment-block free">Ingen aktiv plats</div>
         </div>
         <div class="detail-footer">
-          <button class="btn-danger" @click="removeFromDetail">Ta bort</button>
-          <button class="btn-primary" @click="openEdit(detail.boat); detail = null">Redigera</button>
+          <button class="btn btn-danger btn-sm" @click="removeFromDetail">Ta bort</button>
+          <button class="btn btn-primary btn-sm" @click="openEdit(detail.boat); detail = null">Redigera</button>
         </div>
       </div>
     </div>
     <BaseModal v-if="modal" :title="editing ? 'Redigera båt' : 'Ny båt'" @close="modal = false" @save="save">
       <div class="form-grid">
-        <label class="full">Båtmodell *<input v-model="form.model" required /></label>
-        <label>Längd m *<input v-model.number="form.lengthM" type="number" step="0.1" min="0" required /></label>
-        <label>Bredd m *<input v-model.number="form.widthM" type="number" step="0.1" min="0" required /></label>
-        <label class="full">Djupgång m<input v-model.number="form.draftM" type="number" step="0.1" min="0" /></label>
+        <label class="full">Båtmodell *<input class="input" v-model="form.model" required /></label>
+        <label>Längd m *<input class="input" v-model.number="form.lengthM" type="number" step="0.1" min="0" required /></label>
+        <label>Bredd m *<input class="input" v-model.number="form.widthM" type="number" step="0.1" min="0" required /></label>
+        <label class="full">Djupgång m<input class="input" v-model.number="form.draftM" type="number" step="0.1" min="0" /></label>
         <label class="full">Ägare *
-          <select v-model.number="form.ownerId" required>
+          <select class="input" v-model.number="form.ownerId" required>
             <option value="">Välj ägare…</option>
             <option v-for="p in persons" :key="p.id" :value="p.id">{{ p.firstName }} {{ p.lastName }}</option>
           </select>
@@ -142,52 +142,65 @@ onMounted(load)
 </script>
 
 <style scoped>
-.page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.75rem; }
-h2 { font-size: 1.5rem; }
-.header-right { display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap; }
-.search-input { padding: 0.45rem 0.85rem; border: 1px solid #ddd; border-radius: 6px; font-size: 0.9rem; width: min(220px, 100%); }
-.search-input:focus { outline: none; border-color: #1a3a5c; }
-.table-wrap { background: white; border-radius: 10px; overflow-x: auto; -webkit-overflow-scrolling: touch; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
-table { width: 100%; border-collapse: collapse; }
-th { background: #f8f8f8; padding: 0.75rem 1rem; text-align: left; font-size: 0.85rem; color: #555; border-bottom: 1px solid #eee; }
-td { padding: 0.75rem 1rem; border-bottom: 1px solid #f0f0f0; font-size: 0.9rem; }
-.empty { color: #999; text-align: center; padding: 2rem; }
-button { padding: 0.35rem 0.8rem; border-radius: 5px; border: none; cursor: pointer; font-size: 0.85rem; background: #e8f0fe; color: #1a3a5c; }
-button:hover { background: #d0e2ff; }
-.btn-primary { background: #1a3a5c; color: white; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-primary:hover { background: #234e7a; }
-.btn-danger { background: #fee; color: #c0392b; padding: 0.5rem 1.1rem; border-radius: 6px; border: none; cursor: pointer; }
-.btn-danger:hover { background: #fcc; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.search-input { width: min(240px, 100%); }
+.clickable-row { cursor: pointer; }
+.empty { text-align: center; padding: 44px; display: block; }
+
+.detail { max-width: 440px; padding: 0; }
+.detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 22px;
+  padding: 18px 22px;
+  border-bottom: 1px solid var(--paper-border);
+}
+.detail-head h3 { margin: 0 0 2px; }
+.detail-owner { font-size: 0.9rem; color: var(--text-muted); }
+.close-btn { background: none; border: 0; color: var(--text-muted); cursor: pointer; font-size: 1rem; padding: 2px 6px; }
+.close-btn:hover { color: var(--ink); }
+
+.detail-grid { display: grid; grid-template-columns: 120px 1fr; gap: 10px 22px; padding: 18px 22px; margin: 0; }
+dt { font-family: var(--font-mono); font-size: 0.68rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
+dd { margin: 0; font-family: var(--font-mono); font-size: 0.88rem; color: var(--text); }
+
+.assignment-section { border-top: 1px solid var(--paper-border); padding: 18px 22px; }
+.loading { color: var(--text-muted); font-size: 0.9rem; }
+
+/* Assigned is green and free is neutral, which is the guide's rule for these words. */
+.assignment-block { border-radius: var(--radius-sm); padding: 10px 14px; border: 1px solid transparent; }
+.assignment-block.assigned { background: var(--ok-bg); border-color: var(--ok-border); color: var(--ok-text); }
+.assignment-block.free { background: var(--idle-bg); border-color: var(--idle-border); color: var(--idle-text); font-weight: 500; font-size: 0.9rem; }
+.assign-location { font-weight: 600; }
+.assign-date { font-size: 0.82rem; margin-top: 2px; }
+
+.detail-footer {
+  padding: 14px 22px;
+  border-top: 1px solid var(--paper-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; }
 .form-grid .full { grid-column: 1 / -1; }
-label { display: flex; flex-direction: column; font-size: 0.85rem; font-weight: 600; gap: 0.3rem; }
-label input, label select { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem; font-weight: 400; }
-.error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
-.clickable-row { cursor: pointer; transition: background 0.1s; }
-.clickable-row:hover { background: #f5f8ff; }
-.detail-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.35); z-index: 100; display: flex; align-items: center; justify-content: center; }
-.detail-card { background: white; border-radius: 12px; width: 420px; max-width: 95vw; box-shadow: 0 8px 32px rgba(0,0,0,0.18); overflow: hidden; }
-.detail-header { display: flex; justify-content: space-between; align-items: flex-start; padding: 1.1rem 1.4rem; border-bottom: 1px solid #eee; }
-.detail-header h3 { font-size: 1.15rem; margin: 0 0 0.15rem; }
-.detail-owner { font-size: 0.85rem; color: #666; }
-.close-btn { background: none; border: none; font-size: 1.1rem; color: #888; cursor: pointer; padding: 0.2rem 0.4rem; flex-shrink: 0; }
-.close-btn:hover { color: #333; background: #f0f0f0; border-radius: 4px; }
-.detail-grid { display: grid; grid-template-columns: 120px 1fr; gap: 0.5rem 1rem; padding: 1.1rem 1.4rem; margin: 0; }
-dt { font-size: 0.82rem; font-weight: 600; color: #888; }
-dd { font-size: 0.9rem; color: #222; margin: 0; }
-.assignment-section { border-top: 1px solid #eee; padding: 1rem 1.4rem; }
-.section-title { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 0.6rem; }
-.loading { color: #aaa; font-size: 0.85rem; }
-.assignment-block { border-radius: 8px; padding: 0.7rem 1rem; }
-.assignment-block.assigned { background: #f8d7da; }
-.assign-location { font-weight: 700; font-size: 0.95rem; color: #721c24; }
-.assign-date { font-size: 0.8rem; color: #721c24; margin-top: 0.2rem; opacity: 0.8; }
-.assignment-block.free { background: #d4edda; color: #155724; font-weight: 600; font-size: 0.88rem; }
-.detail-footer { padding: 0.9rem 1.4rem; border-top: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.form-grid label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.form-grid .input { font-family: var(--font); text-transform: none; letter-spacing: 0; }
+
 @media (max-width: 640px) {
   .col-draft { display: none; }
-  .page-header { flex-direction: column; align-items: stretch; }
-  .header-right { flex-direction: column; align-items: stretch; }
+  .toolbar, .toolbar .right { flex-direction: column; align-items: stretch; }
+  .form-grid { grid-template-columns: 1fr; }
 }
 @media (max-width: 400px) { .col-dim { display: none; } }
 </style>

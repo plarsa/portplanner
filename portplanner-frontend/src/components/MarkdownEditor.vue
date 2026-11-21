@@ -1,10 +1,10 @@
 <template>
   <div class="md-editor">
     <div class="md-toolbar">
-      <button v-for="b in BUTTONS" :key="b.kind" type="button" :title="b.title"
+      <button class="btn btn-secondary btn-sm" v-for="b in BUTTONS" :key="b.kind" type="button" :title="b.title"
               @click="apply(b.kind)">{{ b.label }}</button>
     </div>
-    <textarea ref="area" :value="modelValue" :rows="rows" :placeholder="placeholder"
+    <textarea class="input" ref="area" :value="modelValue" :rows="rows" :placeholder="placeholder"
               @input="$emit('update:modelValue', $event.target.value)"></textarea>
     <div class="md-preview-title">Förhandsvisning</div>
     <div v-if="preview" class="md-preview markdown-body" v-html="preview"></div>
@@ -73,24 +73,32 @@ function apply(kind) {
 </script>
 
 <style scoped>
-.md-editor { display: flex; flex-direction: column; gap: 0.4rem; }
-.md-toolbar { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-.md-toolbar button { background: #f0f4f9; border: 1px solid #dde4ec; border-radius: 5px;
-  padding: 0.25rem 0.6rem; font-size: 0.78rem; font-weight: 600; color: #1a3a5c; cursor: pointer; }
-.md-toolbar button:hover { background: #e2eaf4; }
-textarea { padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.95rem;
-  font-weight: 400; font-family: inherit; resize: vertical; line-height: 1.45; }
-.md-preview-title { font-size: 0.75rem; font-weight: 600; color: #888; text-transform: uppercase;
-  letter-spacing: 0.04em; }
-.md-preview { border: 1px dashed #dde4ec; border-radius: 5px; padding: 0.6rem 0.75rem;
-  background: #fafcfe; font-size: 0.85rem; font-weight: 400; }
-.md-preview-empty { color: #aaa; font-style: italic; }
+.md-editor { display: flex; flex-direction: column; gap: 8px; }
+.md-toolbar { display: flex; flex-wrap: wrap; gap: 6px; }
+.md-toolbar .btn { padding: 5px 10px; font-size: 0.8rem; }
+textarea.input { font-family: var(--font); resize: vertical; line-height: 1.45; }
+.md-preview-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+.md-preview {
+  border: 1px dashed var(--paper-border);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  background: var(--paper);
+  font-size: 0.9rem;
+}
+.md-preview-empty { color: var(--text-muted); }
 /* The preview is injected with v-html, so its elements need :deep to be reached. */
-.markdown-body :deep(h4) { font-size: 0.92rem; margin: 0.6rem 0 0.2rem; color: #1a3a5c; }
-.markdown-body :deep(h5) { font-size: 0.85rem; margin: 0.5rem 0 0.2rem; color: #1a3a5c; }
-.markdown-body :deep(p) { margin: 0.25rem 0; }
-.markdown-body :deep(ul) { margin: 0.25rem 0; padding-left: 1.1rem; }
-.markdown-body :deep(li) { margin: 0.1rem 0; }
+.markdown-body :deep(h4) { font-size: 0.95rem; margin: 10px 0 2px; color: var(--ink); }
+.markdown-body :deep(h5) { font-size: 0.9rem; margin: 10px 0 2px; color: var(--ink); }
+.markdown-body :deep(p) { margin: 4px 0; }
+.markdown-body :deep(ul) { margin: 4px 0; padding-left: 18px; }
+.markdown-body :deep(li) { margin: 2px 0; }
 .markdown-body :deep(> :first-child) { margin-top: 0; }
 .markdown-body :deep(> :last-child) { margin-bottom: 0; }
 </style>
