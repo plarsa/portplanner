@@ -46,7 +46,7 @@ public class SecurityConfig {
                 .requestMatchers("/h2-console/**").permitAll()
                 // Landing page and both SPA shells are public; each app signs the user
                 // in through /api/auth and every /api endpoint is authorized on its own.
-                .requestMatchers("/", "/index.html", "/*.ico", "/*.png", "/*.webmanifest").permitAll()
+                .requestMatchers("/", "/index.html", "/*.css", "/*.svg", "/*.ico", "/*.png", "/*.webmanifest").permitAll()
                 .requestMatchers("/error").permitAll()
                 .requestMatchers("/admin", "/admin/**").permitAll()
                 .requestMatchers("/member", "/member/**").permitAll()
