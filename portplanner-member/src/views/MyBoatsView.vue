@@ -1,16 +1,18 @@
 <template>
   <div>
     <h2>Mina båtar</h2>
-    <div v-if="loading" class="loading">Laddar...</div>
-    <div v-else-if="boats.length === 0" class="empty">Inga registrerade båtar.</div>
-    <div v-else class="boat-list">
-      <div v-for="boat in boats" :key="boat.id" class="card">
-        <div class="boat-name">{{ boat.model }}</div>
-        <div class="specs">
-          <span v-if="boat.lengthM">Längd: {{ boat.lengthM }} m</span>
-          <span v-if="boat.widthM">Bredd: {{ boat.widthM }} m</span>
-          <span v-if="boat.draftM">Djupgång: {{ boat.draftM }} m</span>
-          <span v-if="boat.regNumber">Reg: {{ boat.regNumber }}</span>
+    <p v-if="loading" class="empty">Laddar...</p>
+    <p v-else-if="boats.length === 0" class="empty">Inga registrerade båtar.</p>
+    <div v-else class="panel">
+      <div class="rows">
+        <div v-for="boat in boats" :key="boat.id" class="row boat">
+          <span class="boat-name">{{ boat.model }}</span>
+          <span class="specs">
+            <span v-if="boat.lengthM" class="num">{{ boat.lengthM }} m</span>
+            <span v-if="boat.widthM" class="num">{{ boat.widthM }} m</span>
+            <span v-if="boat.draftM" class="num">{{ boat.draftM }} m</span>
+            <span v-if="boat.regNumber" class="num">{{ boat.regNumber }}</span>
+          </span>
         </div>
       </div>
     </div>
@@ -35,15 +37,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-h2 { margin: 0 0 1.5rem; }
-.loading, .empty { color: #888; }
-.boat-list { display: flex; flex-direction: column; gap: 1rem; }
-.card {
-  background: white;
-  border-radius: 10px;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+h2 { font-size: 1.45rem; margin: 0 0 24px; }
+.boat-name { font-weight: 600; color: var(--ink); }
+.specs { display: flex; gap: 22px; flex-wrap: wrap; color: var(--text-muted); }
+@media (max-width: 620px) {
+  .row.boat { flex-direction: column; gap: 6px; }
 }
-.boat-name { font-size: 1.1rem; font-weight: 700; color: #1a3a5c; margin-bottom: 0.5rem; }
-.specs { display: flex; gap: 1.25rem; flex-wrap: wrap; font-size: 0.875rem; color: #555; }
 </style>

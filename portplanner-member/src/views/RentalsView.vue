@@ -2,63 +2,61 @@
   <div>
     <h2>Hyra</h2>
 
-    <div v-if="myBookings.length" class="section">
-      <div class="section-title">Mina bokningar</div>
-      <div v-for="b in myBookings" :key="b.id" class="card">
-        <div class="card-header">
+    <section v-if="myBookings.length" class="section">
+      <p class="section-title">Mina bokningar</p>
+      <div v-for="b in myBookings" :key="b.id" class="panel booking">
+        <div class="booking-head">
           <span class="obj-name">{{ b.objectName }}</span>
-          <span :class="['status-chip', b.status.toLowerCase()]">{{ statusLabel(b.status) }}</span>
+          <span class="pill" :class="pillClass(b.status)">{{ statusLabel(b.status) }}</span>
         </div>
-        <div class="card-details">
-          <span>{{ formatTime(b.startAt) }} – {{ formatTime(b.endAt) }}</span>
-        </div>
-        <div v-if="canCancel(b) || canReturn(b)" class="card-actions">
-          <button v-if="canCancel(b)" @click="cancel(b)">Avboka</button>
-          <button v-if="canReturn(b)" class="btn-primary" @click="openReturn(b)">Återlämna</button>
+        <p class="when num">{{ formatTime(b.startAt) }} – {{ formatTime(b.endAt) }}</p>
+        <div v-if="canCancel(b) || canReturn(b)" class="booking-actions">
+          <button v-if="canCancel(b)" class="btn btn-secondary btn-sm" @click="cancel(b)">Avboka</button>
+          <button v-if="canReturn(b)" class="btn btn-primary btn-sm" @click="openReturn(b)">Återlämna</button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div class="section">
-      <div class="section-title">Objekt att hyra</div>
-      <div v-if="!objects.length" class="empty">Inget är öppet för bokning just nu.</div>
-      <div v-for="o in objects" :key="o.id" class="obj-card" :class="{ on: selected?.id === o.id }">
+    <section class="section">
+      <p class="section-title">Objekt att hyra</p>
+      <p v-if="!objects.length" class="empty">Inget är öppet för bokning just nu.</p>
+      <div v-for="o in objects" :key="o.id" class="panel object" :class="{ on: selected?.id === o.id }">
         <img v-if="o.hasImage" :src="`/api/me/rentals/objects/${o.id}/image`" alt="" class="thumb" />
         <div class="obj-body">
-          <div class="obj-name">{{ o.name }}</div>
+          <h3>{{ o.name }}</h3>
           <div v-if="o.description" class="desc markdown-body" v-html="renderMarkdown(o.description)"></div>
-          <ul class="rules">
-            <li>Längst {{ o.maxDurationHours }} timmar per bokning</li>
-            <li>Kan bokas upp till {{ o.maxDaysAhead }} dagar fram</li>
+          <ul class="ticks">
+            <li>Längst <span class="num">{{ o.maxDurationHours }}</span> timmar per bokning</li>
+            <li>Kan bokas upp till <span class="num">{{ o.maxDaysAhead }}</span> dagar fram</li>
             <li v-if="o.requiresApproval">Bokningen måste godkännas av hamnen</li>
           </ul>
-          <button class="btn-primary" @click="choose(o)">
+          <button class="btn btn-primary btn-sm" @click="choose(o)">
             {{ selected?.id === o.id ? 'Vald' : 'Boka' }}
           </button>
         </div>
       </div>
-    </div>
+    </section>
 
-    <div v-if="selected" class="section">
-      <div class="section-title">Kalender – {{ selected.name }}</div>
+    <section v-if="selected" class="section">
+      <p class="section-title">Kalender – {{ selected.name }}</p>
       <BookingCalendar
         :busy="busy"
         :maxDurationHours="selected.maxDurationHours"
         :maxDaysAhead="selected.maxDaysAhead"
         @select="pick" />
-      <button class="btn-primary book" :disabled="!chosen" @click="book">
+      <button class="btn btn-primary book" :disabled="!chosen" @click="book">
         {{ chosen ? 'Boka vald tid' : 'Välj en tid i kalendern' }}
       </button>
-    </div>
+    </section>
 
     <div v-if="returning" class="modal-backdrop" @click.self="returning = null">
       <div class="modal">
-        <div class="section-title">Återlämna {{ returning.objectName }}</div>
+        <p class="section-title">Återlämna {{ returning.objectName }}</p>
         <p class="hint">Rapportera fel och brister, eller lämna tomt om allt är i ordning.</p>
-        <textarea v-model="faultText" rows="4" placeholder="t.ex. Storseglet är trasigt"></textarea>
+        <textarea class="input" v-model="faultText" rows="4" placeholder="t.ex. Storseglet är trasigt"></textarea>
         <div class="modal-actions">
-          <button @click="returning = null">Avbryt</button>
-          <button class="btn-primary" @click="doReturn">Återlämna</button>
+          <button class="btn btn-secondary btn-sm" @click="returning = null">Avbryt</button>
+          <button class="btn btn-primary btn-sm" @click="doReturn">Återlämna</button>
         </div>
       </div>
     </div>
@@ -89,6 +87,13 @@ const STATUS = {
   CANCELLED: 'Avbokad', RETURNED: 'Återlämnad',
 }
 const statusLabel = (s) => STATUS[s] ?? s
+
+/** Yellow waits for approval, green is live, blue is closed, red was refused. */
+const PILL = {
+  PENDING: 'pill-warn', CONFIRMED: 'pill-ok', RETURNED: 'pill-info',
+  REJECTED: 'pill-bad', CANCELLED: 'pill-idle',
+}
+const pillClass = (s) => PILL[s] ?? 'pill-idle'
 
 function formatTime(t) {
   return t ? new Date(t).toLocaleString('sv-SE', { dateStyle: 'short', timeStyle: 'short' }) : ''
@@ -174,55 +179,34 @@ onMounted(load)
 </script>
 
 <style scoped>
-h2 { margin: 0 0 1.5rem; }
-.section { margin-bottom: 2rem; }
-.section-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin-bottom: 0.75rem; }
-.empty { color: #bbb; font-size: 0.88rem; }
-.error { color: #c0392b; font-size: 0.85rem; }
-.hint { font-size: 0.8rem; color: #777; margin: 0 0 0.5rem; }
+h2 { font-size: 1.45rem; margin: 0 0 24px; }
 
-.card { background: white; border-radius: 10px; padding: 1rem; margin-bottom: 0.6rem; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
-.card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem; }
-.obj-name { font-weight: 700; font-size: 0.95rem; }
-.card-details { font-size: 0.82rem; color: #666; }
-.card-actions { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+.booking-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; }
+.obj-name { font-weight: 600; color: var(--ink); }
+.when { margin: 6px 0 0; color: var(--text-muted); }
+.booking-actions { display: flex; gap: 10px; margin-top: 14px; }
 
-.obj-card { background: white; border-radius: 10px; margin-bottom: 0.6rem; box-shadow: 0 2px 6px rgba(0,0,0,0.07);
-  overflow: hidden; display: flex; flex-direction: column; }
-.obj-card.on { outline: 2px solid #1a3a5c; }
-.thumb { width: 100%; height: 170px; object-fit: cover; flex-shrink: 0; background: #eef2f7; display: block; }
-.obj-body { padding: 0.9rem 1rem; display: flex; flex-direction: column; gap: 0.35rem; flex: 1; }
-.desc { font-size: 0.85rem; color: #666; margin: 0; }
+.object { padding: 0; overflow: hidden; }
+.object.on { border-color: var(--sea); }
+.thumb { width: 100%; height: 170px; object-fit: cover; background: var(--paper-deep); }
+.obj-body { padding: 18px 22px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+.desc { font-size: 0.9rem; color: var(--text-muted); }
+
+/* The guide's ticks: the bullet is a 14px sea rule. */
+.ticks { list-style: none; padding: 0; margin: 0; font-size: 0.9rem; color: var(--text-muted); }
+.ticks li { display: flex; align-items: baseline; gap: 10px; padding: 2px 0; }
+.ticks li::before { content: ""; width: 14px; height: 1px; background: var(--sea); flex-shrink: 0; }
+
 /* The description is injected with v-html, so its elements need :deep to be reached. */
-.markdown-body :deep(h4) { font-size: 0.92rem; margin: 0.5rem 0 0.2rem; color: #1a3a5c; }
-.markdown-body :deep(h5) { font-size: 0.85rem; margin: 0.45rem 0 0.2rem; color: #1a3a5c; }
-.markdown-body :deep(p) { margin: 0.25rem 0; }
-.markdown-body :deep(ul) { margin: 0.25rem 0; padding-left: 1.1rem; }
-.markdown-body :deep(li) { margin: 0.1rem 0; }
+.markdown-body :deep(h4) { font-size: 0.95rem; margin: 10px 0 2px; color: var(--ink); }
+.markdown-body :deep(h5) { font-size: 0.9rem; margin: 10px 0 2px; color: var(--ink); }
+.markdown-body :deep(p) { margin: 4px 0; }
+.markdown-body :deep(ul) { margin: 4px 0; padding-left: 18px; }
+.markdown-body :deep(li) { margin: 2px 0; }
 .markdown-body :deep(> :first-child) { margin-top: 0; }
 .markdown-body :deep(> :last-child) { margin-bottom: 0; }
-.rules { list-style: none; padding: 0; margin: 0; font-size: 0.78rem; color: #777; }
-.rules li { padding: 0.05rem 0; }
-.obj-body button { align-self: flex-start; margin-top: auto; }
 
-.book { margin-top: 0.75rem; width: 100%; }
-
-button { background: #eef2f7; border: none; border-radius: 6px; padding: 0.45rem 1rem; cursor: pointer; font-size: 0.85rem; color: #1a3a5c; }
-button:hover { background: #dce8f6; }
-.btn-primary { background: #1a3a5c; color: white; }
-.btn-primary:hover { background: #234e7a; }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.status-chip { font-size: 0.7rem; font-weight: 700; padding: 0.15rem 0.45rem; border-radius: 8px; }
-.status-chip.pending { background: #fff3cd; color: #856404; }
-.status-chip.confirmed { background: #d4edda; color: #155724; }
-.status-chip.returned { background: #cce5ff; color: #004085; }
-.status-chip.rejected, .status-chip.cancelled { background: #f0f0f0; color: #999; }
-
-.modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex;
-  align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
-.modal { background: white; border-radius: 10px; padding: 1.25rem; width: 100%; max-width: 420px; }
-.modal textarea { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px;
-  font-size: 0.9rem; font-family: inherit; }
-.modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 0.75rem; }
+.book { margin-top: 14px; width: 100%; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.modal textarea { width: 100%; font-family: inherit; resize: vertical; }
 </style>

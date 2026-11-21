@@ -2,35 +2,29 @@
   <div>
     <h2>Min plats</h2>
 
-    <div v-if="loading" class="loading">Laddar...</div>
+    <p v-if="loading" class="empty">Laddar...</p>
     <template v-else>
-      <!-- Erbjudande-panel -->
-      <div v-if="offer" class="offer-panel">
-        <h3>Du har ett erbjudande om en plats!</h3>
-        <div class="offer-details">
-          <span>Brygga:</span><strong>{{ offer.offeredDockName }}</strong>
-          <span>Plats:</span><strong>{{ offer.offeredSlipNumber }}</strong>
+      <div v-if="offer" class="panel offer-panel">
+        <p class="section-title">Erbjudande om plats</p>
+        <div class="rows">
+          <div class="row"><span>Brygga</span><span class="num">{{ offer.offeredDockName }}</span></div>
+          <div class="row"><span>Plats</span><span class="num">{{ offer.offeredSlipNumber }}</span></div>
         </div>
         <div class="offer-actions">
-          <button class="btn-accept" :disabled="acting" @click="acceptOffer(offer.id)">
-            Acceptera
-          </button>
-          <button class="btn-decline" :disabled="acting" @click="declineOffer(offer.id)">
-            Avböj
-          </button>
+          <button class="btn btn-primary btn-sm" :disabled="acting" @click="acceptOffer(offer.id)">Acceptera</button>
+          <button class="btn btn-secondary btn-sm" :disabled="acting" @click="declineOffer(offer.id)">Avböj</button>
         </div>
         <p v-if="actionError" class="error">{{ actionError }}</p>
       </div>
 
-      <!-- Tilldelad plats -->
-      <div v-if="slip" class="card">
-        <div class="row"><span>Brygga</span><strong>{{ slip.dockName }}</strong></div>
-        <div class="row"><span>Plats</span><strong>{{ slip.slipNumber }}</strong></div>
-        <div class="row"><span>Tillagd</span><strong>{{ slip.startDate }}</strong></div>
+      <div v-if="slip" class="panel">
+        <div class="rows">
+          <div class="row"><span>Brygga</span><span class="num">{{ slip.dockName }}</span></div>
+          <div class="row"><span>Plats</span><span class="num">{{ slip.slipNumber }}</span></div>
+          <div class="row"><span>Tillagd</span><span class="num">{{ slip.startDate }}</span></div>
+        </div>
       </div>
-      <div v-else-if="!offer" class="empty">
-        Du har ingen tilldelad plats.
-      </div>
+      <p v-else-if="!offer" class="empty">Du har ingen tilldelad plats.</p>
     </template>
   </div>
 </template>
@@ -86,62 +80,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-h2 { margin: 0 0 1.5rem; }
-.loading, .empty { color: #888; }
-
-.offer-panel {
-  background: #fff8f0;
-  border: 1px solid #f0a040;
-  border-left: 4px solid #e67e22;
-  border-radius: 10px;
-  padding: 1.25rem 1.5rem;
-  margin-bottom: 1.5rem;
-}
-.offer-panel h3 { margin: 0 0 1rem; color: #c0620a; }
-.offer-details {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 0.4rem 1rem;
-  margin-bottom: 1rem;
-  font-size: 0.95rem;
-}
-.offer-actions { display: flex; gap: 0.75rem; }
-.btn-accept {
-  padding: 0.55rem 1.25rem;
-  background: #27ae60;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-.btn-accept:hover:not(:disabled) { background: #219a52; }
-.btn-decline {
-  padding: 0.55rem 1.25rem;
-  background: #e74c3c;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.95rem;
-}
-.btn-decline:hover:not(:disabled) { background: #c0392b; }
+h2 { font-size: 1.45rem; margin: 0 0 24px; }
+/* The offer is the one thing on this page that asks for an answer. */
+.offer-panel { border-left: 2px solid var(--warn-border); background: var(--warn-bg); }
+.offer-panel .section-title { color: var(--warn-text); }
+.offer-actions { display: flex; gap: 10px; margin-top: 18px; }
 button:disabled { opacity: 0.6; cursor: not-allowed; }
-
-.card {
-  background: white;
-  border-radius: 10px;
-  padding: 1.25rem 1.5rem;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-}
-.row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid #f0f0f0;
-  font-size: 0.95rem;
-}
-.row:last-child { border-bottom: none; }
-.row span { color: #666; }
-.error { color: #c0392b; font-size: 0.85rem; margin-top: 0.5rem; }
 </style>

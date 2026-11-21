@@ -211,29 +211,82 @@ function nextDay(dateStr) {
 </script>
 
 <style scoped>
-.calendar { background: white; border-radius: 10px; padding: 1rem; box-shadow: 0 2px 6px rgba(0,0,0,0.07); }
-.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
-.month { font-weight: 700; font-size: 0.95rem; text-transform: capitalize; }
-.cal-header button { background: #eef2f7; border: none; border-radius: 6px; width: 2rem; height: 2rem; cursor: pointer; font-size: 1rem; }
+.calendar {
+  background: var(--surface);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius);
+  padding: 18px;
+}
+.cal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+.month { font-weight: 600; color: var(--ink); text-transform: capitalize; }
+.cal-header button {
+  background: var(--surface);
+  border: 1px solid var(--paper-border);
+  border-radius: var(--radius-sm);
+  width: 2rem;
+  height: 2rem;
+  cursor: pointer;
+  color: var(--sea);
+  font-size: 1rem;
+}
+.cal-header button:hover:not(:disabled) { background: var(--sea-pale); }
 .cal-header button:disabled { opacity: 0.35; cursor: not-allowed; }
 
-.grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.25rem; }
-.weekday { font-size: 0.68rem; color: #999; text-align: center; font-weight: 700; padding-bottom: 0.25rem; }
-.day { aspect-ratio: 1; border: none; border-radius: 6px; background: #f6f8fb; color: #333;
-  font-size: 0.85rem; cursor: pointer; padding: 0; }
-.day.blank { background: transparent; cursor: default; }
-.day:disabled { color: #ccc; cursor: not-allowed; background: #fafafa; }
-.day.busy { box-shadow: inset 0 -3px 0 #e0a030; }
-.day.selectable:hover { background: #dce8f6; }
-.day.on { background: #1a3a5c; color: white; }
+.grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.weekday {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  text-align: center;
+  padding-bottom: 6px;
+}
 
-.hours { margin-top: 1rem; border-top: 1px solid #eee; padding-top: 0.75rem; }
-.hours-title { font-size: 0.8rem; font-weight: 700; color: #555; margin-bottom: 0.5rem; }
-.hour-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.6rem, 1fr)); gap: 0.25rem; }
-.hour { border: none; border-radius: 5px; background: #f6f8fb; padding: 0.4rem 0; font-size: 0.78rem; cursor: pointer; }
-.hour.taken { background: #f0f0f0; color: #c4c4c4; cursor: not-allowed; text-decoration: line-through; }
-.hour.inRange { background: #dce8f6; }
-.hour.edge { background: #1a3a5c; color: white; font-weight: 700; }
-.hint { font-size: 0.78rem; color: #777; margin: 0.5rem 0 0; }
-.range-error { font-size: 0.78rem; color: #c0392b; margin: 0.25rem 0 0; }
+/* Every number on this surface is mono: it is the content, not decoration. */
+.day, .hour { font-family: var(--font-mono); }
+.day {
+  aspect-ratio: 1;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--paper-deep);
+  color: var(--text);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 0;
+}
+.day.blank { background: transparent; cursor: default; }
+.day:disabled { color: var(--text-muted); background: var(--paper); cursor: not-allowed; }
+/* A busy day is marked, but colour is never the only signal: it stays selectable
+   and the hour grid shows which hours are actually taken. */
+.day.busy { box-shadow: inset 0 -3px 0 var(--warn-border); }
+.day.selectable:hover { background: var(--sea-pale); }
+.day.on { background: var(--sea); color: #fff; }
+
+.hours { margin-top: 18px; border-top: 1px solid var(--paper-border); padding-top: 14px; }
+.hours-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+.hour-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(2.6rem, 1fr)); gap: 4px; }
+.hour {
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background: var(--paper-deep);
+  color: var(--text);
+  padding: 6px 0;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+.hour.taken { background: var(--paper); color: var(--text-muted); cursor: not-allowed; text-decoration: line-through; }
+.hour.inRange { background: var(--sea-pale); }
+.hour.edge { background: var(--sea); color: #fff; font-weight: 600; }
+.range-error { font-size: 0.88rem; color: var(--bad-text); margin: 6px 0 0; }
+.hint { margin: 10px 0 0; }
 </style>

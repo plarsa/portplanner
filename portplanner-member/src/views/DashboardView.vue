@@ -1,32 +1,30 @@
 <template>
   <div>
-    <div v-if="modules.notice" class="notice" @click="modules.notice = ''">{{ modules.notice }}</div>
-    <h2>Välkommen, {{ auth.username }}!</h2>
+    <p v-if="modules.notice" class="notice" @click="modules.notice = ''">{{ modules.notice }}</p>
+    <h2>Välkommen, {{ auth.username }}</h2>
 
-    <div v-if="loading" class="loading">Laddar...</div>
+    <p v-if="loading" class="empty">Laddar...</p>
 
-    <div v-else class="cards">
-      <div class="card">
-        <div class="card-title">Min plats</div>
-        <div v-if="slip" class="card-value">{{ slip.dockName }} – {{ slip.slipNumber }}</div>
-        <div v-else class="card-value muted">Ingen tilldelad plats</div>
-        <router-link to="/slip" class="card-link">Visa mer →</router-link>
+    <div v-else class="columns">
+      <div class="column">
+        <span class="column-title">Min plats</span>
+        <span v-if="slip" class="column-value num">{{ slip.dockName }} {{ slip.slipNumber }}</span>
+        <span v-else class="column-value muted">Ingen tilldelad plats</span>
+        <router-link to="/slip" class="column-link">Visa mer</router-link>
       </div>
 
-      <div class="card">
-        <div class="card-title">Mina båtar</div>
-        <div class="card-value">{{ boats.length }}</div>
-        <router-link to="/boats" class="card-link">Visa mer →</router-link>
+      <div class="column">
+        <span class="column-title">Mina båtar</span>
+        <span class="column-value num">{{ boats.length }}</span>
+        <router-link to="/boats" class="column-link">Visa mer</router-link>
       </div>
 
-      <div class="card" :class="{ 'card-offer': hasOffer }">
-        <div class="card-title">Köstatus</div>
-        <div v-if="queueEntry" class="card-value">
-          {{ statusLabel(queueEntry.status) }}
-        </div>
-        <div v-else class="card-value muted">Inte i kö</div>
-        <div v-if="hasOffer" class="offer-alert">Erbjudande väntar! ↗</div>
-        <router-link to="/slip" class="card-link">{{ hasOffer ? 'Svara på erbjudande →' : 'Visa mer →' }}</router-link>
+      <div class="column">
+        <span class="column-title">Köstatus</span>
+        <span v-if="queueEntry" class="column-value">{{ statusLabel(queueEntry.status) }}</span>
+        <span v-else class="column-value muted">Inte i kö</span>
+        <span v-if="hasOffer" class="pill pill-warn">Erbjudande väntar</span>
+        <router-link to="/slip" class="column-link">{{ hasOffer ? 'Svara på erbjudande' : 'Visa mer' }}</router-link>
       </div>
     </div>
   </div>
@@ -73,24 +71,17 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.notice { background: #fff4e5; border: 1px solid #f0c987; border-radius: 6px; padding: 0.6rem 1rem; margin-bottom: 1rem; cursor: pointer; }
-h2 { margin: 0 0 1.5rem; font-size: 1.4rem; }
-.loading { color: #888; }
-.cards { display: flex; gap: 1.25rem; flex-wrap: wrap; }
-.card {
-  background: white;
-  border-radius: 10px;
-  padding: 1.25rem 1.5rem;
-  min-width: 180px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.07);
-  display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+h2 { font-size: 1.45rem; margin: 0 0 24px; }
+.notice {
+  border-left: 2px solid var(--warn-border);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  padding: 10px 14px;
+  margin: 0 0 22px;
+  font-size: 0.9rem;
+  cursor: pointer;
 }
-.card-offer { border-left: 4px solid #e67e22; }
-.card-title { font-size: 0.8rem; color: #666; }
-.card-value { font-size: 1.5rem; font-weight: 700; color: #1a3a5c; }
-.card-value.muted { color: #bbb; font-size: 1rem; font-weight: 400; }
-.card-link { font-size: 0.8rem; color: #1a6fc4; text-decoration: none; margin-top: auto; }
-.offer-alert { font-size: 0.8rem; color: #e67e22; font-weight: 600; }
+.column-value.muted { font-size: 1rem; font-weight: 400; color: var(--text-muted); }
+.column-link { font-size: 0.88rem; margin-top: auto; }
+.pill { align-self: flex-start; }
 </style>
