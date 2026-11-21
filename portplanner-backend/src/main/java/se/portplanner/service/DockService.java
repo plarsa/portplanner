@@ -2,6 +2,7 @@ package se.portplanner.service;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import se.portplanner.dto.DockLayoutResponse;
 import se.portplanner.dto.DockRequest;
 import se.portplanner.dto.DockResponse;
 import se.portplanner.dto.SlipResponse;
@@ -51,7 +52,6 @@ public class DockService {
         var dock = new Dock();
         dock.setName(req.name());
         dock.setDescription(req.description());
-        dock.setLayoutJson(req.layoutJson());
         var saved = dockRepository.save(dock);
         auditService.log("CREATED", "DOCK", saved.getId(), "Dock created: " + saved.getName());
         return DockResponse.from(saved);
@@ -61,10 +61,22 @@ public class DockService {
         var dock = getOrThrow(id);
         dock.setName(req.name());
         dock.setDescription(req.description());
-        if (req.layoutJson() != null) dock.setLayoutJson(req.layoutJson());
         var saved = dockRepository.save(dock);
         auditService.log("UPDATED", "DOCK", saved.getId(), "Dock updated: " + saved.getName());
         return DockResponse.from(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public DockLayoutResponse findLayout(Long dockId) {
+        return DockLayoutResponse.from(getOrThrow(dockId));
+    }
+
+    public DockLayoutResponse saveLayout(Long dockId, String layoutJson) {
+        var dock = getOrThrow(dockId);
+        dock.setLayoutJson(layoutJson);
+        var saved = dockRepository.save(dock);
+        auditService.log("UPDATED", "DOCK", saved.getId(), "Dock layout saved: " + saved.getName());
+        return DockLayoutResponse.from(saved);
     }
 
     public void delete(Long id) {

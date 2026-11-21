@@ -5,6 +5,8 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import se.portplanner.dto.DockLayoutRequest;
+import se.portplanner.dto.DockLayoutResponse;
 import se.portplanner.dto.DockRequest;
 import se.portplanner.dto.DockResponse;
 import se.portplanner.dto.SlipResponse;
@@ -39,6 +41,18 @@ public class DockController {
     @Operation(summary = "List all slips on a dock")
     public List<SlipResponse> findSlips(@PathVariable Long id) {
         return dockService.findSlips(id);
+    }
+
+    @GetMapping("/{id}/layout")
+    @Operation(summary = "Get the painted layout of a dock")
+    public DockLayoutResponse findLayout(@PathVariable Long id) {
+        return dockService.findLayout(id);
+    }
+
+    @PutMapping("/{id}/layout")
+    @Operation(summary = "Save the painted layout of a dock")
+    public DockLayoutResponse saveLayout(@PathVariable Long id, @RequestBody DockLayoutRequest req) {
+        return dockService.saveLayout(id, req.layoutJson());
     }
 
     @PostMapping
