@@ -56,14 +56,14 @@ jobs:
       - name: Upload JAR to S3
         run: |
           aws s3 cp dist/portplanner-backend-*.jar \
-            s3://${{ vars.S3_BUCKET }}/portplaner/app.jar
+            s3://${{ vars.S3_BUCKET }}/portplanner.jar
 
       - name: Trigger deploy on EC2 via SSM
         run: |
           COMMAND_ID=$(aws ssm send-command \
             --instance-ids "${{ vars.EC2_INSTANCE_ID }}" \
             --document-name AWS-RunShellScript \
-            --parameters 'commands=["/opt/portplaner/deploy.sh"]' \
+            --parameters 'commands=["/opt/portplanner/deploy.sh"]' \
             --comment "Deploy from GitHub Actions – ${{ github.sha }}" \
             --query "Command.CommandId" \
             --output text)
