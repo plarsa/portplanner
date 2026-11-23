@@ -67,9 +67,13 @@ The admin dev server is on `http://localhost:5173/admin/` and the member one on
 
 ## Deployment
 
-CI builds the jar and ships it to an EC2 instance via GitHub Actions + S3 + SSM; see
-`deploy/README.md` for one-time infrastructure setup and `deploy/portplaner.service` for
-the systemd unit.
+CI publishes the jar to the repository's Maven registry on GitHub Packages. A push to
+main publishes the snapshot version set in the pom; a tag `vX.Y.Z` publishes that
+version. Downloading a package needs a token with `read:packages`, even though the
+repository is public.
+
+See `deploy/README.md` for the one-time EC2 setup and `deploy/portplaner.service` for the
+systemd unit.
 
 ## License
 
